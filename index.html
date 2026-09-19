@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mi Comisaría | Trámites Policiales - Salta</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="container header-inner">
+      <div class="brand">
+        <div class="police-logo" aria-label="Policía de Salta">
+          <img src="policia-salta.png.jpg.jpeg" alt="Escudo de la Policía de Salta">
+        </div>
+        <div>
+          <h1>Mi Comisaría</h1>
+          <p>Trámites de la Policía de Salta, en línea</p>
+        </div>
+      </div>
+      <nav class="header-nav">
+        <button id="btn-abrir-consulta" class="btn-nav" type="button">🔍 Consultar Trámite</button>
+        <button id="btn-toggle-admin" class="btn-nav btn-nav-officer" type="button">👮 Panel Comisaría</button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- ===================== VISTA: INICIO ===================== -->
+  <main id="view-home" class="view">
+    <section class="hero container">
+      <h2>¿Qué trámite necesitás hacer hoy?</h2>
+      <p>Elegí una opción, completá el formulario y generá tu certificado en formato policial.</p>
+    </section>
+
+    <section class="cards container" aria-label="Selección de trámite">
+      <button class="card" data-tramite="residencia">
+        <span class="card-icon">🏠</span>
+        <h3>Certificado de Residencia</h3>
+        <p>Acredita el domicilio donde vivís actualmente.</p>
+        <span class="card-cta">Iniciar trámite →</span>
+      </button>
+
+      <button class="card" data-tramite="convivencia">
+        <span class="card-icon">🤝</span>
+        <h3>Certificado de Convivencia</h3>
+        <p>Acredita que dos personas conviven en un mismo domicilio.</p>
+        <span class="card-cta">Iniciar trámite →</span>
+      </button>
+
+      <button class="card" data-tramite="carencia">
+        <span class="card-icon">📋</span>
+        <h3>Certificado de Carencia de Recursos</h3>
+        <p>Acredita la falta de ingresos o recursos suficientes.</p>
+        <span class="card-cta">Iniciar trámite →</span>
+      </button>
+
+      <button class="card" data-tramite="autorizacion">
+        <span class="card-icon">✍️</span>
+        <h3>Certificado de Autorización</h3>
+        <p>Deja constancia de una autorización para realizar una gestión determinada.</p>
+        <span class="card-cta">Iniciar trámite →</span>
+      </button>
+    </section>
+  </main>
+
+  <!-- ===================== VISTA: FORMULARIO ===================== -->
+  <main id="view-form" class="view hidden">
+    <section class="container form-wrapper">
+      <button id="btn-back" class="btn-link">← Volver a los trámites</button>
+      <h2 id="form-title">Formulario</h2>
+      <p id="form-subtitle" class="muted"></p>
+
+      <form id="tramite-form" novalidate>
+        <div id="form-fields"></div>
+
+        <label class="checkbox-row">
+          <input type="checkbox" id="declaracion-jurada" required>
+          Declaro que los datos consignados son correctos y verdaderos (declaración jurada).
+        </label>
+
+        <div class="form-actions">
+          <button type="submit" class="btn-primary">Generar certificado (PDF)</button>
+        </div>
+      </form>
+    </section>
+  </main>
+
+  <!-- ===================== VISTA: CONFIRMACIÓN ===================== -->
+  <main id="view-done" class="view hidden">
+    <section class="container done-wrapper">
+      <div class="done-icon">✅</div>
+      <h2>¡Trámite registrado y enviado!</h2>
+      <p>Tu certificado fue generado y descargado en formato PDF. Los datos han sido transmitidos a la guardia policial.</p>
+
+      <div class="tracking-box">
+        <span class="tracking-label">Tu Identificador Oficial de Trámite</span>
+        <div class="tracking-code-wrap">
+          <span id="done-nro-tramite" class="tracking-code">RES-000000</span>
+          <button id="btn-copiar-nro" class="btn-copy" type="button" title="Copiar al portapapeles">📋 Copiar</button>
+        </div>
+        <div id="done-sync-status" class="sync-status-badge sync-ok">
+          🟢 Sincronizado con la Comisaría Central
+        </div>
+      </div>
+
+      <p class="muted" style="font-size: 13px; max-width: 500px; margin: 0 auto 24px;">
+        Guardá tu número de trámite. Con él podrás verificar cuándo tu certificado ha sido revisado y sellado por el oficial de guardia.
+      </p>
+
+      <div style="display: flex; justify-content: center; gap: 12px; flex-wrap: wrap;">
+        <button id="btn-new" class="btn-primary">Iniciar otro trámite</button>
+        <button id="btn-ver-estado-directo" class="btn-link" type="button">Ver estado de este trámite</button>
+      </div>
+    </section>
+  </main>
+
+  <!-- ===================== VISTA: PANEL POLICIAL (ADMIN UNIFICADO) ===================== -->
+  <main id="view-admin" class="view hidden">
+    <section class="container admin-container">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
+        <div>
+          <h2 style="margin: 0; font-size: 24px; color: var(--navy);">Panel de Oficial de Guardia</h2>
+          <p class="muted" style="margin: 4px 0 0; font-size: 14px;">Validación y seguimiento de trámites policiales recibidos</p>
+        </div>
+        <button id="btn-volver-ciudadano" class="btn-secondary" type="button">← Volver a Trámites Ciudadanos</button>
+      </div>
+
+      <!-- Barra superior de estadísticas / KPIs -->
+      <section class="kpi-grid">
+        <div class="kpi-card">
+          <span class="kpi-label">Total Solicitudes</span>
+          <span class="kpi-value" id="kpi-total">0</span>
+        </div>
+        <div class="kpi-card kpi-pending">
+          <span class="kpi-label">Pendientes de Revisión</span>
+          <span class="kpi-value" id="kpi-pendientes">0</span>
+        </div>
+        <div class="kpi-card kpi-approved">
+          <span class="kpi-label">Aprobados / Validados</span>
+          <span class="kpi-value" id="kpi-aprobados">0</span>
+        </div>
+        <div class="kpi-card kpi-rejected">
+          <span class="kpi-label">Observados / Rechazados</span>
+          <span class="kpi-value" id="kpi-rechazados">0</span>
+        </div>
+      </section>
+
+      <!-- Filtros y buscador -->
+      <section class="admin-toolbar">
+        <div class="search-box">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="input-busqueda" placeholder="Buscar por DNI, N° trámite, apellido o nombre...">
+        </div>
+
+        <div class="toolbar-filters">
+          <select id="filtro-tipo">
+            <option value="TODOS">Todos los trámites</option>
+            <option value="residencia">Cert. de Residencia</option>
+            <option value="convivencia">Cert. de Convivencia</option>
+            <option value="carencia">Carencia de Recursos</option>
+            <option value="autorizacion">Autorización</option>
+          </select>
+
+          <select id="filtro-estado">
+            <option value="TODOS">Todos los estados</option>
+            <option value="PENDIENTE">Pendientes</option>
+            <option value="APROBADO">Aprobados</option>
+            <option value="OBSERVADO">Observados</option>
+            <option value="RECHAZADO">Rechazados</option>
+          </select>
+
+          <button id="btn-refrescar" class="btn-secondary" type="button" title="Actualizar datos del servidor">
+            🔄 Actualizar
+          </button>
+        </div>
+      </section>
+
+      <!-- Estado de conexión con el backend -->
+      <div id="admin-status-banner" class="status-banner hidden"></div>
+
+      <!-- Tabla principal de trámites -->
+      <section class="admin-card">
+        <div class="table-responsive">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>N° Trámite</th>
+                <th>Fecha y Hora</th>
+                <th>Trámite</th>
+                <th>Solicitante</th>
+                <th>DNI</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="tabla-tramites-body">
+              <tr>
+                <td colspan="7" class="td-empty">Cargando trámites recibidos...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <!-- ===================== MODAL: DETALLE Y RESOLUCIÓN POLICIAL ===================== -->
+  <div id="modal-detalle-admin" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="modal-admin-title">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <div>
+          <span id="modal-badge-tipo" class="badge badge-pendiente">Trámite</span>
+          <h2 id="modal-admin-title">Detalle del Trámite</h2>
+          <p id="modal-subtitulo" class="modal-meta"></p>
+        </div>
+        <button id="modal-admin-close" class="btn-close" type="button" aria-label="Cerrar modal">&times;</button>
+      </div>
+
+      <div class="modal-body" id="modal-cuerpo-detalle"></div>
+
+      <div class="modal-gestion">
+        <h3>Resolución del Oficial de Guardia</h3>
+        <div class="field-row">
+          <div class="field">
+            <label for="modal-select-estado">Estado del trámite</label>
+            <select id="modal-select-estado">
+              <option value="PENDIENTE">🟡 PENDIENTE (En revisión)</option>
+              <option value="APROBADO">🟢 APROBADO (Validado y sellado)</option>
+              <option value="OBSERVADO">🟠 OBSERVADO (Faltan requisitos/documentación)</option>
+              <option value="RECHAZADO">🔴 RECHAZADO (No corresponde)</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="modal-input-observaciones">Observaciones / Libro de Guardia</label>
+            <textarea id="modal-input-observaciones" rows="2" placeholder="Ej: Constatado en libro de guardia N° 42 folio 11."></textarea>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button id="modal-admin-cancelar" class="btn-secondary" type="button">Cerrar</button>
+        <button id="modal-admin-guardar" class="btn-primary" type="button">Guardar resolución</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== MODAL: CONSULTAR ESTADO DE TRÁMITE ===================== -->
+  <div id="consulta-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="consulta-title">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <div>
+          <span class="badge badge-pendiente">Consulta Ciudadana</span>
+          <h2 id="consulta-title">Estado de mi Trámite</h2>
+          <p class="modal-meta">Ingresá tu DNI o tu Código de Trámite para conocer el estado.</p>
+        </div>
+        <button id="consulta-close" class="btn-close" type="button" aria-label="Cerrar modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="consulta-form">
+          <div class="consulta-form-row">
+            <input type="text" id="consulta-input" placeholder="Ej: 38942105 o RES-742910" required>
+            <button type="submit" class="btn-primary" style="padding: 10px 18px;">Buscar</button>
+          </div>
+        </form>
+        <div id="consulta-resultado" style="margin-top: 15px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="scanner-modal" class="scanner-modal hidden" role="dialog" aria-modal="true" aria-labelledby="scanner-title">
+    <div class="scanner-panel">
+      <div class="scanner-header">
+        <div>
+          <p class="scanner-kicker">Lectura de documento</p>
+          <h2 id="scanner-title">Escanear DNI</h2>
+        </div>
+        <button id="scanner-close" class="btn-link" type="button" aria-label="Cerrar escáner">Cerrar</button>
+      </div>
+      <div class="scanner-video-wrap">
+        <video id="scanner-video" autoplay muted playsinline></video>
+        <div class="scanner-frame" aria-hidden="true"></div>
+      </div>
+      <p id="scanner-status" class="muted">Solicitando acceso a la cámara...</p>
+      <button id="scanner-start" class="btn-primary" type="button">Activar cámara</button>
+    </div>
+  </div>
+
+  <footer class="site-footer">
+    <div class="container">
+      <p>Mi Comisaría — Policía de Salta. Este es un formulario de solicitud; el certificado final debe ser validado y sellado por la dependencia policial correspondiente.</p>
+    </div>
+  </footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+{
+  "name": "mi-comisaria",
+  "version": "1.0.0",
+  "description": "Sistema de gestión y emisión de trámites policiales de la Policía de Salta",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "keywords": ["policia", "salta", "tramites", "certificados"],
+  "author": "Policía de Salta - Mi Comisaría",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.19.2",
+    "cors": "^2.8.5"
+  }
+}
