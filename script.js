@@ -572,6 +572,91 @@ function tomarFotoDocumento() {
   documentCameraImage.src = pendingDocumentPhoto;
   documentCameraPreview.classList.remove("hidden");
   documentCameraStatus.textContent = "Revisá que los datos se lean bien. Si no, repetí la foto.";
+  leerDatosDocumento(canvas, documentCameraTarget);
+}
+
+async function leerDatosDocumento(imagen, targetId) {
+  if (!window.BarcodeDetector) return;
+
+  try {
+    const formatosSolicitados = ["pdf417", "qr_code", "code_128", "code_39"];
+    const formatosSoportados = await BarcodeDetector.getSupportedFormats();
+    const formatos = formatosSolicitados.filter((formato) => formatosSoportados.includes(formato));
+    if (!formatos.length) return;
+    const detector = new BarcodeDetector({ formats: formatos });
+    const codigos = await detector.detect(imagen);
+    if (!codigos.length) return;
+
+    const datos = extraerDatosDocumento(codigos[0].rawValue);
+    if (!datos.dni && !datos.nombre) return;
+
+    completarCamposDocumento(targetId, datos);
+    if (documentCameraTarget === targetId) {
+      documentCameraStatus.textContent = "Datos leídos y completados automáticamente. Revisalos antes de continuar.";
+    }
+  } catch {
+    // La foto se conserva aunque el navegador no pueda leer el código.
+  }
+}
+
+function extraerDatosDocumento(texto) {
+  const contenido = String(texto || "").replace(/[\r\n]+/g, "@");
+  const partes = contenido.split("@").map((parte) => parte.trim()).filter(Boolean);
+  const dni = contenido.match(/\b\d{7,8}\b/);
+  const sexo = partes.map(normalizarSexo).find(Boolean) || "";
+  const candidatosNombre = partes
+    .filter((parte) => /^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ ]{3,}$/.test(parte))
+    .filter((parte) => !/^(ARG|ARGENTINA|IDARG|DNI|EJEMPLAR|NACIONALIDAD|APELLIDO|NOMBRE|MERCOSUR)$/i.test(parte));
+
+  return {
+    dni: dni ? dni[0] : "",
+    nombre: candidatosNombre.slice(0, 2).join(" "),
+    sexo,
+    fechaNacimiento: extraerFechaNacimiento(partes),
+  };
+}
+
+function normalizarSexo(valor) {
+  const sexo = String(valor || "").trim().toUpperCase();
+  if (sexo === "M" || sexo === "MASCULINO") return "Masculino";
+  if (sexo === "F" || sexo === "FEMENINO") return "Femenino";
+  if (sexo === "X" || sexo === "OTRO") return "Otro / Prefiero no especificar";
+  return "";
+}
+
+function extraerFechaNacimiento(partes) {
+  const fecha = partes.find((parte) => {
+    if (/^\d{2}[/-]\d{2}[/-]\d{4}$/.test(parte)) return true;
+    return /^\d{8}$/.test(parte) && (/^(19|20)\d{2}/.test(parte) || /(19|20)\d{2}$/.test(parte));
+  });
+  if (!fecha) return "";
+  const numeros = fecha.replace(/\D/g, "");
+  if (numeros.length !== 8) return "";
+
+  const empiezaConAnio = /^(19|20)\d{2}/.test(numeros);
+  const anio = empiezaConAnio ? numeros.slice(0, 4) : numeros.slice(4, 8);
+  const mes = empiezaConAnio ? numeros.slice(4, 6) : numeros.slice(2, 4);
+  const dia = empiezaConAnio ? numeros.slice(6, 8) : numeros.slice(0, 2);
+  return `${anio}-${mes}-${dia}`;
+}
+
+function completarCamposDocumento(targetId, datos) {
+  const destinos = {
+    dni: { nombre: "nombre", sexo: "sexo" },
+    dniSolicitante: { nombre: "nombreSolicitante", sexo: "sexoSolicitante", fechaNacimiento: "fechaNacimientoSolicitante" },
+    autorizanteDni: { nombre: "autorizanteNombre" },
+    autorizadoDni: { nombre: "autorizadoNombre" },
+    testigo1Dni: { nombre: "testigo1Nombre" },
+    testigo2Dni: { nombre: "testigo2Nombre" },
+  };
+  const destino = destinos[targetId] || {};
+  const dniInput = document.getElementById(targetId);
+  if (dniInput && datos.dni) dniInput.value = datos.dni;
+
+  Object.entries(destino).forEach(([dato, inputId]) => {
+    const input = document.getElementById(inputId);
+    if (input && datos[dato]) input.value = datos[dato];
+  });
 }
 
 function continuarFotoDocumento() {
