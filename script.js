@@ -242,36 +242,38 @@ const TRAMITES = {
 const viewHome = document.getElementById("view-home");
 const viewForm = document.getElementById("view-form");
 const viewDone = document.getElementById("view-done");
-const viewAdmin = document.getElementById("view-admin");
-
-const btnToggleAdmin = document.getElementById("btn-toggle-admin");
-const btnVolverCiudadano = document.getElementById("btn-volver-ciudadano");
 
 const formTitle = document.getElementById("form-title");
 const formSubtitle = document.getElementById("form-subtitle");
 const formFields = document.getElementById("form-fields");
 const tramiteForm = document.getElementById("tramite-form");
-const scannerModal = document.getElementById("scanner-modal");
-const scannerVideo = document.getElementById("scanner-video");
-const scannerStatus = document.getElementById("scanner-status");
-const scannerStart = document.getElementById("scanner-start");
-const scannerClose = document.getElementById("scanner-close");
+const documentCameraModal = document.getElementById("document-camera-modal");
+const documentCameraVideo = document.getElementById("document-camera-video");
+const documentCameraStatus = document.getElementById("document-camera-status");
+const documentCameraStep = document.getElementById("document-camera-step");
+const documentCameraFlash = document.getElementById("document-camera-flash");
+const documentCameraCapture = document.getElementById("document-camera-capture");
+const documentCameraPreview = document.getElementById("document-camera-preview");
+const documentCameraImage = document.getElementById("document-camera-image");
+const documentCameraRetake = document.getElementById("document-camera-retake");
+const documentCameraContinue = document.getElementById("document-camera-continue");
+const documentCameraClose = document.getElementById("document-camera-close");
 
 let tramiteActual = null;
-let scannerStream = null;
-let scannerTimer = null;
-let scannerReading = false;
-let scannerTarget = null;
+let documentCameraStream = null;
+let documentCameraTrack = null;
+let documentCameraTarget = null;
+let documentCameraSide = "frente";
+let pendingDocumentPhoto = null;
+let flashEnabled = false;
+const fotosDni = new Map();
 
 // ------------------------------------------------------------
 // Navegación entre vistas
 // ------------------------------------------------------------
 function mostrarVista(vista) {
-  [viewHome, viewForm, viewDone, viewAdmin].forEach((v) => v && v.classList.add("hidden"));
-  if (vista) vista.classList.remove("hidden");
-  if (btnToggleAdmin) {
-    btnToggleAdmin.textContent = vista === viewAdmin ? "🏠 Inicio Ciudadano" : "👮 Panel Comisaría";
-  }
+  [viewHome, viewForm, viewDone].forEach((v) => v.classList.add("hidden"));
+  vista.classList.remove("hidden");
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
@@ -290,23 +292,6 @@ document.getElementById("btn-back").addEventListener("click", () => {
 document.getElementById("btn-new").addEventListener("click", () => {
   mostrarVista(viewHome);
 });
-
-if (btnToggleAdmin) {
-  btnToggleAdmin.addEventListener("click", () => {
-    if (viewAdmin && !viewAdmin.classList.contains("hidden")) {
-      mostrarVista(viewHome);
-    } else {
-      mostrarVista(viewAdmin);
-      cargarDatosAdmin();
-    }
-  });
-}
-
-if (btnVolverCiudadano) {
-  btnVolverCiudadano.addEventListener("click", () => {
-    mostrarVista(viewHome);
-  });
-}
 
 // ------------------------------------------------------------
 // Render dinámico del formulario según el trámite elegido
@@ -371,9 +356,15 @@ function renderFormulario(tramiteKey) {
       const scanButton = document.createElement("button");
       scanButton.type = "button";
       scanButton.className = "btn-scan";
-      scanButton.textContent = "Escanear DNI";
-      scanButton.addEventListener("click", () => abrirScanner(campo.id));
+      scanButton.textContent = "Fotografiar DNI";
+      scanButton.addEventListener("click", () => abrirCamaraDocumento(campo.id));
       inputRow.appendChild(scanButton);
+
+      const photoStatus = document.createElement("p");
+      photoStatus.id = `dni-photo-status-${campo.id}`;
+      photoStatus.className = "dni-photo-status";
+      photoStatus.textContent = "Faltan las fotos del frente y dorso del DNI.";
+      inputRow.appendChild(photoStatus);
       wrapper.appendChild(inputRow);
     } else {
       wrapper.appendChild(input);
@@ -504,135 +495,144 @@ function obtenerFamiliares() {
   });
 }
 
-function abrirScanner(targetId) {
-  scannerTarget = targetId;
-  scannerModal.classList.remove("hidden");
-  scannerStatus.textContent = "Presioná Activar cámara y enfocá el código del documento.";
-  scannerStart.focus();
-}
+async function abrirCamaraDocumento(targetId) {
+  cerrarCamaraDocumento();
+  documentCameraTarget = targetId;
+  documentCameraSide = "frente";
+  pendingDocumentPhoto = null;
+  flashEnabled = false;
+  documentCameraModal.classList.remove("hidden");
+  actualizarPasoCamara();
 
-function cerrarScanner() {
-  if (scannerTimer) {
-    clearInterval(scannerTimer);
-    scannerTimer = null;
-  }
-  if (scannerStream) {
-    scannerStream.getTracks().forEach((track) => track.stop());
-    scannerStream = null;
-  }
-  scannerVideo.srcObject = null;
-  scannerReading = false;
-  scannerModal.classList.add("hidden");
-  scannerTarget = null;
-}
-
-async function iniciarScanner() {
   if (!window.isSecureContext) {
-    scannerStatus.textContent = "La cámara requiere una conexión segura (HTTPS). Abrí esta página con HTTPS o probá desde localhost.";
+    documentCameraStatus.textContent = "La cámara requiere una conexión segura (HTTPS). Abrí esta página con HTTPS o probá desde localhost.";
     return;
   }
-
-  if (!window.BarcodeDetector || !navigator.mediaDevices) {
-    scannerStatus.textContent = "Este navegador no admite lectura de códigos por cámara. Podés completar los datos manualmente.";
+  if (!navigator.mediaDevices?.getUserMedia) {
+    documentCameraStatus.textContent = "Este navegador no permite usar la cámara. Podés completar el DNI manualmente.";
     return;
   }
-
   try {
-    const detector = new BarcodeDetector({ formats: ["qr_code", "pdf417", "code_128", "code_39"] });
     try {
-      scannerStream = await navigator.mediaDevices.getUserMedia({
+      documentCameraStream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } },
         audio: false,
       });
     } catch {
-      scannerStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      documentCameraStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
     }
-    scannerVideo.srcObject = scannerStream;
-    await scannerVideo.play();
-    scannerStatus.textContent = "Buscando el código del documento...";
-    scannerTimer = setInterval(async () => {
-      if (scannerReading || scannerVideo.readyState < 2) return;
-      scannerReading = true;
-      try {
-        const codigos = await detector.detect(scannerVideo);
-        if (codigos.length > 0) {
-          procesarCodigoEscaneado(codigos[0].rawValue);
-          cerrarScanner();
-        }
-      } catch {
-        scannerStatus.textContent = "No se pudo leer el código. Alineá el documento dentro del marco.";
-      } finally {
-        scannerReading = false;
-      }
-    }, 300);
+    documentCameraTrack = documentCameraStream.getVideoTracks()[0] || null;
+    documentCameraVideo.srcObject = documentCameraStream;
+    await documentCameraVideo.play();
+    configurarFlash();
+    documentCameraCapture.disabled = false;
+    documentCameraStatus.textContent = "Asegurate de que el DNI se vea completo, nítido y sin reflejos.";
   } catch {
-    scannerStatus.textContent = "No se pudo mostrar la cámara. Revisá el permiso del navegador y que otra aplicación no la esté usando.";
+    documentCameraStatus.textContent = "No se pudo mostrar la cámara. Revisá el permiso del navegador y que otra aplicación no la esté usando.";
   }
 }
 
-function procesarCodigoEscaneado(texto) {
-  const datos = extraerDatosDocumento(texto);
-  const dniInput = document.getElementById(scannerTarget);
-  if (dniInput && datos.dni) dniInput.value = datos.dni;
-
-  const nombreTarget = {
-    dni: "nombre",
-    testigo1Dni: "testigo1Nombre",
-    testigo2Dni: "testigo2Nombre",
-  }[scannerTarget];
-  const nombreInput = nombreTarget && document.getElementById(nombreTarget);
-  if (nombreInput && datos.nombre) nombreInput.value = datos.nombre;
-
-  if (scannerTarget === "dni" && datos.sexo) {
-    const sexoInput = document.getElementById("sexo");
-    if (sexoInput) sexoInput.value = datos.sexo;
-  }
+function actualizarPasoCamara() {
+  const esFrente = documentCameraSide === "frente";
+  documentCameraStep.textContent = `Paso ${esFrente ? "1" : "2"} de 2: ${documentCameraSide} del DNI`;
+  documentCameraCapture.textContent = `Tomar foto del ${documentCameraSide}`;
+  documentCameraContinue.textContent = esFrente ? "Continuar con el dorso" : "Guardar fotos";
+  documentCameraPreview.classList.add("hidden");
+  documentCameraImage.removeAttribute("src");
 }
 
-function extraerDatosDocumento(texto) {
+function configurarFlash() {
+  const soportaFlash = Boolean(documentCameraTrack?.getCapabilities?.().torch);
+  documentCameraFlash.disabled = !soportaFlash;
+  documentCameraFlash.textContent = soportaFlash ? "Flash: apagado" : "Flash: no disponible";
+}
+
+async function alternarFlash() {
+  if (!documentCameraTrack?.getCapabilities?.().torch) return;
   try {
-    const datos = JSON.parse(texto);
-    return {
-      dni: String(datos.dni || datos.documento || "").replace(/\D/g, ""),
-      nombre: datos.nombre || datos.nombreCompleto || "",
-      sexo: normalizarSexo(datos.sexo),
-    };
+    flashEnabled = !flashEnabled;
+    await documentCameraTrack.applyConstraints({ advanced: [{ torch: flashEnabled }] });
+    documentCameraFlash.textContent = `Flash: ${flashEnabled ? "encendido" : "apagado"}`;
   } catch {
-    const partes = texto
-      .replace(/[\r\n]+/g, "@").split("@").map((parte) => parte.trim()).filter(Boolean);
-    const dni = texto.match(/\b\d{7,8}\b/);
-    const sexo = partes.map(normalizarSexo).find(Boolean) || "";
-    const nombres = partes.filter((parte) => /^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ ]{3,}$/.test(parte))
-      .filter((parte) => !/^(ARG|IDARG|DNI|EJEMPLAR|NACIONALIDAD|APELLIDO|NOMBRE)$/i.test(parte));
-    return {
-      dni: dni ? dni[0] : "",
-      nombre: nombres.slice(0, 2).join(" "),
-      sexo,
-    };
+    flashEnabled = false;
+    documentCameraFlash.textContent = "Flash: no disponible";
+    documentCameraFlash.disabled = true;
   }
 }
 
-function normalizarSexo(valor) {
-  const sexo = String(valor || "").trim().toUpperCase();
-  if (sexo === "M" || sexo === "MASCULINO") return "Masculino";
-  if (sexo === "F" || sexo === "FEMENINO") return "Femenino";
-  if (sexo === "X" || sexo === "OTRO") return "Otro / Prefiero no especificar";
-  return "";
+function tomarFotoDocumento() {
+  if (documentCameraVideo.readyState < 2) return;
+  const maxWidth = 1600;
+  const escala = Math.min(1, maxWidth / documentCameraVideo.videoWidth);
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.round(documentCameraVideo.videoWidth * escala);
+  canvas.height = Math.round(documentCameraVideo.videoHeight * escala);
+  canvas.getContext("2d").drawImage(documentCameraVideo, 0, 0, canvas.width, canvas.height);
+  pendingDocumentPhoto = canvas.toDataURL("image/jpeg", 0.88);
+  documentCameraImage.src = pendingDocumentPhoto;
+  documentCameraPreview.classList.remove("hidden");
+  documentCameraStatus.textContent = "Revisá que los datos se lean bien. Si no, repetí la foto.";
 }
 
-scannerStart.addEventListener("click", iniciarScanner);
-scannerClose.addEventListener("click", cerrarScanner);
-scannerModal.addEventListener("click", (event) => {
-  if (event.target === scannerModal) cerrarScanner();
+function continuarFotoDocumento() {
+  if (!pendingDocumentPhoto || !documentCameraTarget) return;
+  const fotos = fotosDni.get(documentCameraTarget) || {};
+  fotos[documentCameraSide] = pendingDocumentPhoto;
+  fotosDni.set(documentCameraTarget, fotos);
+
+  if (documentCameraSide === "frente") {
+    documentCameraSide = "dorso";
+    pendingDocumentPhoto = null;
+    actualizarPasoCamara();
+    documentCameraStatus.textContent = "Dá vuelta el DNI y fotografiá el dorso completo.";
+    return;
+  }
+  actualizarEstadoFotosDni(documentCameraTarget);
+  cerrarCamaraDocumento();
+}
+
+function actualizarEstadoFotosDni(targetId) {
+  const status = document.getElementById(`dni-photo-status-${targetId}`);
+  if (!status) return;
+  const fotos = fotosDni.get(targetId);
+  const listo = fotos?.frente && fotos?.dorso;
+  status.textContent = listo ? "✓ Frente y dorso del DNI fotografiados." : "Faltan las fotos del frente y dorso del DNI.";
+  status.classList.toggle("is-complete", Boolean(listo));
+}
+
+function cerrarCamaraDocumento() {
+  if (documentCameraTrack && flashEnabled) {
+    documentCameraTrack.applyConstraints({ advanced: [{ torch: false }] }).catch(() => {});
+  }
+  if (documentCameraStream) documentCameraStream.getTracks().forEach((track) => track.stop());
+  documentCameraStream = null;
+  documentCameraTrack = null;
+  documentCameraVideo.srcObject = null;
+  documentCameraCapture.disabled = true;
+  documentCameraFlash.disabled = true;
+  documentCameraModal.classList.add("hidden");
+  documentCameraTarget = null;
+  pendingDocumentPhoto = null;
+  flashEnabled = false;
+}
+
+documentCameraCapture.addEventListener("click", tomarFotoDocumento);
+documentCameraRetake.addEventListener("click", () => {
+  pendingDocumentPhoto = null;
+  documentCameraPreview.classList.add("hidden");
+  documentCameraStatus.textContent = "Volvé a encuadrar el DNI y tomá otra foto.";
+});
+documentCameraContinue.addEventListener("click", continuarFotoDocumento);
+documentCameraFlash.addEventListener("click", alternarFlash);
+documentCameraClose.addEventListener("click", cerrarCamaraDocumento);
+documentCameraModal.addEventListener("click", (event) => {
+  if (event.target === documentCameraModal) cerrarCamaraDocumento();
 });
 
 // ------------------------------------------------------------
 // Envío del formulario: genera el PDF y "envía" los datos
 // ------------------------------------------------------------
-// ------------------------------------------------------------
-// Envío del formulario: genera el PDF y envía los datos a la API
-// ------------------------------------------------------------
-tramiteForm.addEventListener("submit", async (e) => {
+tramiteForm.addEventListener("submit", (e) => {
   e.preventDefault();
 
   if (!tramiteForm.checkValidity()) {
@@ -640,57 +640,31 @@ tramiteForm.addEventListener("submit", async (e) => {
     return;
   }
 
-  const submitBtn = tramiteForm.querySelector('button[type="submit"]');
-  const btnOriginalText = submitBtn ? submitBtn.textContent : "Generar certificado (PDF)";
-  if (submitBtn) {
-    submitBtn.disabled = true;
-    submitBtn.textContent = "Generando certificado y enviando a comisaría...";
+  const tramite = TRAMITES[tramiteActual];
+  const datos = {};
+  tramite.campos.forEach((campo) => {
+    datos[campo.id] = document.getElementById(campo.id).value;
+  });
+  if (tramiteActual === "convivencia") {
+    datos.familiares = obtenerFamiliares();
+    datos.familiaresTexto = datos.familiares
+      .map((familiar) => `${familiar.nombre}, DNI N° ${familiar.dni}, en calidad de ${familiar.vinculo.toLowerCase()}`)
+      .join("; ");
+  }
+  if (tramiteActual === "autorizacion" && datos.empresa === "Otra empresa") {
+    datos.empresa = document.getElementById("empresaOtra")?.value || datos.empresa;
   }
 
-  try {
-    const tramite = TRAMITES[tramiteActual];
-    const datos = {};
-    tramite.campos.forEach((campo) => {
-      datos[campo.id] = document.getElementById(campo.id).value;
-    });
+  generarPDF(tramite, datos, tramiteActual);
+  enviarDatosAComisaria(tramiteActual, datos);
 
-    if (tramiteActual === "convivencia") {
-      datos.familiares = obtenerFamiliares();
-      datos.familiaresTexto = datos.familiares
-        .map((familiar) => `${familiar.nombre}, DNI N° ${familiar.dni}, en calidad de ${familiar.vinculo.toLowerCase()}`)
-        .join("; ");
-    }
-    if (tramiteActual === "autorizacion" && datos.empresa === "Otra empresa") {
-      datos.empresa = document.getElementById("empresaOtra")?.value || datos.empresa;
-    }
-
-    // Generar identificador único y oficial para el trámite
-    const nroTramite = generarNumeroTramite(tramiteActual);
-
-    // 1. Generar y descargar el PDF con el número de trámite oficial
-    generarPDF(tramite, datos, tramiteActual, nroTramite);
-
-    // 2. Transmitir los datos al backend de la comisaría
-    const resultadoEnvio = await enviarDatosAComisaria(tramiteActual, datos, nroTramite, tramite.titulo);
-
-    // 3. Configurar y mostrar pantalla de confirmación
-    configurarVistaConfirmacion(nroTramite, resultadoEnvio);
-    mostrarVista(viewDone);
-  } catch (error) {
-    console.error("Error al procesar trámite:", error);
-    alert("Ocurrió un inconveniente al procesar el trámite: " + error.message);
-  } finally {
-    if (submitBtn) {
-      submitBtn.disabled = false;
-      submitBtn.textContent = btnOriginalText;
-    }
-  }
+  mostrarVista(viewDone);
 });
 
 // ------------------------------------------------------------
 // Generación del PDF con formato tipo policial
 // ------------------------------------------------------------
-function generarPDF(tramite, datos, tramiteKey, nroTramiteParam) {
+function generarPDF(tramite, datos, tramiteKey) {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ unit: "mm", format: "a4" });
 
@@ -715,7 +689,7 @@ function generarPDF(tramite, datos, tramiteKey, nroTramiteParam) {
   doc.text(tramite.titulo.toUpperCase(), pageWidth / 2, 48, { align: "center" });
 
   // --- Número de trámite y fecha ---
-  const nroTramite = nroTramiteParam || generarNumeroTramite(tramiteKey);
+  const nroTramite = generarNumeroTramite(tramiteKey);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(10);
   doc.text(`N° de trámite: ${nroTramite}`, marginX, 58);
@@ -763,244 +737,29 @@ function generarPDF(tramite, datos, tramiteKey, nroTramiteParam) {
 }
 
 // ------------------------------------------------------------
-// Envío de datos a la API de la comisaría con fallback offline
+// Envío de datos a la comisaría
 // ------------------------------------------------------------
-async function enviarDatosAComisaria(tramiteKey, datos, nroTramite, titulo) {
+// NOTA PARA VS CODE: acá reemplazar por una llamada real a tu backend,
+// por ejemplo:
+//   fetch("https://TU-API.com/tramites", {
+//     method: "POST",
+//     headers: { "Content-Type": "application/json" },
+//     body: JSON.stringify({ tramite: tramiteKey, datos }),
+//   });
+// Por ahora, para poder probar la página sin backend, los datos
+// se guardan localmente en el navegador (localStorage).
+function enviarDatosAComisaria(tramiteKey, datos) {
   const registro = {
-    nroTramite,
     tramite: tramiteKey,
-    titulo: titulo || TRAMITES[tramiteKey]?.titulo,
     datos,
     fecha: new Date().toISOString(),
   };
 
-  // Guardado local de respaldo inmediato (localStorage)
-  try {
-    const historial = JSON.parse(localStorage.getItem("tramites_enviados") || "[]");
-    historial.unshift(registro);
-    localStorage.setItem("tramites_enviados", JSON.stringify(historial));
-  } catch (err) {
-    console.warn("No se pudo escribir en localStorage:", err);
-  }
+  const historial = JSON.parse(localStorage.getItem("tramites_enviados") || "[]");
+  historial.push(registro);
+  localStorage.setItem("tramites_enviados", JSON.stringify(historial));
 
-  // Intento de envío HTTP POST al backend
-  try {
-    const response = await fetch("/api/tramites", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(registro),
-    });
-
-    if (!response.ok) {
-      throw new Error(`El servidor respondió con código ${response.status}`);
-    }
-
-    const data = await response.json();
-    console.log("Trámite registrado con éxito en el servidor:", data);
-    return { ok: true, data };
-  } catch (error) {
-    console.warn("Servidor backend no disponible temporalmente. Trámite respaldado localmente:", error);
-    return { ok: false, offline: true, error: error.message };
-  }
-}
-
-// ------------------------------------------------------------
-// Configuración de pantalla de confirmación
-// ------------------------------------------------------------
-function configurarVistaConfirmacion(nroTramite, resultadoEnvio) {
-  const nroElem = document.getElementById("done-nro-tramite");
-  const statusElem = document.getElementById("done-sync-status");
-  const btnCopiar = document.getElementById("btn-copiar-nro");
-  const btnVerDirecto = document.getElementById("btn-ver-estado-directo");
-
-  if (nroElem) nroElem.textContent = nroTramite;
-
-  if (statusElem) {
-    if (resultadoEnvio && resultadoEnvio.ok) {
-      statusElem.className = "sync-status-badge sync-ok";
-      statusElem.textContent = "🟢 Registrado en el sistema de la Policía de Salta";
-    } else {
-      statusElem.className = "sync-status-badge sync-warn";
-      statusElem.textContent = "🟡 Guardado localmente (Servidor en espera de sincronización)";
-    }
-  }
-
-  if (btnCopiar) {
-    btnCopiar.onclick = () => {
-      navigator.clipboard.writeText(nroTramite).then(() => {
-        btnCopiar.textContent = "✅ ¡Copiado!";
-        setTimeout(() => (btnCopiar.textContent = "📋 Copiar"), 2000);
-      });
-    };
-  }
-
-  if (btnVerDirecto) {
-    btnVerDirecto.onclick = () => {
-      abrirModalConsulta(nroTramite);
-    };
-  }
-}
-
-// ------------------------------------------------------------
-// Modal: Consulta de estado de trámite ciudadano
-// ------------------------------------------------------------
-const consultaModal = document.getElementById("consulta-modal");
-const btnAbrirConsulta = document.getElementById("btn-abrir-consulta");
-const consultaClose = document.getElementById("consulta-close");
-const consultaForm = document.getElementById("consulta-form");
-const consultaInput = document.getElementById("consulta-input");
-const consultaResultado = document.getElementById("consulta-resultado");
-
-function abrirModalConsulta(codigoInicial = "") {
-  if (!consultaModal) return;
-  consultaModal.classList.remove("hidden");
-  if (codigoInicial && consultaInput) {
-    consultaInput.value = codigoInicial;
-    consultarEstadoTramite(codigoInicial);
-  } else if (consultaInput) {
-    consultaInput.value = "";
-    consultaResultado.innerHTML = "";
-    consultaInput.focus();
-  }
-}
-
-function cerrarModalConsulta() {
-  if (!consultaModal) return;
-  consultaModal.classList.add("hidden");
-}
-
-if (btnAbrirConsulta) btnAbrirConsulta.addEventListener("click", () => abrirModalConsulta());
-if (consultaClose) consultaClose.addEventListener("click", cerrarModalConsulta);
-if (consultaModal) {
-  consultaModal.addEventListener("click", (e) => {
-    if (e.target === consultaModal) cerrarModalConsulta();
-  });
-}
-
-if (consultaForm) {
-  consultaForm.addEventListener("submit", (e) => {
-    e.preventDefault();
-    const query = consultaInput.value.trim();
-    if (query) consultarEstadoTramite(query);
-  });
-}
-
-async function consultarEstadoTramite(termino) {
-  if (!consultaResultado) return;
-  consultaResultado.innerHTML = `<p class="muted" style="text-align:center; padding: 12px;">Consultando registros de la Comisaría...</p>`;
-
-  try {
-    const res = await fetch(`/api/tramites/${encodeURIComponent(termino)}`);
-    if (res.ok) {
-      const data = await res.json();
-      renderizarResultadoConsulta(data.tramite);
-      return;
-    }
-
-    // Si no se encuentra por endpoint exacto, buscar en la lista general
-    const resList = await fetch(`/api/tramites?q=${encodeURIComponent(termino)}`);
-    if (resList.ok) {
-      const dataList = await resList.json();
-      if (dataList.tramites && dataList.tramites.length > 0) {
-        renderizarResultadoConsulta(dataList.tramites[0]);
-        return;
-      }
-    }
-
-    // Respaldo en localStorage si no hay conexión o no existe en servidor
-    const local = JSON.parse(localStorage.getItem("tramites_enviados") || "[]");
-    const localItem = local.find(
-      (t) =>
-        t.nroTramite?.toLowerCase() === termino.toLowerCase() ||
-        t.datos?.dni === termino ||
-        t.datos?.dniSolicitante === termino
-    );
-    if (localItem) {
-      renderizarResultadoConsulta({
-        nroTramite: localItem.nroTramite,
-        titulo: localItem.titulo || "Trámite Policial",
-        fecha: localItem.fecha,
-        estado: "PENDIENTE",
-        solicitante: {
-          nombre: localItem.datos?.nombre || localItem.datos?.nombreSolicitante || "Solicitante",
-          dni: localItem.datos?.dni || localItem.datos?.dniSolicitante || termino,
-        },
-        observaciones: "Trámite registrado localmente en este dispositivo.",
-      });
-      return;
-    }
-
-    consultaResultado.innerHTML = `
-      <div class="consulta-card" style="text-align:center; border-color: #fca5a5; background: #fef2f2;">
-        <p style="color: #991b1b; margin: 0; font-weight: 500;">
-          No se encontró ningún trámite con el identificador o DNI "<strong>${escapeHTML(termino)}</strong>".
-        </p>
-        <small class="muted">Verificá los datos ingresados o acercate a la dependencia policial.</small>
-      </div>
-    `;
-  } catch (err) {
-    consultaResultado.innerHTML = `
-      <div class="consulta-card" style="text-align:center; background: #fffbeb; border-color: #fcd34d;">
-        <p style="color: #92400e; margin: 0;">
-          No se pudo consultar el servidor en este momento. Verificá que el backend esté en ejecución.
-        </p>
-      </div>
-    `;
-  }
-}
-
-function renderizarResultadoConsulta(t) {
-  const badgeClass = {
-    PENDIENTE: "badge-pendiente",
-    APROBADO: "badge-aprobado",
-    OBSERVADO: "badge-observado",
-    RECHAZADO: "badge-rechazado",
-  }[t.estado] || "badge-pendiente";
-
-  const estadoDesc = {
-    PENDIENTE: "En proceso de revisión por el personal policial.",
-    APROBADO: "Certificado validado y sellado. Listo para retirar o presentar.",
-    OBSERVADO: "El oficial registró observaciones sobre la documentación.",
-    RECHAZADO: "La solicitud fue rechazada por la dependencia policial.",
-  }[t.estado] || "";
-
-  consultaResultado.innerHTML = `
-    <div class="consulta-card">
-      <div class="consulta-header">
-        <div>
-          <strong style="font-size: 15px; color: var(--navy);">${escapeHTML(t.titulo || "Certificado")}</strong>
-          <div style="font-size: 12px; color: var(--muted); margin-top: 2px;">
-            N° Trámite: <strong>${escapeHTML(t.nroTramite || t.id)}</strong>
-          </div>
-        </div>
-        <span class="badge ${badgeClass}">${t.estado || "PENDIENTE"}</span>
-      </div>
-
-      <div style="font-size: 13px; line-height: 1.6; color: var(--text);">
-        <p style="margin: 4px 0;"><strong>Solicitante:</strong> ${escapeHTML(t.solicitante?.nombre || "-")} (DNI ${escapeHTML(t.solicitante?.dni || "-")})</p>
-        <p style="margin: 4px 0;"><strong>Fecha de solicitud:</strong> ${formatFecha(t.fecha?.slice(0, 10))}</p>
-        <p style="margin: 6px 0 2px; color: var(--muted); font-size: 12px;">${estadoDesc}</p>
-        ${
-          t.observaciones
-            ? `<div style="background: #e2e8f0; padding: 8px 12px; border-radius: 6px; margin-top: 8px; font-size: 12px;">
-                <strong>Observaciones de guardia:</strong> ${escapeHTML(t.observaciones)}
-               </div>`
-            : ""
-        }
-      </div>
-    </div>
-  `;
-}
-
-function escapeHTML(str) {
-  if (!str) return "";
-  return String(str).replace(/[&<>'"]/g, (tag) => ({
-    "&": "&amp;",
-    "<": "&lt;",
-    ">": "&gt;",
-    "'": "&#39;",
-    '"': "&quot;",
-  }[tag] || tag));
+  console.log("Trámite enviado (simulado):", registro);
 }
 
 // ------------------------------------------------------------
@@ -1031,346 +790,3 @@ function generarNumeroTramite(tramiteKey) {
   const ahora = Date.now().toString().slice(-6);
   return `${prefijo}-${ahora}`;
 }
-
-// ============================================================
-// Lógica del Panel Policial de Oficial de Guardia (Unificado)
-// ============================================================
-let tramitesAdminCache = [];
-let tramiteAdminSeleccionado = null;
-
-const tablaAdminBody = document.getElementById("tabla-tramites-body");
-const inputBusquedaAdmin = document.getElementById("input-busqueda");
-const filtroTipoAdmin = document.getElementById("filtro-tipo");
-const filtroEstadoAdmin = document.getElementById("filtro-estado");
-const btnRefrescarAdmin = document.getElementById("btn-refrescar");
-
-// KPIs
-const kpiTotal = document.getElementById("kpi-total");
-const kpiPendientes = document.getElementById("kpi-pendientes");
-const kpiAprobados = document.getElementById("kpi-aprobados");
-const kpiRechazados = document.getElementById("kpi-rechazados");
-
-// Modal Admin
-const modalDetalleAdmin = document.getElementById("modal-detalle-admin");
-const modalAdminClose = document.getElementById("modal-admin-close");
-const modalAdminCancelar = document.getElementById("modal-admin-cancelar");
-const modalAdminGuardar = document.getElementById("modal-admin-guardar");
-const modalAdminTitle = document.getElementById("modal-admin-title");
-const modalSubtituloAdmin = document.getElementById("modal-subtitulo");
-const modalBadgeTipoAdmin = document.getElementById("modal-badge-tipo");
-const modalCuerpoAdmin = document.getElementById("modal-cuerpo-detalle");
-const modalSelectEstadoAdmin = document.getElementById("modal-select-estado");
-const modalInputObsAdmin = document.getElementById("modal-input-observaciones");
-const adminStatusBanner = document.getElementById("admin-status-banner");
-
-if (btnRefrescarAdmin) btnRefrescarAdmin.addEventListener("click", cargarDatosAdmin);
-if (inputBusquedaAdmin) inputBusquedaAdmin.addEventListener("input", filtrarYRenderizarAdmin);
-if (filtroTipoAdmin) filtroTipoAdmin.addEventListener("change", filtrarYRenderizarAdmin);
-if (filtroEstadoAdmin) filtroEstadoAdmin.addEventListener("change", filtrarYRenderizarAdmin);
-
-if (modalAdminClose) modalAdminClose.addEventListener("click", cerrarModalDetalleAdmin);
-if (modalAdminCancelar) modalAdminCancelar.addEventListener("click", cerrarModalDetalleAdmin);
-if (modalDetalleAdmin) {
-  modalDetalleAdmin.addEventListener("click", (e) => {
-    if (e.target === modalDetalleAdmin) cerrarModalDetalleAdmin();
-  });
-}
-if (modalAdminGuardar) modalAdminGuardar.addEventListener("click", guardarResolucionAdmin);
-
-async function cargarDatosAdmin() {
-  if (!tablaAdminBody) return;
-  mostrarBannerAdmin("", false);
-  tablaAdminBody.innerHTML = `<tr><td colspan="7" class="td-empty">Consultando trámites recibidos en el servidor...</td></tr>`;
-
-  try {
-    const [resTramites, resStats] = await Promise.all([
-      fetch("/api/tramites"),
-      fetch("/api/estadisticas"),
-    ]);
-
-    if (!resTramites.ok) throw new Error("No se pudo conectar a /api/tramites");
-
-    const dataTramites = await resTramites.json();
-    tramitesAdminCache = dataTramites.tramites || [];
-
-    if (resStats.ok) {
-      const dataStats = await resStats.json();
-      actualizarKPIsAdmin(dataStats.stats);
-    } else {
-      calcularKPIsLocalesAdmin(tramitesAdminCache);
-    }
-
-    filtrarYRenderizarAdmin();
-  } catch (error) {
-    console.warn("Backend no disponible para admin. Usando caché local:", error);
-    mostrarBannerAdmin(
-      "⚠️ No se pudo conectar al servidor backend. Se muestran los trámites guardados localmente.",
-      true
-    );
-
-    const local = JSON.parse(localStorage.getItem("tramites_enviados") || "[]");
-    tramitesAdminCache = local.map((item, index) => ({
-      id: item.nroTramite || `LOC-${index}`,
-      nroTramite: item.nroTramite || `LOC-${index}`,
-      tramite: item.tramite,
-      titulo: item.titulo || item.tramite,
-      fecha: item.fecha,
-      estado: "PENDIENTE",
-      solicitante: {
-        nombre: item.datos?.nombre || item.datos?.nombreSolicitante || "Solicitante",
-        dni: item.datos?.dni || item.datos?.dniSolicitante || "-",
-      },
-      datos: item.datos,
-      observaciones: "Almacenado localmente en este dispositivo",
-    }));
-
-    calcularKPIsLocalesAdmin(tramitesAdminCache);
-    filtrarYRenderizarAdmin();
-  }
-}
-
-function actualizarKPIsAdmin(stats) {
-  if (kpiTotal) kpiTotal.textContent = stats?.total || 0;
-  if (kpiPendientes) kpiPendientes.textContent = stats?.pendientes || 0;
-  if (kpiAprobados) kpiAprobados.textContent = stats?.aprobados || 0;
-  if (kpiRechazados) kpiRechazados.textContent = stats?.rechazados || 0;
-}
-
-function calcularKPIsLocalesAdmin(lista) {
-  const total = lista.length;
-  const pendientes = lista.filter((t) => (t.estado || "PENDIENTE") === "PENDIENTE").length;
-  const aprobados = lista.filter((t) => t.estado === "APROBADO").length;
-  const rechazados = lista.filter((t) => t.estado === "RECHAZADO" || t.estado === "OBSERVADO").length;
-  actualizarKPIsAdmin({ total, pendientes, aprobados, rechazados });
-}
-
-function filtrarYRenderizarAdmin() {
-  if (!tablaAdminBody) return;
-  const query = inputBusquedaAdmin ? inputBusquedaAdmin.value.toLowerCase().trim() : "";
-  const tipo = filtroTipoAdmin ? filtroTipoAdmin.value : "TODOS";
-  const estado = filtroEstadoAdmin ? filtroEstadoAdmin.value : "TODOS";
-
-  const filtrados = tramitesAdminCache.filter((t) => {
-    if (tipo !== "TODOS" && t.tramite !== tipo) return false;
-    if (estado !== "TODOS" && (t.estado || "PENDIENTE").toUpperCase() !== estado.toUpperCase()) return false;
-
-    if (query) {
-      const matchNro = t.nroTramite && t.nroTramite.toLowerCase().includes(query);
-      const matchNombre = t.solicitante?.nombre && t.solicitante.nombre.toLowerCase().includes(query);
-      const matchDni = t.solicitante?.dni && String(t.solicitante.dni).includes(query);
-      const matchTitulo = t.titulo && t.titulo.toLowerCase().includes(query);
-      if (!matchNro && !matchNombre && !matchDni && !matchTitulo) return false;
-    }
-
-    return true;
-  });
-
-  renderizarTablaAdmin(filtrados);
-}
-
-function renderizarTablaAdmin(lista) {
-  if (lista.length === 0) {
-    tablaAdminBody.innerHTML = `<tr><td colspan="7" class="td-empty">No se encontraron trámites con los filtros aplicados.</td></tr>`;
-    return;
-  }
-
-  tablaAdminBody.innerHTML = lista
-    .map((t) => {
-      const estadoClass = {
-        PENDIENTE: "badge-pendiente",
-        APROBADO: "badge-aprobado",
-        OBSERVADO: "badge-observado",
-        RECHAZADO: "badge-rechazado",
-      }[t.estado] || "badge-pendiente";
-
-      const fechaStr = formatFechaHora(t.fecha);
-
-      return `
-        <tr>
-          <td><strong class="tramite-badge">${escapeHTML(t.nroTramite || t.id)}</strong></td>
-          <td>${fechaStr}</td>
-          <td>${escapeHTML(t.titulo || t.tramite)}</td>
-          <td><strong>${escapeHTML(t.solicitante?.nombre || "No especificado")}</strong></td>
-          <td>${escapeHTML(t.solicitante?.dni || "-")}</td>
-          <td><span class="badge ${estadoClass}">${escapeHTML(t.estado || "PENDIENTE")}</span></td>
-          <td>
-            <button class="btn-action" type="button" onclick="abrirModalDetalleAdmin('${escapeHTML(t.id || t.nroTramite)}')">
-              Ver detalle
-            </button>
-          </td>
-        </tr>
-      `;
-    })
-    .join("");
-}
-
-window.abrirModalDetalleAdmin = function (id) {
-  const tramite = tramitesAdminCache.find((t) => t.id === id || t.nroTramite === id);
-  if (!tramite || !modalDetalleAdmin) return;
-
-  tramiteAdminSeleccionado = tramite;
-  if (modalBadgeTipoAdmin) modalBadgeTipoAdmin.textContent = tramite.nroTramite || tramite.id;
-  if (modalAdminTitle) modalAdminTitle.textContent = tramite.titulo || "Certificado Policial";
-  if (modalSubtituloAdmin) modalSubtituloAdmin.textContent = `Registrado el ${formatFechaHora(tramite.fecha)}`;
-
-  if (modalSelectEstadoAdmin) modalSelectEstadoAdmin.value = tramite.estado || "PENDIENTE";
-  if (modalInputObsAdmin) modalInputObsAdmin.value = tramite.observaciones || "";
-
-  let html = `
-    <div class="detail-section">
-      <h4>Datos del Solicitante</h4>
-      <div class="detail-grid">
-        <div class="detail-item">
-          <span class="detail-label">Nombre y Apellido</span>
-          <span class="detail-value">${escapeHTML(tramite.solicitante?.nombre || "-")}</span>
-        </div>
-        <div class="detail-item">
-          <span class="detail-label">DNI</span>
-          <span class="detail-value">${escapeHTML(tramite.solicitante?.dni || "-")}</span>
-        </div>
-        <div class="detail-item">
-          <span class="detail-label">Domicilio</span>
-          <span class="detail-value">${escapeHTML(tramite.solicitante?.domicilio || tramite.datos?.domicilio || "-")}</span>
-        </div>
-        <div class="detail-item">
-          <span class="detail-label">Localidad / Barrio</span>
-          <span class="detail-value">${escapeHTML(tramite.solicitante?.barrio || tramite.datos?.barrio || "Salta Capital")}</span>
-        </div>
-      </div>
-    </div>
-  `;
-
-  if (tramite.tramite === "residencia") {
-    html += `
-      <div class="detail-section">
-        <h4>Testigos Declarados</h4>
-        <div class="detail-grid">
-          <div class="detail-item">
-            <span class="detail-label">Testigo 1</span>
-            <span class="detail-value">${escapeHTML(tramite.datos?.testigo1Nombre || "-")} (DNI ${escapeHTML(tramite.datos?.testigo1Dni || "-")})</span>
-            <small style="color: var(--muted);">${escapeHTML(tramite.datos?.testigo1Domicilio || "")}</small>
-          </div>
-          <div class="detail-item">
-            <span class="detail-label">Testigo 2</span>
-            <span class="detail-value">${escapeHTML(tramite.datos?.testigo2Nombre || "-")} (DNI ${escapeHTML(tramite.datos?.testigo2Dni || "-")})</span>
-            <small style="color: var(--muted);">${escapeHTML(tramite.datos?.testigo2Domicilio || "")}</small>
-          </div>
-        </div>
-      </div>
-    `;
-  } else if (tramite.tramite === "convivencia" && Array.isArray(tramite.datos?.familiares)) {
-    html += `
-      <div class="detail-section">
-        <h4>Grupo Familiar Conviviente (${tramite.datos.familiares.length} personas)</h4>
-        <div class="detail-grid">
-          ${tramite.datos.familiares
-            .map(
-              (fam, i) => `
-            <div class="detail-item">
-              <span class="detail-label">Conviviente ${i + 1} (${escapeHTML(fam.vinculo)})</span>
-              <span class="detail-value">${escapeHTML(fam.nombre)} — DNI ${escapeHTML(fam.dni)}</span>
-            </div>
-          `
-            )
-            .join("")}
-        </div>
-      </div>
-    `;
-  } else if (tramite.tramite === "autorizacion") {
-    html += `
-      <div class="detail-section">
-        <h4>Persona Autorizada y Destino</h4>
-        <div class="detail-grid">
-          <div class="detail-item">
-            <span class="detail-label">Autorizado/a</span>
-            <span class="detail-value">${escapeHTML(tramite.datos?.autorizadoNombre || "-")} (DNI ${escapeHTML(tramite.datos?.autorizadoDni || "-")})</span>
-          </div>
-          <div class="detail-item">
-            <span class="detail-label">Parentesco / Edad</span>
-            <span class="detail-value">${escapeHTML(tramite.datos?.parentesco || "-")} (${escapeHTML(tramite.datos?.autorizadoEdad || "-")} años)</span>
-          </div>
-          <div class="detail-item">
-            <span class="detail-label">Destino</span>
-            <span class="detail-value">${escapeHTML(tramite.datos?.destino || "-")}</span>
-          </div>
-          <div class="detail-item">
-            <span class="detail-label">Empresa Transporte</span>
-            <span class="detail-value">${escapeHTML(tramite.datos?.empresa || "-")}</span>
-          </div>
-        </div>
-      </div>
-    `;
-  }
-
-  if (modalCuerpoAdmin) modalCuerpoAdmin.innerHTML = html;
-  modalDetalleAdmin.classList.remove("hidden");
-};
-
-function cerrarModalDetalleAdmin() {
-  if (modalDetalleAdmin) modalDetalleAdmin.classList.add("hidden");
-  tramiteAdminSeleccionado = null;
-}
-
-async function guardarResolucionAdmin() {
-  if (!tramiteAdminSeleccionado) return;
-
-  const nuevoEstado = modalSelectEstadoAdmin.value;
-  const nuevasObs = modalInputObsAdmin.value.trim();
-  const id = tramiteAdminSeleccionado.id || tramiteAdminSeleccionado.nroTramite;
-
-  modalAdminGuardar.disabled = true;
-  modalAdminGuardar.textContent = "Guardando...";
-
-  try {
-    const res = await fetch(`/api/tramites/${encodeURIComponent(id)}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        estado: nuevoEstado,
-        observaciones: nuevasObs,
-      }),
-    });
-
-    if (!res.ok) throw new Error("El servidor no pudo actualizar el trámite");
-
-    // Actualizar datos en memoria
-    tramiteAdminSeleccionado.estado = nuevoEstado;
-    tramiteAdminSeleccionado.observaciones = nuevasObs;
-
-    cerrarModalDetalleAdmin();
-    cargarDatosAdmin();
-  } catch (error) {
-    console.error("Error al guardar resolución:", error);
-    alert("No se pudo conectar al servidor para guardar la resolución: " + error.message);
-  } finally {
-    modalAdminGuardar.disabled = false;
-    modalAdminGuardar.textContent = "Guardar resolución";
-  }
-}
-
-function formatFechaHora(iso) {
-  if (!iso) return "-";
-  const d = new Date(iso);
-  if (isNaN(d.getTime())) return iso;
-  return d.toLocaleDateString("es-AR", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
-function mostrarBannerAdmin(mensaje, visible) {
-  if (!adminStatusBanner) return;
-  if (!visible) {
-    adminStatusBanner.classList.add("hidden");
-    adminStatusBanner.textContent = "";
-    return;
-  }
-  adminStatusBanner.textContent = mensaje;
-  adminStatusBanner.className = "status-banner error";
-  adminStatusBanner.classList.remove("hidden");
-}
-
-

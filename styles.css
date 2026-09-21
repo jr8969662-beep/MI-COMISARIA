@@ -37,13 +37,7 @@ body {
   border-bottom: 4px solid var(--gold);
 }
 
-.header-inner {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 14px;
-}
+.header-inner { display: flex; align-items: center; }
 
 .brand { display: flex; align-items: center; gap: 14px; }
 
@@ -188,6 +182,15 @@ body {
 
 .btn-scan:hover { background: #fff2ce; }
 
+.dni-photo-status {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.dni-photo-status.is-complete { color: var(--success); }
+
 .scanner-modal {
   position: fixed;
   inset: 0;
@@ -225,7 +228,7 @@ body {
   border-radius: 8px;
 }
 
-#scanner-video { width: 100%; height: 100%; object-fit: cover; }
+#document-camera-video { width: 100%; height: 100%; object-fit: cover; }
 
 .scanner-frame {
   position: absolute;
@@ -238,9 +241,49 @@ body {
 
 .scanner-panel > .btn-primary { width: 100%; }
 
+.camera-step {
+  margin: 16px 0 4px;
+  color: var(--navy);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.camera-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.camera-actions > button { flex: 1; }
+
+.btn-secondary {
+  background: #fffaf0;
+  border: 1px solid var(--gold);
+  border-radius: 8px;
+  color: var(--navy);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+  padding: 12px 16px;
+}
+
+.btn-secondary:disabled { cursor: not-allowed; opacity: 0.55; }
+
+.camera-preview { margin-top: 16px; }
+.camera-preview img {
+  display: block;
+  width: 100%;
+  max-height: 250px;
+  object-fit: contain;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--night);
+}
+
 @media (max-width: 560px) {
   .input-scan-row { grid-template-columns: 1fr; gap: 6px; }
   .btn-scan { width: 100%; }
+  .camera-actions { flex-direction: column; }
 }
 .field textarea { resize: vertical; min-height: 70px; }
 .field input:focus,
@@ -306,477 +349,3 @@ body {
   padding: 18px 0;
   text-align: center;
 }
-
-/* ---------- Navegación de Cabecera ---------- */
-.header-nav {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-}
-
-.btn-nav {
-  background: rgba(255, 255, 255, 0.12);
-  color: #fff;
-  text-decoration: none;
-  font-size: 13.5px;
-  font-weight: 500;
-  padding: 8px 16px;
-  border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  cursor: pointer;
-  transition: all 0.15s ease;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.btn-nav:hover {
-  background: rgba(255, 255, 255, 0.25);
-  border-color: #fff;
-}
-
-.btn-nav-officer {
-  background: rgba(184, 147, 63, 0.25);
-  border-color: var(--gold-bright);
-  color: #fff;
-}
-
-.btn-nav-officer:hover {
-  background: rgba(184, 147, 63, 0.45);
-}
-
-/* ---------- Caja de Seguimiento en Confirmación ---------- */
-.tracking-box {
-  background: #f8fafc;
-  border: 1px dashed #94a3b8;
-  border-radius: 10px;
-  padding: 18px;
-  margin: 20px auto 30px;
-  max-width: 480px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-}
-
-.tracking-label {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--muted);
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-}
-
-.tracking-code-wrap {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.tracking-code {
-  font-family: monospace;
-  font-size: 24px;
-  font-weight: 700;
-  color: var(--navy);
-  letter-spacing: 1px;
-}
-
-.btn-copy {
-  background: #e2e8f0;
-  border: none;
-  padding: 6px 10px;
-  border-radius: 6px;
-  font-size: 12px;
-  cursor: pointer;
-  font-weight: 600;
-}
-.btn-copy:hover {
-  background: #cbd5e1;
-}
-
-.sync-status-badge {
-  font-size: 12px;
-  padding: 4px 10px;
-  border-radius: 12px;
-  font-weight: 600;
-  margin-top: 4px;
-}
-.sync-ok {
-  background: #dcfce7;
-  color: #166534;
-}
-.sync-warn {
-  background: #fef3c7;
-  color: #92400e;
-}
-
-/* ---------- Modal de Consulta Ciudadana ---------- */
-.modal-backdrop {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(10, 25, 47, 0.65);
-  backdrop-filter: blur(3px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-  z-index: 1000;
-}
-
-.modal-dialog {
-  background: #fff;
-  width: 100%;
-  max-width: 580px;
-  border-radius: 12px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  padding: 20px 24px 16px;
-  border-bottom: 1px solid var(--border);
-  background: #f8fafc;
-}
-
-.modal-header h2 {
-  margin: 4px 0 2px;
-  font-size: 20px;
-  color: var(--navy);
-}
-
-.modal-meta {
-  margin: 0;
-  font-size: 12.5px;
-  color: var(--muted);
-}
-
-.btn-close {
-  background: transparent;
-  border: none;
-  font-size: 26px;
-  line-height: 1;
-  color: var(--muted);
-  cursor: pointer;
-}
-.btn-close:hover {
-  color: var(--text);
-}
-
-.modal-body {
-  padding: 20px 24px;
-  max-height: 75vh;
-  overflow-y: auto;
-}
-
-.consulta-form-row {
-  display: flex;
-  gap: 8px;
-}
-
-.consulta-form-row input {
-  flex: 1;
-  padding: 10px 14px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  font-size: 14px;
-}
-
-.consulta-card {
-  background: #f8fafc;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 16px;
-  margin-top: 14px;
-}
-
-.consulta-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-bottom: 1px solid #e2e8f0;
-  padding-bottom: 10px;
-  margin-bottom: 10px;
-}
-
-.badge {
-  display: inline-block;
-  padding: 4px 10px;
-  border-radius: 20px;
-  font-size: 11.5px;
-  font-weight: 700;
-  letter-spacing: 0.3px;
-  text-transform: uppercase;
-}
-
-.badge-pendiente {
-  background: #fef3c7;
-  color: #92400e;
-}
-.badge-aprobado {
-  background: #dcfce7;
-  color: #166534;
-}
-.badge-observado {
-  background: #ffedd5;
-  color: #9a3412;
-}
-.badge-rechazado {
-  background: #fee2e2;
-  color: #991b1b;
-}
-
-/* ============================================================
-   Estilos del Panel de Guardia / Administración (Unificado)
-   ============================================================ */
-.admin-container {
-  padding-top: 25px;
-  padding-bottom: 50px;
-}
-
-.kpi-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 16px;
-  margin-bottom: 24px;
-}
-
-.kpi-card {
-  background: #fff;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 18px 20px;
-  display: flex;
-  flex-direction: column;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.03);
-  border-left: 5px solid var(--navy);
-}
-
-.kpi-pending { border-left-color: #e67e22; }
-.kpi-approved { border-left-color: #27ae60; }
-.kpi-rejected { border-left-color: #c0392b; }
-
-.kpi-label {
-  font-size: 12.5px;
-  font-weight: 600;
-  text-transform: uppercase;
-  color: var(--muted);
-  letter-spacing: 0.5px;
-}
-
-.kpi-value {
-  font-size: 30px;
-  font-weight: 700;
-  color: var(--text);
-  margin-top: 4px;
-}
-
-.admin-toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 18px;
-  background: #fff;
-  padding: 14px 18px;
-  border-radius: 10px;
-  border: 1px solid var(--border);
-}
-
-.search-box {
-  display: flex;
-  align-items: center;
-  background: #f8fafc;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 0 12px;
-  flex: 1;
-  min-width: 260px;
-}
-
-.search-box input {
-  border: none;
-  background: transparent;
-  padding: 9px 8px;
-  width: 100%;
-  font-size: 14px;
-  outline: none;
-}
-
-.toolbar-filters {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.toolbar-filters select {
-  padding: 9px 12px;
-  border-radius: 8px;
-  border: 1px solid var(--border);
-  background: #fff;
-  font-size: 13.5px;
-  color: var(--text);
-  cursor: pointer;
-}
-
-.btn-secondary {
-  background: #eaeff7;
-  color: var(--navy);
-  border: 1px solid #cbd5e1;
-  padding: 9px 16px;
-  border-radius: 8px;
-  font-size: 13.5px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.btn-secondary:hover { background: #dbe4f2; }
-
-.status-banner {
-  padding: 10px 16px;
-  border-radius: 8px;
-  font-size: 13.5px;
-  margin-bottom: 16px;
-}
-.status-banner.error {
-  background: #fee2e2;
-  color: #991b1b;
-  border: 1px solid #fca5a5;
-}
-
-.admin-card {
-  background: #fff;
-  border-radius: 10px;
-  border: 1px solid var(--border);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-  overflow: hidden;
-}
-
-.table-responsive {
-  width: 100%;
-  overflow-x: auto;
-}
-
-.admin-table {
-  width: 100%;
-  border-collapse: collapse;
-  text-align: left;
-  font-size: 13.5px;
-}
-
-.admin-table th {
-  background: #f8fafc;
-  color: #475569;
-  font-weight: 600;
-  padding: 14px 16px;
-  border-bottom: 2px solid var(--border);
-  white-space: nowrap;
-}
-
-.admin-table td {
-  padding: 14px 16px;
-  border-bottom: 1px solid var(--border);
-  vertical-align: middle;
-}
-
-.admin-table tr:hover td { background: #fbfcfe; }
-
-.td-empty {
-  text-align: center;
-  padding: 36px !important;
-  color: var(--muted);
-  font-style: italic;
-}
-
-.tramite-badge {
-  background: #e2e8f0;
-  color: #334155;
-  padding: 3px 8px;
-  border-radius: 6px;
-  font-weight: 600;
-  font-size: 12px;
-}
-
-.btn-action {
-  background: var(--navy);
-  color: #fff;
-  border: none;
-  padding: 6px 12px;
-  border-radius: 6px;
-  font-size: 12.5px;
-  cursor: pointer;
-  font-weight: 600;
-  transition: background 0.15s ease;
-}
-
-.btn-action:hover { background: var(--navy-light); }
-
-.detail-section { margin-bottom: 20px; }
-
-.detail-section h4 {
-  margin: 0 0 10px;
-  font-size: 14px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: var(--navy);
-  border-bottom: 1px solid #e2e8f0;
-  padding-bottom: 4px;
-}
-
-.detail-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  font-size: 13.5px;
-}
-
-.detail-item {
-  display: flex;
-  flex-direction: column;
-}
-
-.detail-label {
-  color: var(--muted);
-  font-size: 11.5px;
-  font-weight: 600;
-  text-transform: uppercase;
-}
-
-.detail-value {
-  color: var(--text);
-  font-weight: 500;
-  margin-top: 2px;
-  word-break: break-word;
-}
-
-.modal-gestion {
-  padding: 16px 24px;
-  background: #f8fafc;
-  border-top: 1px solid var(--border);
-}
-
-.modal-gestion h3 {
-  margin: 0 0 12px;
-  font-size: 14.5px;
-  color: var(--navy);
-}
-
-.modal-footer {
-  padding: 14px 24px;
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  border-top: 1px solid var(--border);
-  background: #fff;
-}
-
-

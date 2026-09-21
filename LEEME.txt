@@ -1,0 +1,15 @@
+MI COMISARIA - PROYECTO
+
+Archivos principales:
+- index.html: estructura de la web
+- script.js: tramites, formularios y generacion de PDF
+- styles.css: diseño visual
+- policia-salta.png.jpg: logo
+
+Para trabajar localmente:
+1. Abrir index.html en el navegador para revisar la interfaz.
+2. Para probar la camara, usar HTTPS o localhost.
+3. La publicacion actual esta en Netlify, pero este proyecto local es la copia editable.
+
+URL publicada actual:
+https://stunning-tanuki-586b74.netlify.app/index.html
