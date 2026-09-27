@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mi Comisaría - Panel del personal</title>
+<style>
+  :root{ --azul:#1a3a6b; --azul-claro:#2c5aa0; --gris:#f4f6f9; --borde:#d7dde5; --texto:#1f2937; }
+  *{box-sizing:border-box;}
+  body{font-family:'Segoe UI', Arial, sans-serif; background:var(--gris); margin:0; color:var(--texto);}
+  header{background:var(--azul); color:#fff; padding:18px 24px; display:flex; justify-content:space-between; align-items:center;}
+  header h1{margin:0; font-size:1.2rem;}
+  #btn-salir{display:none; background:#fff; color:var(--azul); border:none; padding:8px 14px; border-radius:6px; cursor:pointer; font-size:0.85rem;}
+  main{max-width:900px; margin:0 auto; padding:24px 16px;}
+
+  /* Login */
+  #vista-login{max-width:340px; margin:60px auto 0; background:#fff; border:1px solid var(--borde); border-radius:10px; padding:26px;}
+  #vista-login h2{margin-top:0; font-size:1.05rem; color:var(--azul);}
+  #vista-login label{display:block; font-size:0.85rem; font-weight:600; margin:14px 0 6px;}
+  #vista-login input{width:100%; padding:9px 10px; border:1px solid var(--borde); border-radius:6px; font-size:0.9rem;}
+  #vista-login button{margin-top:18px; width:100%; padding:10px; background:var(--azul); color:#fff; border:none; border-radius:6px; cursor:pointer; font-size:0.9rem;}
+  #error-login{color:#b91c1c; font-size:0.82rem; margin-top:10px; display:none;}
+
+  /* Dashboard */
+  #vista-panel{display:none;}
+  .filtros{display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap;}
+  .filtros select, .filtros input{padding:8px 10px; border:1px solid var(--borde); border-radius:6px; font-size:0.85rem;}
+
+  table{width:100%; border-collapse:collapse; background:#fff; border-radius:8px; overflow:hidden;}
+  th, td{padding:10px 12px; text-align:left; font-size:0.85rem; border-bottom:1px solid var(--borde);}
+  th{background:#eef1f5; color:var(--azul);}
+  tr.fila-solicitud{cursor:pointer;}
+  tr.fila-solicitud:hover{background:#f8fafc;}
+  .etiqueta{padding:3px 8px; border-radius:12px; font-size:0.72rem; font-weight:600;}
+  .etiqueta.pendiente{background:#fff3cd; color:#8a6400;}
+  .etiqueta.procesado{background:#d1f5e0; color:#146c43;}
+
+  /* Detalle */
+  #detalle{display:none; background:#fff; border:1px solid var(--borde); border-radius:10px; padding:24px; margin-top:18px;}
+  #detalle dt{font-size:0.75rem; color:#6b7280; margin-top:10px;}
+  #detalle dd{margin:2px 0 0; font-size:0.92rem;}
+  #detalle dd img{max-width:220px; border:1px solid var(--borde); border-radius:6px; margin-top:4px; display:block;}
+  #detalle .btns{margin-top:20px; display:flex; gap:10px;}
+  #detalle button{padding:9px 16px; border:none; border-radius:6px; cursor:pointer; font-size:0.85rem;}
+  #btn-procesar{background:var(--azul); color:#fff;}
+  #btn-cerrar-detalle{background:#e5e9ef; color:var(--texto);}
+  .vacio{padding:30px; text-align:center; color:#6b7280; font-size:0.9rem;}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Mi Comisaría - Panel del personal</h1>
+  <button id="btn-salir">Salir</button>
+</header>
+
+<main>
+
+  <!-- LOGIN -->
+  <div id="vista-login">
+    <h2>Ingreso del personal</h2>
+    <label>Usuario (email)</label>
+    <input type="email" id="login-email" autocomplete="username">
+    <label>Contraseña</label>
+    <input type="password" id="login-pass" autocomplete="current-password">
+    <button id="btn-entrar">Ingresar</button>
+    <p id="error-login"></p>
+  </div>
+
+  <!-- PANEL -->
+  <div id="vista-panel">
+    <div class="filtros">
+      <select id="filtro-estado">
+        <option value="">Todos los estados</option>
+        <option value="pendiente">Pendientes</option>
+        <option value="procesado">Procesados</option>
+      </select>
+      <select id="filtro-comisaria">
+        <option value="">Todas las comisarías</option>
+      </select>
+      <select id="filtro-tramite">
+        <option value="">Todos los trámites</option>
+        <option value="residencia">Residencia</option>
+        <option value="convivencia">Convivencia</option>
+        <option value="carencia">Carencia de recursos</option>
+      </select>
+      <button id="btn-actualizar" type="button">Actualizar</button>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Fecha</th>
+          <th>Trámite</th>
+          <th>Solicitante</th>
+          <th>Comisaría asignada</th>
+          <th>Estado</th>
+        </tr>
+      </thead>
+      <tbody id="tabla-solicitudes"></tbody>
+    </table>
+    <p class="vacio" id="mensaje-vacio" style="display:none;">No hay solicitudes con estos filtros.</p>
+
+    <div id="detalle">
+      <h3 id="detalle-titulo"></h3>
+      <dl id="detalle-contenido"></dl>
+      <div class="btns">
+        <button id="btn-procesar">Marcar como procesado</button>
+        <button id="btn-cerrar-detalle">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-config.js"></script>
+<script src="comisarias-config.js"></script>
+
+<script>
+const vistaLogin = document.getElementById('vista-login');
+const vistaPanel = document.getElementById('vista-panel');
+const btnSalir = document.getElementById('btn-salir');
+const errorLogin = document.getElementById('error-login');
+
+// --- Login ---
+document.getElementById('btn-entrar').addEventListener('click', async () => {
+  const email = document.getElementById('login-email').value.trim();
+  const pass = document.getElementById('login-pass').value;
+  errorLogin.style.display = 'none';
+  const { error } = await supabaseClient.auth.signInWithPassword({ email, password: pass });
+  if (error) {
+    errorLogin.textContent = 'Usuario o contraseña incorrectos.';
+    errorLogin.style.display = 'block';
+  }
+});
+
+btnSalir.addEventListener('click', () => supabaseClient.auth.signOut());
+
+function mostrarSesion(sesionActiva) {
+  if (sesionActiva) {
+    vistaLogin.style.display = 'none';
+    vistaPanel.style.display = 'block';
+    btnSalir.style.display = 'inline-block';
+    cargarSolicitudes();
+  } else {
+    vistaLogin.style.display = 'block';
+    vistaPanel.style.display = 'none';
+    btnSalir.style.display = 'none';
+  }
+}
+
+supabaseClient.auth.getSession().then(({ data: { session } }) => mostrarSesion(!!session));
+supabaseClient.auth.onAuthStateChange((_event, session) => mostrarSesion(!!session));
+
+// --- Cargar filtro de comisarías desde la configuración (dependencias reales) ---
+const filtroComisaria = document.getElementById('filtro-comisaria');
+DEPENDENCIAS_POLICIALES.forEach(dep => {
+  const opt = document.createElement('option');
+  opt.value = dep.nombre;
+  opt.textContent = dep.nombre;
+  filtroComisaria.appendChild(opt);
+});
+
+const etiquetasDetalle = {
+  nombre: 'Nombre completo', dni: 'DNI', fechaNacimiento: 'Fecha de nacimiento',
+  domicilio: 'Domicilio', localidad: 'Localidad', tiempoResidencia: 'Tiempo de residencia',
+  motivo: 'Motivo del trámite', nombreSolicitante: 'Nombre del solicitante',
+  dniSolicitante: 'DNI del solicitante', nombreConviviente: 'Nombre del conviviente',
+  dniConviviente: 'DNI del conviviente', domicilioComun: 'Domicilio en común',
+  tiempoConvivencia: 'Tiempo de convivencia', estadoCivil: 'Estado civil',
+  situacionLaboral: 'Situación laboral', personasACargo: 'Personas a cargo',
+  testigo1Nombre: 'Nombre del testigo 1', testigo1Dni: 'DNI del testigo 1',
+  testigo2Nombre: 'Nombre del testigo 2', testigo2Dni: 'DNI del testigo 2',
+  foto_solicitante: 'Foto del DNI - Solicitante',
+  foto_testigo1: 'Foto del DNI - Testigo 1',
+  foto_testigo2: 'Foto del DNI - Testigo 2',
+};
+
+let solicitudesCache = [];
+
+async function cargarSolicitudes() {
+  const { data, error } = await supabaseClient
+    .from('solicitudes')
+    .select('*')
+    .order('created_at', { ascending: false });
+  if (error) { console.error(error); return; }
+  solicitudesCache = data || [];
+  renderTabla();
+}
+
+document.getElementById('btn-actualizar').addEventListener('click', cargarSolicitudes);
+
+// Actualización en vivo (requiere tener "solicitudes" agregada a la publicación Realtime en Supabase)
+supabaseClient
+  .channel('solicitudes-cambios')
+  .on('postgres_changes', { event: '*', schema: 'public', table: 'solicitudes' }, cargarSolicitudes)
+  .subscribe();
+
+function renderTabla() {
+  const estado = document.getElementById('filtro-estado').value;
+  const comisaria = document.getElementById('filtro-comisaria').value;
+  const tramite = document.getElementById('filtro-tramite').value;
+
+  const filtradas = solicitudesCache.filter(s =>
+    (!estado || s.estado === estado) &&
+    (!comisaria || s.comisaria_asignada === comisaria) &&
+    (!tramite || s.tramite === tramite)
+  );
+
+  const tbody = document.getElementById('tabla-solicitudes');
+  tbody.innerHTML = '';
+  document.getElementById('mensaje-vacio').style.display = filtradas.length ? 'none' : 'block';
+
+  filtradas.forEach(s => {
+    const tr = document.createElement('tr');
+    tr.className = 'fila-solicitud';
+    const fecha = s.created_at ? new Date(s.created_at).toLocaleString('es-AR') : '-';
+    const d = s.datos || {};
+    const nombreSolicitante = d.nombre || d.nombreSolicitante || '-';
+    tr.innerHTML = `
+      <td>${fecha}</td>
+      <td>${s.tramite_titulo || s.tramite || '-'}</td>
+      <td>${nombreSolicitante}</td>
+      <td>${s.comisaria_asignada || '-'}</td>
+      <td><span class="etiqueta ${s.estado}">${s.estado === 'procesado' ? 'Procesado' : 'Pendiente'}</span></td>
+    `;
+    tr.addEventListener('click', () => mostrarDetalle(s));
+    tbody.appendChild(tr);
+  });
+}
+
+document.getElementById('filtro-estado').addEventListener('change', renderTabla);
+filtroComisaria.addEventListener('change', renderTabla);
+document.getElementById('filtro-tramite').addEventListener('change', renderTabla);
+
+let solicitudAbierta = null;
+
+function mostrarDetalle(s) {
+  solicitudAbierta = s;
+  document.getElementById('detalle-titulo').textContent = s.tramite_titulo || s.tramite;
+  const cont = document.getElementById('detalle-contenido');
+  cont.innerHTML = '';
+
+  const dt0 = document.createElement('dt');
+  dt0.textContent = 'Comisaría asignada';
+  const dd0 = document.createElement('dd');
+  dd0.textContent = s.comisaria_asignada || '-';
+  cont.appendChild(dt0);
+  cont.appendChild(dd0);
+
+  Object.entries(s.datos || {}).forEach(([campo, valor]) => {
+    if (!valor) return;
+    const dt = document.createElement('dt');
+    dt.textContent = etiquetasDetalle[campo] || campo;
+    const dd = document.createElement('dd');
+    if (campo.startsWith('foto_')) {
+      const img = document.createElement('img');
+      img.src = valor;
+      dd.appendChild(img);
+    } else {
+      dd.textContent = valor;
+    }
+    cont.appendChild(dt);
+    cont.appendChild(dd);
+  });
+
+  document.getElementById('btn-procesar').textContent =
+    s.estado === 'procesado' ? 'Marcar como pendiente' : 'Marcar como procesado';
+  document.getElementById('detalle').style.display = 'block';
+  document.getElementById('detalle').scrollIntoView({ behavior: 'smooth' });
+}
+
+document.getElementById('btn-cerrar-detalle').addEventListener('click', () => {
+  document.getElementById('detalle').style.display = 'none';
+});
+
+document.getElementById('btn-procesar').addEventListener('click', async () => {
+  if (!solicitudAbierta) return;
+  const nuevoEstado = solicitudAbierta.estado === 'procesado' ? 'pendiente' : 'procesado';
+  const { error } = await supabaseClient.from('solicitudes').update({ estado: nuevoEstado }).eq('id', solicitudAbierta.id);
+  if (error) console.error(error);
+  document.getElementById('detalle').style.display = 'none';
+});
+</script>
+
+</body>
+</html>
