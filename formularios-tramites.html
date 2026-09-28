@@ -61,8 +61,6 @@
   .captura-botones button{padding:7px 12px; font-size:0.82rem;}
   .captura-estado{font-size:0.78rem; color:#6b7280; margin-top:6px;}
   .captura-estado.ok{color:#1a7f3c; font-weight:600;}
-  .btn-quitar-testigo{background:none; color:#b91c1c; text-decoration:underline; padding:4px 0; font-size:0.8rem;}
-  .bloque-testigo[data-activo="false"] .campos-testigo{display:none;}
 
   /* Vista de documento generado */
   #documento{display:none; background:#fff; border:1px solid var(--borde); border-radius:10px; padding:30px;}
@@ -152,16 +150,16 @@
       <p class="captura-estado">Sin foto capturada</p>
     </div>
 
-    <h3 class="seccion">Testigos (opcional, hasta 2)</h3>
+    <h3 class="seccion">Testigos (obligatorios: 2)</h3>
     <div class="bloque-testigo" data-testigo="1" data-activo="true">
       <div class="fila campos-testigo">
         <div>
           <label>Nombre del testigo 1</label>
-          <input type="text" name="testigo1Nombre">
+          <input type="text" name="testigo1Nombre" required>
         </div>
         <div>
           <label>DNI del testigo 1</label>
-          <input type="text" name="testigo1Dni" pattern="[0-9]{7,8}">
+          <input type="text" name="testigo1Dni" pattern="[0-9]{7,8}" required>
         </div>
       </div>
       <label class="campos-testigo">Foto del DNI (testigo 1)</label>
@@ -181,16 +179,15 @@
       </div>
     </div>
 
-    <button type="button" class="btn-secundario btn-agregar-testigo">+ Agregar segundo testigo</button>
-    <div class="bloque-testigo" data-testigo="2" data-activo="false">
+    <div class="bloque-testigo" data-testigo="2" data-activo="true">
       <div class="fila campos-testigo">
         <div>
           <label>Nombre del testigo 2</label>
-          <input type="text" name="testigo2Nombre" disabled>
+          <input type="text" name="testigo2Nombre" required>
         </div>
         <div>
           <label>DNI del testigo 2</label>
-          <input type="text" name="testigo2Dni" pattern="[0-9]{7,8}" disabled>
+          <input type="text" name="testigo2Dni" pattern="[0-9]{7,8}" required>
         </div>
       </div>
       <label class="campos-testigo">Foto del DNI (testigo 2)</label>
@@ -200,7 +197,7 @@
           <img hidden alt="Foto del DNI capturada">
         </div>
         <canvas hidden></canvas>
-        <input type="hidden" name="foto_testigo2" value="" disabled>
+        <input type="hidden" name="foto_testigo2" value="">
         <div class="captura-botones">
           <button type="button" class="btn-secundario btn-camara">Activar cámara</button>
           <button type="button" class="btn-primario btn-capturar" hidden>Tomar foto</button>
@@ -208,7 +205,6 @@
         </div>
         <p class="captura-estado">Sin foto capturada</p>
       </div>
-      <button type="button" class="btn-quitar-testigo">Quitar testigo 2</button>
     </div>
 
     <div class="btns">
@@ -275,16 +271,16 @@
     <label>Motivo del trámite</label>
     <textarea name="motivo" required></textarea>
 
-    <h3 class="seccion">Testigos (opcional, hasta 2)</h3>
+    <h3 class="seccion">Testigos (obligatorios: 2)</h3>
     <div class="bloque-testigo" data-testigo="1" data-activo="true">
       <div class="fila campos-testigo">
         <div>
           <label>Nombre del testigo 1</label>
-          <input type="text" name="testigo1Nombre">
+          <input type="text" name="testigo1Nombre" required>
         </div>
         <div>
           <label>DNI del testigo 1</label>
-          <input type="text" name="testigo1Dni" pattern="[0-9]{7,8}">
+          <input type="text" name="testigo1Dni" pattern="[0-9]{7,8}" required>
         </div>
       </div>
       <label class="campos-testigo">Foto del DNI (testigo 1)</label>
@@ -304,16 +300,15 @@
       </div>
     </div>
 
-    <button type="button" class="btn-secundario btn-agregar-testigo">+ Agregar segundo testigo</button>
-    <div class="bloque-testigo" data-testigo="2" data-activo="false">
+    <div class="bloque-testigo" data-testigo="2" data-activo="true">
       <div class="fila campos-testigo">
         <div>
           <label>Nombre del testigo 2</label>
-          <input type="text" name="testigo2Nombre" disabled>
+          <input type="text" name="testigo2Nombre" required>
         </div>
         <div>
           <label>DNI del testigo 2</label>
-          <input type="text" name="testigo2Dni" pattern="[0-9]{7,8}" disabled>
+          <input type="text" name="testigo2Dni" pattern="[0-9]{7,8}" required>
         </div>
       </div>
       <label class="campos-testigo">Foto del DNI (testigo 2)</label>
@@ -323,7 +318,7 @@
           <img hidden alt="Foto del DNI capturada">
         </div>
         <canvas hidden></canvas>
-        <input type="hidden" name="foto_testigo2" value="" disabled>
+        <input type="hidden" name="foto_testigo2" value="">
         <div class="captura-botones">
           <button type="button" class="btn-secundario btn-camara">Activar cámara</button>
           <button type="button" class="btn-primario btn-capturar" hidden>Tomar foto</button>
@@ -331,7 +326,6 @@
         </div>
         <p class="captura-estado">Sin foto capturada</p>
       </div>
-      <button type="button" class="btn-quitar-testigo">Quitar testigo 2</button>
     </div>
 
     <div class="btns">
@@ -410,16 +404,16 @@
       <p class="captura-estado">Sin foto capturada</p>
     </div>
 
-    <h3 class="seccion">Testigos (opcional, hasta 2)</h3>
+    <h3 class="seccion">Testigos (obligatorios: 2)</h3>
     <div class="bloque-testigo" data-testigo="1" data-activo="true">
       <div class="fila campos-testigo">
         <div>
           <label>Nombre del testigo 1</label>
-          <input type="text" name="testigo1Nombre">
+          <input type="text" name="testigo1Nombre" required>
         </div>
         <div>
           <label>DNI del testigo 1</label>
-          <input type="text" name="testigo1Dni" pattern="[0-9]{7,8}">
+          <input type="text" name="testigo1Dni" pattern="[0-9]{7,8}" required>
         </div>
       </div>
       <label class="campos-testigo">Foto del DNI (testigo 1)</label>
@@ -439,16 +433,15 @@
       </div>
     </div>
 
-    <button type="button" class="btn-secundario btn-agregar-testigo">+ Agregar segundo testigo</button>
-    <div class="bloque-testigo" data-testigo="2" data-activo="false">
+    <div class="bloque-testigo" data-testigo="2" data-activo="true">
       <div class="fila campos-testigo">
         <div>
           <label>Nombre del testigo 2</label>
-          <input type="text" name="testigo2Nombre" disabled>
+          <input type="text" name="testigo2Nombre" required>
         </div>
         <div>
           <label>DNI del testigo 2</label>
-          <input type="text" name="testigo2Dni" pattern="[0-9]{7,8}" disabled>
+          <input type="text" name="testigo2Dni" pattern="[0-9]{7,8}" required>
         </div>
       </div>
       <label class="campos-testigo">Foto del DNI (testigo 2)</label>
@@ -458,7 +451,7 @@
           <img hidden alt="Foto del DNI capturada">
         </div>
         <canvas hidden></canvas>
-        <input type="hidden" name="foto_testigo2" value="" disabled>
+        <input type="hidden" name="foto_testigo2" value="">
         <div class="captura-botones">
           <button type="button" class="btn-secundario btn-camara">Activar cámara</button>
           <button type="button" class="btn-primario btn-capturar" hidden>Tomar foto</button>
@@ -466,7 +459,6 @@
         </div>
         <p class="captura-estado">Sin foto capturada</p>
       </div>
-      <button type="button" class="btn-quitar-testigo">Quitar testigo 2</button>
     </div>
 
     <div class="btns">
@@ -571,28 +563,6 @@ document.getElementById('doc-volver').addEventListener('click', () => {
   tarjetasEl.style.display = 'grid';
 });
 
-/* --- Testigo 2: mostrar / ocultar --- */
-document.querySelectorAll('.btn-agregar-testigo').forEach(btn => {
-  btn.addEventListener('click', () => {
-    const bloque2 = btn.nextElementSibling;
-    bloque2.dataset.activo = 'true';
-    bloque2.querySelectorAll('input').forEach(i => i.disabled = false);
-    btn.hidden = true;
-  });
-});
-document.querySelectorAll('.btn-quitar-testigo').forEach(btn => {
-  btn.addEventListener('click', () => {
-    const bloque2 = btn.closest('.bloque-testigo');
-    bloque2.dataset.activo = 'false';
-    bloque2.querySelectorAll('input').forEach(i => { i.disabled = true; if (i.type !== 'hidden') i.value = ''; else i.value=''; });
-    const agregarBtn = bloque2.previousElementSibling;
-    if (agregarBtn && agregarBtn.classList.contains('btn-agregar-testigo')) agregarBtn.hidden = false;
-    // reset captura visual del testigo 2
-    const captura = bloque2.querySelector('.captura-foto');
-    resetCaptura(captura);
-  });
-});
-
 /* --- Captura de foto del DNI --- */
 function resetCaptura(captura){
   const video = captura.querySelector('video');
@@ -678,6 +648,15 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
 Object.entries(forms).forEach(([tramite, form]) => {
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
+
+    // Las fotos del DNI de los dos testigos son obligatorias
+    for (const n of [1, 2]) {
+      const foto = form.querySelector(`input[name="foto_testigo${n}"]`);
+      if (!foto || !foto.value) {
+        alert(`Falta la foto del DNI del testigo ${n}. Tocá "Activar cámara" y sacala.`);
+        return;
+      }
+    }
     const btnEnviar = form.querySelector('button[type=submit]');
     const textoOriginal = btnEnviar.textContent;
     btnEnviar.disabled = true;
@@ -736,6 +715,7 @@ Object.entries(forms).forEach(([tramite, form]) => {
       form.classList.remove('activo');
       documento.classList.add('activo');
       form.reset();
+      form.querySelectorAll('.captura-foto').forEach(c => resetCaptura(c));
     } catch (err) {
       console.error(err);
       alert('No se pudo enviar el trámite. Revisá tu conexión e intentá de nuevo.');
