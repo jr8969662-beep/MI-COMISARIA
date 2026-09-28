@@ -89,6 +89,81 @@ const DEPENDENCIAS_POLICIALES = [
   { nombre: "Puesto Policial El Circulo", lat: -24.836051, lon: -65.4190408 },
 ];
 
+/*
+  Localidades de Salta que se muestran en el desplegable del formulario:
+  los 60 municipios de la provincia (que cubren todo el territorio).
+  Fuente: Anexo "Municipios de la provincia de Salta" (Wikipedia, 60 municipios en 2020).
+*/
+const LOCALIDADES_SALTA = [
+  "Salta (Capital)",
+  "Aguaray",
+  "Aguas Blancas",
+  "Angastaco",
+  "Animaná",
+  "Apolinario Saravia",
+  "Cachi",
+  "Cafayate",
+  "Campo Quijano",
+  "Campo Santo",
+  "Cerrillos",
+  "Chicoana",
+  "Colonia Santa Rosa",
+  "Coronel Moldes",
+  "El Bordo",
+  "El Carril",
+  "El Galpón",
+  "El Jardín",
+  "El Potrero",
+  "El Quebrachal",
+  "El Tala",
+  "Embarcación",
+  "General Ballivián",
+  "General Güemes",
+  "General Mosconi",
+  "General Pizarro",
+  "Guachipas",
+  "Hipólito Yrigoyen",
+  "Iruya",
+  "Isla de Cañas",
+  "Joaquín V. González",
+  "La Caldera",
+  "La Candelaria",
+  "La Merced",
+  "La Poma",
+  "La Viña",
+  "Las Lajitas",
+  "Los Toldos",
+  "Molinos",
+  "Nazareno",
+  "Payogasta",
+  "Pichanal",
+  "Profesor Salvador Mazza",
+  "Río Piedras",
+  "Rivadavia Banda Norte",
+  "Rivadavia Banda Sur",
+  "Rosario de la Frontera",
+  "Rosario de Lerma",
+  "San Antonio de los Cobres",
+  "San Carlos",
+  "San José de Metán",
+  "San Lorenzo",
+  "San Ramón de la Nueva Orán",
+  "Santa Victoria Este",
+  "Santa Victoria Oeste",
+  "Seclantás",
+  "Tartagal",
+  "Tolar Grande",
+  "Urundel",
+  "Vaqueros",
+];
+
+/*
+  Si la dependencia más cercana queda a más de esta distancia, se considera
+  que el domicilio está fuera de la zona cubierta por el mapa (que solo
+  incluye Capital y alrededores) y NO se asigna comisaría automáticamente.
+*/
+const DISTANCIA_MAXIMA_KM = 15;
+
 /* Distancia entre dos puntos (fórmula de Haversine), en kilómetros */
 function distanciaKm(lat1, lon1, lat2, lon2) {
   const R = 6371;
@@ -120,8 +195,11 @@ function dependenciaMasCercana(lat, lon) {
   servicio gratuito Nominatim (OpenStreetMap). No requiere API key.
   Devuelve {lat, lon, direccionEncontrada} o null si no se pudo ubicar.
 */
-async function geocodificarDireccion(domicilio) {
-  const consulta = `${domicilio}, Salta, Argentina`;
+async function geocodificarDireccion(domicilio, localidad) {
+  // Se le saca lo que esté entre paréntesis, ej: "Salta (Capital)" -> "Salta"
+  const localidadLimpia = (localidad || '').replace(/\s*\(.*?\)\s*/g, ' ').trim();
+  const partes = [domicilio, localidadLimpia, 'Salta', 'Argentina'].filter(Boolean);
+  const consulta = partes.join(', ');
   const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=ar&q=${encodeURIComponent(consulta)}`;
   try {
     const resp = await fetch(url, { headers: { 'Accept-Language': 'es' } });
@@ -143,12 +221,14 @@ async function geocodificarDireccion(domicilio) {
   { comisaria, distanciaKm, direccionEncontrada } o null si no se pudo
   determinar (por ejemplo, dirección no encontrada).
 */
-async function asignarComisariaPorDireccion(domicilio) {
+async function asignarComisariaPorDireccion(domicilio, localidad) {
   if (!domicilio) return null;
-  const ubicacion = await geocodificarDireccion(domicilio);
+  const ubicacion = await geocodificarDireccion(domicilio, localidad);
   if (!ubicacion) return null;
   const { dependencia, distanciaKm: dist } = dependenciaMasCercana(ubicacion.lat, ubicacion.lon);
   if (!dependencia) return null;
+  // Fuera de la zona cubierta por el mapa: que lo asigne el personal
+  if (dist > DISTANCIA_MAXIMA_KM) return null;
   return {
     comisaria: dependencia.nombre,
     distanciaKm: dist,
