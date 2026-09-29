@@ -52,18 +52,83 @@
   .captura-foto{
     border:1px dashed var(--borde); border-radius:8px; padding:14px; margin-top:8px; background:#fafbfc;
   }
-  .captura-visor{position:relative; width:100%; max-width:280px;}
+  .captura-visor{
+    position:relative; width:100%; max-width:340px; margin:0 auto;
+  }
   .captura-visor video, .captura-visor img{
     width:100%; border-radius:6px; background:#000; display:block;
   }
   .captura-visor video[hidden], .captura-visor img[hidden]{display:none;}
-  .captura-botones{display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;}
-  .captura-botones button{padding:7px 12px; font-size:0.82rem;}
-  .captura-estado{font-size:0.78rem; color:#6b7280; margin-top:6px;}
-  .captura-estado.ok{color:#1a7f3c; font-weight:600;}
-  .escaneo-estado{font-size:0.78rem; color:#2c5aa0; margin-top:4px; font-weight:600;}
 
-  /* Aviso de borrador recuperado */
+  .marco-dni{
+    position:absolute; top:50%; left:50%;
+    transform:translate(-50%,-50%);
+    width:88%;
+    aspect-ratio: 1.586 / 1;
+    border:2px dashed rgba(255,255,255,0.85);
+    border-radius:8px;
+    box-shadow:0 0 0 9999px rgba(0,0,0,0.35);
+    pointer-events:none;
+    display:none;
+  }
+  .marco-dni.activo{display:block;}
+  .marco-dni::before,
+  .marco-dni::after{
+    content:''; position:absolute; width:24px; height:24px;
+    border:3px solid #4ade80;
+  }
+  .marco-dni::before{
+    top:-3px; left:-3px;
+    border-right:none; border-bottom:none;
+    border-top-left-radius:8px;
+  }
+  .marco-dni::after{
+    bottom:-3px; right:-3px;
+    border-left:none; border-top:none;
+    border-bottom-right-radius:8px;
+  }
+  .marco-dni-texto{
+    position:absolute; top:-32px; left:0; right:0;
+    text-align:center; color:#fff; font-size:0.78rem; font-weight:600;
+    text-shadow:0 1px 3px rgba(0,0,0,0.8);
+  }
+
+  .btn-flash{
+    position:absolute; top:8px; right:8px;
+    background:rgba(0,0,0,0.55); color:#fff;
+    border:1px solid rgba(255,255,255,0.4);
+    border-radius:50%; width:40px; height:40px;
+    font-size:1.1rem; cursor:pointer;
+    display:none;
+    align-items:center; justify-content:center;
+    padding:0;
+  }
+  .btn-flash.activo{display:flex;}
+  .btn-flash.encendido{background:rgba(250,204,21,0.9); color:#1f2937;}
+
+  .aviso-foto{
+    background:#fff8e1; border:1px solid #ffe082; color:#8a6400;
+    padding:10px 14px; border-radius:8px; font-size:0.85rem;
+    margin-top:10px; display:none;
+  }
+  .aviso-foto.activo{display:block;}
+  .aviso-foto .acciones{
+    margin-top:8px; display:flex; gap:8px; flex-wrap:wrap;
+  }
+  .aviso-foto .acciones button{
+    padding:6px 12px; font-size:0.8rem; border-radius:6px; border:none;
+    cursor:pointer;
+  }
+  .aviso-foto .btn-repetir-aviso{background:#8a6400; color:#fff;}
+  .aviso-foto .btn-usar-igual{background:#e5e9ef; color:#1f2937;}
+
+  .captura-botones{display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; justify-content:center;}
+  .captura-botones button{padding:7px 12px; font-size:0.82rem;}
+  .captura-estado{font-size:0.78rem; color:#6b7280; margin-top:6px; text-align:center;}
+  .captura-estado.ok{color:#1a7f3c; font-weight:600;}
+  .captura-estado.error{color:#b91c1c; font-weight:600;}
+  .escaneo-estado{font-size:0.78rem; color:#2c5aa0; margin-top:4px; font-weight:600; text-align:center;}
+
   .aviso-borrador{
     background:#fff8e1; border:1px solid #ffe082; color:#8a6400;
     padding:10px 14px; border-radius:8px; font-size:0.85rem; margin-bottom:16px;
@@ -75,7 +140,6 @@
     padding:0; font-size:0.85rem; margin-left:6px;
   }
 
-  /* Vista de documento generado */
   #documento{display:none; background:#fff; border:1px solid var(--borde); border-radius:10px; padding:30px;}
   #documento.activo{display:block;}
   #documento h2{text-align:center; color:var(--azul); font-size:1.05rem; margin-bottom:4px;}
@@ -155,10 +219,21 @@
     <div class="captura-foto" data-target="res-solicitante">
       <div class="captura-visor">
         <video autoplay playsinline muted></video>
+        <div class="marco-dni">
+          <div class="marco-dni-texto">Encuadrá el DNI dentro del marco</div>
+        </div>
+        <button type="button" class="btn-flash" title="Activar/desactivar flash">🔦</button>
         <img hidden alt="Foto del DNI capturada">
       </div>
       <canvas hidden></canvas>
       <input type="hidden" name="foto_solicitante" value="">
+      <div class="aviso-foto">
+        ⚠️ La foto parece <span class="motivo"></span>. ¿Querés repetirla?
+        <div class="acciones">
+          <button type="button" class="btn-repetir-aviso">Repetir foto</button>
+          <button type="button" class="btn-usar-igual">Usar esta igual</button>
+        </div>
+      </div>
       <div class="captura-botones">
         <button type="button" class="btn-secundario btn-camara">Activar cámara</button>
         <button type="button" class="btn-primario btn-capturar" hidden>Tomar foto</button>
@@ -185,10 +260,21 @@
       <div class="captura-foto campos-testigo" data-target="res-testigo1">
         <div class="captura-visor">
           <video autoplay playsinline muted></video>
+          <div class="marco-dni">
+            <div class="marco-dni-texto">Encuadrá el DNI dentro del marco</div>
+          </div>
+          <button type="button" class="btn-flash" title="Activar/desactivar flash">🔦</button>
           <img hidden alt="Foto del DNI capturada">
         </div>
         <canvas hidden></canvas>
         <input type="hidden" name="foto_testigo1" value="">
+        <div class="aviso-foto">
+          ⚠️ La foto parece <span class="motivo"></span>. ¿Querés repetirla?
+          <div class="acciones">
+            <button type="button" class="btn-repetir-aviso">Repetir foto</button>
+            <button type="button" class="btn-usar-igual">Usar esta igual</button>
+          </div>
+        </div>
         <div class="captura-botones">
           <button type="button" class="btn-secundario btn-camara">Activar cámara</button>
           <button type="button" class="btn-primario btn-capturar" hidden>Tomar foto</button>
@@ -215,10 +301,21 @@
       <div class="captura-foto campos-testigo" data-target="res-testigo2">
         <div class="captura-visor">
           <video autoplay playsinline muted></video>
+          <div class="marco-dni">
+            <div class="marco-dni-texto">Encuadrá el DNI dentro del marco</div>
+          </div>
+          <button type="button" class="btn-flash" title="Activar/desactivar flash">🔦</button>
           <img hidden alt="Foto del DNI capturada">
         </div>
         <canvas hidden></canvas>
         <input type="hidden" name="foto_testigo2" value="">
+        <div class="aviso-foto">
+          ⚠️ La foto parece <span class="motivo"></span>. ¿Querés repetirla?
+          <div class="acciones">
+            <button type="button" class="btn-repetir-aviso">Repetir foto</button>
+            <button type="button" class="btn-usar-igual">Usar esta igual</button>
+          </div>
+        </div>
         <div class="captura-botones">
           <button type="button" class="btn-secundario btn-camara">Activar cámara</button>
           <button type="button" class="btn-primario btn-capturar" hidden>Tomar foto</button>
@@ -256,10 +353,21 @@
     <div class="captura-foto" data-target="con-solicitante">
       <div class="captura-visor">
         <video autoplay playsinline muted></video>
+        <div class="marco-dni">
+          <div class="marco-dni-texto">Encuadrá el DNI dentro del marco</div>
+        </div>
+        <button type="button" class="btn-flash" title="Activar/desactivar flash">🔦</button>
         <img hidden alt="Foto del DNI capturada">
       </div>
       <canvas hidden></canvas>
       <input type="hidden" name="foto_solicitante" value="">
+      <div class="aviso-foto">
+        ⚠️ La foto parece <span class="motivo"></span>. ¿Querés repetirla?
+        <div class="acciones">
+          <button type="button" class="btn-repetir-aviso">Repetir foto</button>
+          <button type="button" class="btn-usar-igual">Usar esta igual</button>
+        </div>
+      </div>
       <div class="captura-botones">
         <button type="button" class="btn-secundario btn-camara">Activar cámara</button>
         <button type="button" class="btn-primario btn-capturar" hidden>Tomar foto</button>
@@ -312,10 +420,21 @@
       <div class="captura-foto campos-testigo" data-target="con-testigo1">
         <div class="captura-visor">
           <video autoplay playsinline muted></video>
+          <div class="marco-dni">
+            <div class="marco-dni-texto">Encuadrá el DNI dentro del marco</div>
+          </div>
+          <button type="button" class="btn-flash" title="Activar/desactivar flash">🔦</button>
           <img hidden alt="Foto del DNI capturada">
         </div>
         <canvas hidden></canvas>
         <input type="hidden" name="foto_testigo1" value="">
+        <div class="aviso-foto">
+          ⚠️ La foto parece <span class="motivo"></span>. ¿Querés repetirla?
+          <div class="acciones">
+            <button type="button" class="btn-repetir-aviso">Repetir foto</button>
+            <button type="button" class="btn-usar-igual">Usar esta igual</button>
+          </div>
+        </div>
         <div class="captura-botones">
           <button type="button" class="btn-secundario btn-camara">Activar cámara</button>
           <button type="button" class="btn-primario btn-capturar" hidden>Tomar foto</button>
@@ -342,10 +461,21 @@
       <div class="captura-foto campos-testigo" data-target="con-testigo2">
         <div class="captura-visor">
           <video autoplay playsinline muted></video>
+          <div class="marco-dni">
+            <div class="marco-dni-texto">Encuadrá el DNI dentro del marco</div>
+          </div>
+          <button type="button" class="btn-flash" title="Activar/desactivar flash">🔦</button>
           <img hidden alt="Foto del DNI capturada">
         </div>
         <canvas hidden></canvas>
         <input type="hidden" name="foto_testigo2" value="">
+        <div class="aviso-foto">
+          ⚠️ La foto parece <span class="motivo"></span>. ¿Querés repetirla?
+          <div class="acciones">
+            <button type="button" class="btn-repetir-aviso">Repetir foto</button>
+            <button type="button" class="btn-usar-igual">Usar esta igual</button>
+          </div>
+        </div>
         <div class="captura-botones">
           <button type="button" class="btn-secundario btn-camara">Activar cámara</button>
           <button type="button" class="btn-primario btn-capturar" hidden>Tomar foto</button>
@@ -421,10 +551,21 @@
     <div class="captura-foto" data-target="car-solicitante">
       <div class="captura-visor">
         <video autoplay playsinline muted></video>
+        <div class="marco-dni">
+          <div class="marco-dni-texto">Encuadrá el DNI dentro del marco</div>
+        </div>
+        <button type="button" class="btn-flash" title="Activar/desactivar flash">🔦</button>
         <img hidden alt="Foto del DNI capturada">
       </div>
       <canvas hidden></canvas>
       <input type="hidden" name="foto_solicitante" value="">
+      <div class="aviso-foto">
+        ⚠️ La foto parece <span class="motivo"></span>. ¿Querés repetirla?
+        <div class="acciones">
+          <button type="button" class="btn-repetir-aviso">Repetir foto</button>
+          <button type="button" class="btn-usar-igual">Usar esta igual</button>
+        </div>
+      </div>
       <div class="captura-botones">
         <button type="button" class="btn-secundario btn-camara">Activar cámara</button>
         <button type="button" class="btn-primario btn-capturar" hidden>Tomar foto</button>
@@ -451,10 +592,21 @@
       <div class="captura-foto campos-testigo" data-target="car-testigo1">
         <div class="captura-visor">
           <video autoplay playsinline muted></video>
+          <div class="marco-dni">
+            <div class="marco-dni-texto">Encuadrá el DNI dentro del marco</div>
+          </div>
+          <button type="button" class="btn-flash" title="Activar/desactivar flash">🔦</button>
           <img hidden alt="Foto del DNI capturada">
         </div>
         <canvas hidden></canvas>
         <input type="hidden" name="foto_testigo1" value="">
+        <div class="aviso-foto">
+          ⚠️ La foto parece <span class="motivo"></span>. ¿Querés repetirla?
+          <div class="acciones">
+            <button type="button" class="btn-repetir-aviso">Repetir foto</button>
+            <button type="button" class="btn-usar-igual">Usar esta igual</button>
+          </div>
+        </div>
         <div class="captura-botones">
           <button type="button" class="btn-secundario btn-camara">Activar cámara</button>
           <button type="button" class="btn-primario btn-capturar" hidden>Tomar foto</button>
@@ -481,10 +633,21 @@
       <div class="captura-foto campos-testigo" data-target="car-testigo2">
         <div class="captura-visor">
           <video autoplay playsinline muted></video>
+          <div class="marco-dni">
+            <div class="marco-dni-texto">Encuadrá el DNI dentro del marco</div>
+          </div>
+          <button type="button" class="btn-flash" title="Activar/desactivar flash">🔦</button>
           <img hidden alt="Foto del DNI capturada">
         </div>
         <canvas hidden></canvas>
         <input type="hidden" name="foto_testigo2" value="">
+        <div class="aviso-foto">
+          ⚠️ La foto parece <span class="motivo"></span>. ¿Querés repetirla?
+          <div class="acciones">
+            <button type="button" class="btn-repetir-aviso">Repetir foto</button>
+            <button type="button" class="btn-usar-igual">Usar esta igual</button>
+          </div>
+        </div>
         <div class="captura-botones">
           <button type="button" class="btn-secundario btn-camara">Activar cámara</button>
           <button type="button" class="btn-primario btn-capturar" hidden>Tomar foto</button>
@@ -527,7 +690,6 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-config.js"></script>
 <script src="comisarias-config.js"></script>
-
 <script>
 const tarjetas = document.querySelectorAll('.tarjeta');
 const forms = {
@@ -554,14 +716,12 @@ const etiquetas = {
   foto_testigo2: 'Foto del DNI - Testigo 2',
 };
 
-/* Nombre del campo de domicilio que corresponde a cada trámite (para geocodificar) */
 const CAMPO_DOMICILIO = {
   residencia: 'domicilio',
   convivencia: 'domicilioComun',
   carencia: 'domicilio',
 };
 
-/* --- Cargar las localidades de Salta (de comisarias-config.js) en los desplegables --- */
 document.querySelectorAll('.select-localidad').forEach(select => {
   LOCALIDADES_SALTA.forEach(nombre => {
     const opt = document.createElement('option');
@@ -579,8 +739,6 @@ const titulos = {
 
 /* ============================================================
    LOCALSTORAGE: guardado de fotos y borrador del formulario
-   Sirve para que, si el ciudadano recarga la página mientras
-   completa el formulario, no pierda las fotos que ya sacó.
    ============================================================ */
 
 function guardarFotoEnStorage(clave, dataUrl) {
@@ -605,10 +763,9 @@ function limpiarTodasLasFotosDeStorage() {
 }
 
 function hayFotosGuardadas() {
-  return document.querySelectorAll('.captura-foto').length > 0 &&
-    Array.from(document.querySelectorAll('.captura-foto')).some(c =>
-      localStorage.getItem('foto_' + c.dataset.target)
-    );
+  return Array.from(document.querySelectorAll('.captura-foto')).some(c =>
+    localStorage.getItem('foto_' + c.dataset.target)
+  );
 }
 
 function mostrarAvisoBorrador() {
@@ -617,7 +774,6 @@ function mostrarAvisoBorrador() {
   }
 }
 
-/* Restaurar fotos guardadas al cargar la página */
 window.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('.captura-foto').forEach(captura => {
     const clave = captura.dataset.target;
@@ -639,7 +795,6 @@ window.addEventListener('DOMContentLoaded', () => {
     btnRepetir.hidden = false;
   });
 
-  // Restaurar qué trámite estaba activo (si había uno)
   const tramiteGuardado = localStorage.getItem('tramite_activo');
   if (tramiteGuardado && forms[tramiteGuardado]) {
     tarjetas.forEach(x => x.classList.remove('activa'));
@@ -653,7 +808,6 @@ window.addEventListener('DOMContentLoaded', () => {
   mostrarAvisoBorrador();
 });
 
-/* Botón para descartar todas las fotos guardadas */
 document.getElementById('btn-descartar-borrador').addEventListener('click', () => {
   if (!confirm('¿Seguro que querés borrar las fotos guardadas y empezar de nuevo?')) return;
   limpiarTodasLasFotosDeStorage();
@@ -689,7 +843,56 @@ document.getElementById('doc-volver').addEventListener('click', () => {
   try { localStorage.removeItem('tramite_activo'); } catch(e){}
 });
 
-/* --- Captura de foto del DNI --- */
+/* ============================================================
+   ANÁLISIS DE FOTO: detecta si está oscura o borrosa
+   ============================================================ */
+function analizarFoto(canvas) {
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width;
+  const h = canvas.height;
+  const imageData = ctx.getImageData(0, 0, w, h);
+  const data = imageData.data;
+
+  let suma = 0;
+  for (let i = 0; i < data.length; i += 4) {
+    suma += 0.299 * data[i] + 0.587 * data[i+1] + 0.114 * data[i+2];
+  }
+  const luminosidad = suma / (data.length / 4);
+
+  const gris = new Uint8ClampedArray(w * h);
+  for (let i = 0, j = 0; i < data.length; i += 4, j++) {
+    gris[j] = 0.299 * data[i] + 0.587 * data[i+1] + 0.114 * data[i+2];
+  }
+  let sumaLap = 0;
+  let sumaLap2 = 0;
+  let count = 0;
+  for (let y = 1; y < h - 1; y++) {
+    for (let x = 1; x < w - 1; x++) {
+      const i = y * w + x;
+      const lap = 4 * gris[i] - gris[i-1] - gris[i+1] - gris[i-w] - gris[i+w];
+      sumaLap += lap;
+      sumaLap2 += lap * lap;
+      count++;
+    }
+  }
+  const media = sumaLap / count;
+  const varianza = (sumaLap2 / count) - (media * media);
+
+  const UMBRAL_OSCURA = 60;
+  const UMBRAL_BORROSA = 50;
+
+  if (luminosidad < UMBRAL_OSCURA) {
+    return { ok: false, motivo: 'muy oscura (probá con más luz)' };
+  }
+  if (varianza < UMBRAL_BORROSA) {
+    return { ok: false, motivo: 'borrosa o desenfocada' };
+  }
+  return { ok: true };
+}
+
+/* ============================================================
+   CAPTURA DE FOTO + FLASH + MARCO DNI
+   ============================================================ */
 function resetCaptura(captura){
   const video = captura.querySelector('video');
   const img = captura.querySelector('img');
@@ -698,6 +901,9 @@ function resetCaptura(captura){
   const btnCamara = captura.querySelector('.btn-camara');
   const btnCapturar = captura.querySelector('.btn-capturar');
   const btnRepetir = captura.querySelector('.btn-repetir');
+  const marcoDni = captura.querySelector('.marco-dni');
+  const avisoFoto = captura.querySelector('.aviso-foto');
+  const btnFlash = captura.querySelector('.btn-flash');
   if (video.srcObject) {
     video.srcObject.getTracks().forEach(t => t.stop());
     video.srcObject = null;
@@ -708,10 +914,16 @@ function resetCaptura(captura){
   hiddenInput.value = '';
   estado.textContent = 'Sin foto capturada';
   estado.classList.remove('ok');
+  estado.classList.remove('error');
   btnCamara.hidden = false;
   btnCapturar.hidden = true;
   btnRepetir.hidden = true;
-  // borrar también de localStorage
+  if (marcoDni) marcoDni.classList.remove('activo');
+  if (avisoFoto) avisoFoto.classList.remove('activo');
+  if (btnFlash) {
+    btnFlash.classList.remove('activo');
+    btnFlash.classList.remove('encendido');
+  }
   borrarFotoDeStorage(captura.dataset.target);
 }
 
@@ -724,58 +936,140 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
   const btnCamara = captura.querySelector('.btn-camara');
   const btnCapturar = captura.querySelector('.btn-capturar');
   const btnRepetir = captura.querySelector('.btn-repetir');
+  const marcoDni = captura.querySelector('.marco-dni');
+  const avisoFoto = captura.querySelector('.aviso-foto');
+  const avisoMotivo = captura.querySelector('.motivo');
+  const btnRepetirAviso = captura.querySelector('.btn-repetir-aviso');
+  const btnUsarIgual = captura.querySelector('.btn-usar-igual');
+  const btnFlash = captura.querySelector('.btn-flash');
+
+  let trackActual = null;
+  let flashEncendido = false;
+  let flashSoportado = false;
 
   btnCamara.addEventListener('click', async () => {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       estado.textContent = 'Este navegador no permite acceder a la cámara.';
+      estado.classList.add('error');
       return;
     }
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
+      });
       video.srcObject = stream;
       video.hidden = false;
       img.hidden = true;
       btnCamara.hidden = true;
       btnCapturar.hidden = false;
       btnRepetir.hidden = true;
-      estado.textContent = 'Encuadrá el DNI y tocá "Tomar foto".';
+      if (marcoDni) marcoDni.classList.add('activo');
+      if (avisoFoto) avisoFoto.classList.remove('activo');
+      estado.textContent = 'Encuadrá el DNI dentro del marco y tocá "Tomar foto".';
       estado.classList.remove('ok');
+      estado.classList.remove('error');
+
+      // Detectar si soporta flash (torch)
+      trackActual = stream.getVideoTracks()[0];
+      const capacidades = trackActual.getCapabilities ? trackActual.getCapabilities() : {};
+      flashSoportado = !!capacidades.torch;
+      if (btnFlash && flashSoportado) {
+        btnFlash.classList.add('activo');
+      } else if (btnFlash) {
+        btnFlash.classList.remove('activo');
+      }
     } catch (err) {
       estado.textContent = 'No se pudo acceder a la cámara (revisá los permisos).';
+      estado.classList.add('error');
     }
   });
 
+  if (btnFlash) {
+    btnFlash.addEventListener('click', async () => {
+      if (!trackActual || !flashSoportado) return;
+      try {
+        flashEncendido = !flashEncendido;
+        await trackActual.applyConstraints({
+          advanced: [{ torch: flashEncendido }]
+        });
+        btnFlash.classList.toggle('encendido', flashEncendido);
+      } catch (err) {
+        console.warn('No se pudo cambiar el flash:', err);
+      }
+    });
+  }
+
   btnCapturar.addEventListener('click', () => {
-    const anchoMax = 700;
+    const anchoMax = 900;
     const escala = Math.min(1, anchoMax / video.videoWidth);
     canvas.width = video.videoWidth * escala;
     canvas.height = video.videoHeight * escala;
     canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
-    const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
     hiddenInput.value = dataUrl;
 
-    // guardar en localStorage para no perderla al recargar
-    guardarFotoEnStorage(captura.dataset.target, dataUrl);
+    const analisis = analizarFoto(canvas);
 
+    // Apagar flash si estaba encendido
+    if (flashEncendido && trackActual) {
+      trackActual.applyConstraints({ advanced: [{ torch: false }] }).catch(()=>{});
+      flashEncendido = false;
+      if (btnFlash) btnFlash.classList.remove('encendido');
+    }
+
+    guardarFotoEnStorage(captura.dataset.target, dataUrl);
     img.src = dataUrl;
     img.hidden = false;
     video.hidden = true;
+    if (marcoDni) marcoDni.classList.remove('activo');
+    if (btnFlash) btnFlash.classList.remove('activo');
     if (video.srcObject) {
       video.srcObject.getTracks().forEach(t => t.stop());
       video.srcObject = null;
     }
+    trackActual = null;
     btnCapturar.hidden = true;
-    btnRepetir.hidden = false;
-    estado.textContent = 'Foto capturada.';
-    estado.classList.add('ok');
+
+    if (analisis.ok) {
+      if (avisoFoto) avisoFoto.classList.remove('activo');
+      btnRepetir.hidden = false;
+      estado.textContent = 'Foto capturada.';
+      estado.classList.add('ok');
+      estado.classList.remove('error');
+    } else {
+      if (avisoMotivo) avisoMotivo.textContent = analisis.motivo;
+      if (avisoFoto) avisoFoto.classList.add('activo');
+      btnRepetir.hidden = true;
+      estado.textContent = 'Foto capturada, pero parece que hay un problema.';
+      estado.classList.remove('ok');
+      estado.classList.add('error');
+    }
   });
 
   btnRepetir.addEventListener('click', () => {
     resetCaptura(captura);
   });
+
+  if (btnRepetirAviso) {
+    btnRepetirAviso.addEventListener('click', () => {
+      resetCaptura(captura);
+    });
+  }
+
+  if (btnUsarIgual) {
+    btnUsarIgual.addEventListener('click', () => {
+      if (avisoFoto) avisoFoto.classList.remove('activo');
+      btnRepetir.hidden = false;
+      estado.textContent = 'Foto capturada.';
+      estado.classList.add('ok');
+      estado.classList.remove('error');
+    });
+  }
 });
 
-/* --- Escanear el código de barras del DNI (PDF417) y autocompletar --- */
+/* ============================================================
+   ESCANEO PDF417 DEL DNI
+   ============================================================ */
 function parsearCodigoDNI(texto) {
   const partes = texto.split('@');
   if (partes.length < 7) return null;
@@ -804,7 +1098,6 @@ function camposParaTarget(target) {
 
 document.querySelectorAll('.captura-foto').forEach(captura => {
   const video = captura.querySelector('video');
-  const estado = captura.querySelector('.captura-estado');
   const escaneoEstado = captura.querySelector('.escaneo-estado');
   const btnCamara = captura.querySelector('.btn-camara');
   const btnEscanear = captura.querySelector('.btn-escanear');
@@ -834,7 +1127,7 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
         video.hidden = false;
         btnCamara.hidden = true;
       }
-      escaneoEstado.textContent = 'Buscando el código de barras del DNI (el rectángulo con rayas, en el frente)...';
+      escaneoEstado.textContent = 'Buscando el código de barras del DNI...';
 
       await lector.decodeFromVideoElement(video, (resultado, error) => {
         if (resultado) {
@@ -858,6 +1151,12 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
             if (inputFecha) inputFecha.value = datos.fechaNacimientoISO;
           }
           escaneoEstado.textContent = `DNI escaneado: ${datos.nombreCompleto} (${datos.dni})`;
+
+          if (video.srcObject) {
+            video.srcObject.getTracks().forEach(t => t.stop());
+            video.srcObject = null;
+          }
+          video.hidden = true;
         }
       });
     } catch (err) {
@@ -869,7 +1168,9 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
   });
 });
 
-/* --- Generar documento y guardar en Supabase al enviar --- */
+/* ============================================================
+   ENVÍO DEL TRÁMITE A SUPABASE
+   ============================================================ */
 Object.entries(forms).forEach(([tramite, form]) => {
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
