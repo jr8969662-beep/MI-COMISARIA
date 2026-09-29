@@ -686,7 +686,6 @@
 </main>
 
 <!-- Supabase (backend: guarda las solicitudes, incluidas las fotos comprimidas) -->
-<script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-config.js"></script>
 <script src="comisarias-config.js"></script>
@@ -1074,17 +1073,56 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
 /* ============================================================
    ESCANEO PDF417 DEL DNI
    ============================================================ */
+/* ============================================================
+   ESCANEO DEL DNI (usando BarcodeDetector nativo del navegador)
+   ============================================================ */
 function parsearCodigoDNI(texto) {
-  const partes = texto.split('@');
-  if (partes.length < 7) return null;
-  const [, apellido, nombre, , dni, , fechaNacRaw] = partes;
-  const [dd, mm, aaaa] = (fechaNacRaw || '').split('/');
-  const fechaISO = (dd && mm && aaaa) ? `${aaaa}-${mm.padStart(2, '0')}-${dd.padStart(2, '0')}` : '';
-  const dniLimpio = (dni || '').replace(/\D/g, '');
-  if (!dniLimpio) return null;
+  const contenido = String(texto || "").replace(/[\r\n]+/g, "@");
+  const partes = contenido.split("@").map(p => p.trim()).filter(Boolean);
+  
+  // DNI: buscar cualquier número de 7-8 dígitos
+  const dniMatch = contenido.match(/\b\d{7,8}\b/);
+  const dni = dniMatch ? dniMatch[0] : "";
+  
+  // Sexo: buscar M, F o X como parte aislada
+  let sexo = "";
+  const sexoParte = partes.map(p => p.toUpperCase()).find(p =>
+    p === "M" || p === "F" || p === "X" ||
+    p === "MASCULINO" || p === "FEMENINO"
+  );
+  if (sexoParte === "M" || sexoParte === "MASCULINO") sexo = "Masculino";
+  else if (sexoParte === "F" || sexoParte === "FEMENINO") sexo = "Femenino";
+  else if (sexoParte === "X") sexo = "Otro / Prefiero no especificar";
+  
+  // Nombre y apellido: buscar partes alfabéticas (excluyendo palabras conocidas)
+  const candidatosNombre = partes
+    .filter(p => /^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ ]{3,}$/.test(p))
+    .filter(p => !/^(ARG|ARGENTINA|IDARG|DNI|EJEMPLAR|NACIONALIDAD|APELLIDO|NOMBRE|MERCOSUR)$/i.test(p));
+  const nombre = candidatosNombre.slice(0, 2).join(" ").trim();
+  
+  // Fecha de nacimiento: buscar formato DD/MM/AAAA o AAAAMMDD
+  let fechaISO = "";
+  const fechaParte = partes.find(p => {
+    if (/^\d{2}[/-]\d{2}[/-]\d{4}$/.test(p)) return true;
+    return /^\d{8}$/.test(p) && (/^(19|20)\d{2}/.test(p) || /(19|20)\d{2}$/.test(p));
+  });
+  if (fechaParte) {
+    const nums = fechaParte.replace(/\D/g, "");
+    if (nums.length === 8) {
+      const empiezaAnio = /^(19|20)\d{2}/.test(nums);
+      const anio = empiezaAnio ? nums.slice(0, 4) : nums.slice(4, 8);
+      const mes = empiezaAnio ? nums.slice(4, 6) : nums.slice(2, 4);
+      const dia = empiezaAnio ? nums.slice(6, 8) : nums.slice(0, 2);
+      fechaISO = `${anio}-${mes}-${dia}`;
+    }
+  }
+  
+  if (!dni && !nombre) return null;
+  
   return {
-    nombreCompleto: `${apellido || ''} ${nombre || ''}`.trim(),
-    dni: dniLimpio,
+    nombreCompleto: nombre,
+    dni: dni,
+    sexo: sexo,
     fechaNacimientoISO: fechaISO,
   };
 }
@@ -1092,11 +1130,11 @@ function parsearCodigoDNI(texto) {
 function camposParaTarget(target) {
   const [prefijo, persona] = target.split('-');
   if (persona === 'testigo1' || persona === 'testigo2') {
-    return { nombre: `${persona}Nombre`, dni: `${persona}Dni`, fechaNacimiento: null };
+    return { nombre: `${persona}Nombre`, dni: `${persona}Dni`, sexo: null, fechaNacimiento: null };
   }
-  if (prefijo === 'res') return { nombre: 'nombre', dni: 'dni', fechaNacimiento: 'fechaNacimiento' };
-  if (prefijo === 'con') return { nombre: 'nombreSolicitante', dni: 'dniSolicitante', fechaNacimiento: null };
-  if (prefijo === 'car') return { nombre: 'nombre', dni: 'dni', fechaNacimiento: null };
+  if (prefijo === 'res') return { nombre: 'nombre', dni: 'dni', sexo: null, fechaNacimiento: 'fechaNacimiento' };
+  if (prefijo === 'con') return { nombre: 'nombreSolicitante', dni: 'dniSolicitante', sexo: null, fechaNacimiento: null };
+  if (prefijo === 'car') return { nombre: 'nombre', dni: 'dni', sexo: null, fechaNacimiento: null };
   return null;
 }
 
@@ -1107,69 +1145,80 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
   const btnEscanear = captura.querySelector('.btn-escanear');
   const form = captura.closest('form');
   const campos = camposParaTarget(captura.dataset.target);
+  const canvas = captura.querySelector('canvas');
 
-  if (!window.ZXing) {
-    escaneoEstado.textContent = 'No se pudo cargar el lector de código de barras.';
+  // Verificar si BarcodeDetector está disponible
+  if (!window.BarcodeDetector) {
+    escaneoEstado.textContent = 'Tu navegador no soporta lectura de códigos. Completá los datos a mano.';
+    if (btnEscanear) btnEscanear.style.display = 'none';
     return;
   }
 
-   const hints = new Map();
-  hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [ZXing.BarcodeFormat.PDF_417]);
-  hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
-  hints.set(ZXing.DecodeHintType.CHARACTER_SET, 'UTF-8');
-  const lector = new ZXing.BrowserMultiFormatReader(hints);
-  let escaneando = false;
-
   btnEscanear.addEventListener('click', async () => {
-    if (escaneando) return;
-    escaneando = true;
+    if (!video.srcObject) {
+      escaneoEstado.textContent = 'Primero activá la cámara con el botón "Activar cámara".';
+      return;
+    }
     btnEscanear.disabled = true;
-    escaneoEstado.textContent = 'Activando cámara para escanear...';
+    escaneoEstado.textContent = 'Tomando foto y analizando...';
 
     try {
-      if (!video.srcObject) {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-        video.srcObject = stream;
-        video.hidden = false;
-        btnCamara.hidden = true;
+      // Tomar una foto del video actual
+      const anchoMax = 1280;
+      const escala = Math.min(1, anchoMax / video.videoWidth);
+      canvas.width = video.videoWidth * escala;
+      canvas.height = video.videoHeight * escala;
+      canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      // Ver qué formatos soporta el navegador
+      const formatosSolicitados = ['pdf417', 'qr_code', 'code_128', 'code_39'];
+      const formatosSoportados = await BarcodeDetector.getSupportedFormats();
+      const formatos = formatosSolicitados.filter(f => formatosSoportados.includes(f));
+
+      if (!formatos.length) {
+        escaneoEstado.textContent = 'Tu navegador no soporta PDF417. Completá los datos a mano.';
+        btnEscanear.disabled = false;
+        return;
       }
-      escaneoEstado.textContent = 'Buscando el código de barras del DNI...';
 
-      await lector.decodeFromVideoElement(video, (resultado, error) => {
-        if (resultado) {
-          const datos = parsearCodigoDNI(resultado.getText());
-          lector.reset();
-          escaneando = false;
-          btnEscanear.disabled = false;
+      const detector = new BarcodeDetector({ formats: formatos });
+      const codigos = await detector.detect(canvas);
 
-          if (!datos || !campos) {
-            escaneoEstado.textContent = 'No se pudo leer el código. Probá de nuevo o completá los datos a mano.';
-            return;
-          }
-          if (form.querySelector(`[name="${campos.nombre}"]`)) {
-            form.querySelector(`[name="${campos.nombre}"]`).value = datos.nombreCompleto;
-          }
-          if (form.querySelector(`[name="${campos.dni}"]`)) {
-            form.querySelector(`[name="${campos.dni}"]`).value = datos.dni;
-          }
-          if (campos.fechaNacimiento && datos.fechaNacimientoISO) {
-            const inputFecha = form.querySelector(`[name="${campos.fechaNacimiento}"]`);
-            if (inputFecha) inputFecha.value = datos.fechaNacimientoISO;
-          }
-          escaneoEstado.textContent = `DNI escaneado: ${datos.nombreCompleto} (${datos.dni})`;
+      if (!codigos.length) {
+        escaneoEstado.textContent = 'No se detectó código. Acercate más al código de barras y probá de nuevo.';
+        btnEscanear.disabled = false;
+        return;
+      }
 
-          if (video.srcObject) {
-            video.srcObject.getTracks().forEach(t => t.stop());
-            video.srcObject = null;
-          }
-          video.hidden = true;
+      const datos = parsearCodigoDNI(codigos[0].rawValue);
+      if (!datos) {
+        escaneoEstado.textContent = 'No se pudieron interpretar los datos del DNI.';
+        btnEscanear.disabled = false;
+        return;
+      }
+
+      // Autocompletar los campos del formulario
+      if (campos) {
+        if (datos.nombreCompleto && form.querySelector(`[name="${campos.nombre}"]`)) {
+          form.querySelector(`[name="${campos.nombre}"]`).value = datos.nombreCompleto;
         }
-      });
+        if (datos.dni && form.querySelector(`[name="${campos.dni}"]`)) {
+          form.querySelector(`[name="${campos.dni}"]`).value = datos.dni;
+        }
+        if (campos.fechaNacimiento && datos.fechaNacimientoISO) {
+          const inputFecha = form.querySelector(`[name="${campos.fechaNacimiento}"]`);
+          if (inputFecha) inputFecha.value = datos.fechaNacimientoISO;
+        }
+      }
+
+      escaneoEstado.textContent = `✓ DNI escaneado: ${datos.nombreCompleto} (${datos.dni})`;
+      escaneoEstado.style.color = '#1a7f3c';
+      btnEscanear.disabled = false;
+
     } catch (err) {
       console.error(err);
-      escaneando = false;
+      escaneoEstado.textContent = 'Error al escanear. Probá de nuevo.';
       btnEscanear.disabled = false;
-      escaneoEstado.textContent = 'No se pudo escanear (revisá los permisos de cámara).';
     }
   });
 });
