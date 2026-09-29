@@ -6,30 +6,191 @@
 <title>Mi Comisaría - Formularios de Trámites</title>
 <style>
   :root{
-    --azul:#1a3a6b; --azul-claro:#2c5aa0; --gris:#f4f6f9; --borde:#d7dde5; --texto:#1f2937;
+    --azul-oscuro:#0d2a4d;
+    --azul:#1a3a6b;
+    --azul-claro:#2c5aa0;
+    --dorado:#c9a961;
+    --dorado-claro:#e6c988;
+    --gris:#f4f6f9;
+    --gris-claro:#fafbfc;
+    --borde:#d7dde5;
+    --texto:#1f2937;
+    --texto-suave:#6b7280;
+    --sombra-suave:0 2px 8px rgba(13,42,77,0.08);
+    --sombra-media:0 4px 16px rgba(13,42,77,0.12);
+    --sombra-fuerte:0 8px 32px rgba(13,42,77,0.16);
   }
   *{box-sizing:border-box;}
+  html,body{min-height:100%;}
   body{
-    font-family:'Segoe UI', Arial, sans-serif; background:var(--gris); margin:0; color:var(--texto);
+    font-family:'Segoe UI', -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+    background:var(--gris);
+    margin:0;
+    color:var(--texto);
+    position:relative;
+    overflow-x:hidden;
   }
-  header{
-    background:var(--azul); color:#fff; padding:20px 24px;
+  body::before{
+    content:'';
+    position:fixed;
+    top:50%; left:50%;
+    transform:translate(-50%,-50%);
+    width:90vmin;
+    height:90vmin;
+    background-image:url('logo-policia.png.jpeg');
+    background-size:contain;
+    background-repeat:no-repeat;
+    background-position:center;
+    opacity:0.08;
+    pointer-events:none;
+    z-index:0;
   }
-  header h1{margin:0; font-size:1.3rem;}
-  header p{margin:4px 0 0; font-size:0.85rem; opacity:0.85;}
-  main{max-width:760px; margin:24px auto; padding:0 16px;}
+  body > *{position:relative; z-index:1;}
 
-  .tarjetas{display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:14px; margin-bottom:28px;}
-  .tarjeta{
-    background:#fff; border:1px solid var(--borde); border-radius:10px; padding:18px;
-    cursor:pointer; text-align:left; font-size:0.95rem; transition:box-shadow .15s, border-color .15s;
+  header{
+    background:linear-gradient(135deg, var(--azul-oscuro) 0%, var(--azul) 100%);
+    color:#fff;
+    padding:28px 24px 26px;
+    position:relative;
+    overflow:hidden;
+    border-bottom:3px solid var(--dorado);
+    box-shadow:var(--sombra-media);
   }
-  .tarjeta:hover{border-color:var(--azul-claro); box-shadow:0 2px 8px rgba(26,58,107,0.12);}
-  .tarjeta.activa{border-color:var(--azul); background:#eef3fa;}
-  .tarjeta b{display:block; margin-bottom:6px; color:var(--azul);}
+  header::after{
+    content:'';
+    position:absolute;
+    top:-50%; right:-10%;
+    width:400px; height:400px;
+    background:radial-gradient(circle, rgba(201,169,97,0.15) 0%, transparent 70%);
+    border-radius:50%;
+    pointer-events:none;
+  }
+  header .header-inner{
+    max-width:760px;
+    margin:0 auto;
+    position:relative;
+    z-index:2;
+  }
+  header h1{
+    margin:0;
+    font-size:1.6rem;
+    font-weight:700;
+    letter-spacing:-0.02em;
+    color:#fff;
+    text-shadow:0 2px 4px rgba(0,0,0,0.2);
+  }
+  header h1::after{
+    content:'';
+    display:block;
+    width:60px;
+    height:3px;
+    background:linear-gradient(90deg, var(--dorado), var(--dorado-claro));
+    margin-top:8px;
+    border-radius:2px;
+  }
+  header p{
+    margin:8px 0 0;
+    font-size:0.92rem;
+    color:var(--dorado-claro);
+    font-weight:500;
+    letter-spacing:0.02em;
+  }
+  header .sub{
+    margin:4px 0 0;
+    font-size:0.78rem;
+    opacity:0.8;
+    color:#e0e7f1;
+  }
+
+  main{
+    max-width:760px;
+    margin:36px auto;
+    padding:0 16px 40px;
+  }
+
+  .tarjetas{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(210px, 1fr));
+    gap:18px;
+    margin-bottom:32px;
+  }
+  .tarjeta{
+    background:#fff;
+    border:1px solid var(--borde);
+    border-top:3px solid var(--dorado);
+    border-radius:12px;
+    padding:24px 20px 20px;
+    cursor:pointer;
+    text-align:left;
+    font-size:0.95rem;
+    font-family:inherit;
+    color:var(--texto);
+    transition:all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow:var(--sombra-suave);
+    position:relative;
+    overflow:hidden;
+    display:flex;
+    flex-direction:column;
+    min-height:200px;
+  }
+  .tarjeta::before{
+    content:'';
+    position:absolute;
+    top:0; left:0; right:0;
+    height:3px;
+    background:linear-gradient(90deg, var(--dorado), var(--azul-claro));
+    opacity:0;
+    transition:opacity 0.25s;
+  }
+  .tarjeta:hover{
+    border-color:var(--dorado);
+    box-shadow:var(--sombra-fuerte);
+    transform:translateY(-4px);
+  }
+  .tarjeta:hover::before{opacity:1;}
+  .tarjeta.activa{
+    border-color:var(--azul);
+    background:linear-gradient(135deg, #eef3fa, #f6f9fc);
+    box-shadow:var(--sombra-media);
+  }
+  .tarjeta .tarjeta-icono{
+    font-size:2rem;
+    margin-bottom:12px;
+    display:block;
+    line-height:1;
+  }
+  .tarjeta b{
+    display:block;
+    margin-bottom:10px;
+    color:var(--azul-oscuro);
+    font-size:1.02rem;
+    font-weight:700;
+    line-height:1.3;
+  }
+  .tarjeta .tarjeta-desc{
+    color:var(--texto-suave);
+    font-size:0.86rem;
+    line-height:1.5;
+    flex:1;
+  }
+  .tarjeta .tarjeta-cta{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    margin-top:14px;
+    color:var(--azul);
+    font-weight:600;
+    font-size:0.85rem;
+    transition:gap 0.2s;
+  }
+  .tarjeta:hover .tarjeta-cta{
+    gap:10px;
+    color:var(--dorado);
+  }
 
   form{
     background:#fff; border:1px solid var(--borde); border-radius:10px; padding:22px; display:none;
+    box-shadow:var(--sombra-suave);
   }
   form.activo{display:block;}
   form h2{margin-top:0; color:var(--azul); font-size:1.1rem;}
@@ -168,18 +329,60 @@
   #documento .firma{margin-top:50px; display:flex; justify-content:space-between; font-size:0.8rem; flex-wrap:wrap; gap:16px;}
   #documento .firma div{border-top:1px solid #333; padding-top:6px; width:30%; text-align:center; min-width:150px;}
 
+  footer.site-footer{
+    background:linear-gradient(135deg, var(--azul-oscuro) 0%, var(--azul) 100%);
+    color:#fff;
+    padding:24px 20px;
+    margin-top:40px;
+    border-top:3px solid var(--dorado);
+    text-align:center;
+    font-size:0.82rem;
+    line-height:1.6;
+  }
+  footer.site-footer .footer-inner{
+    max-width:760px;
+    margin:0 auto;
+  }
+  footer.site-footer p{
+    margin:6px 0;
+    color:#e0e7f1;
+  }
+  footer.site-footer strong{
+    color:var(--dorado-claro);
+    font-weight:600;
+  }
+  footer.site-footer a{
+    color:var(--dorado-claro);
+    text-decoration:none;
+  }
+  footer.site-footer a:hover{
+    text-decoration:underline;
+  }
+
   @media print{
-    header, .tarjetas, form, .no-print{display:none !important;}
+    header, .tarjetas, form, .no-print, footer.site-footer{display:none !important;}
     #documento{display:block !important; border:none; box-shadow:none;}
     body{background:#fff;}
+    body::before{display:none !important;}
+  }
+
+  @media (max-width: 600px){
+    header h1{font-size:1.3rem;}
+    header{padding:22px 18px 20px;}
+    main{margin:24px auto;}
+    .tarjeta{padding:20px 16px; min-height:auto;}
+    body::before{width:110vmin; height:110vmin; opacity:0.06;}
   }
 </style>
 </head>
 <body>
 
 <header>
-  <h1>Mi Comisaría</h1>
-  <p>Solicitud de certificados - Policía de Salta</p>
+  <div class="header-inner">
+    <h1>Mi Comisaría</h1>
+    <p>Trámites policiales en línea</p>
+    <p class="sub">Policía de Salta · DMI (JP)</p>
+  </div>
 </header>
 
 <main>
@@ -190,16 +393,22 @@
 
   <div class="tarjetas" id="tarjetas">
     <button class="tarjeta" data-tramite="residencia">
+      <span class="tarjeta-icono">🏠</span>
       <b>Certificado de Residencia</b>
-      Acredita el domicilio donde vive la persona solicitante.
+      <span class="tarjeta-desc">Acredita el domicilio donde vive la persona solicitante.</span>
+      <span class="tarjeta-cta">Iniciar trámite →</span>
     </button>
     <button class="tarjeta" data-tramite="convivencia">
+      <span class="tarjeta-icono">🤝</span>
       <b>Certificado de Convivencia</b>
-      Acredita que dos o más personas conviven en un mismo domicilio.
+      <span class="tarjeta-desc">Acredita que dos o más personas conviven en un mismo domicilio.</span>
+      <span class="tarjeta-cta">Iniciar trámite →</span>
     </button>
     <button class="tarjeta" data-tramite="carencia">
+      <span class="tarjeta-icono">📋</span>
       <b>Certificado de Carencia de Recursos</b>
-      Acredita la situación de falta de recursos económicos.
+      <span class="tarjeta-desc">Acredita la situación de falta de recursos económicos.</span>
+      <span class="tarjeta-cta">Iniciar trámite →</span>
     </button>
   </div>
 
@@ -738,6 +947,13 @@
 
 </main>
 
+<footer class="site-footer">
+  <div class="footer-inner">
+    <p><strong>© 2026 Policía de Salta</strong> · Dirección de Modernización e Innovación Tecnológica (JP)</p>
+    <p>Contacto: <a href="mailto:micomisaria@salta.gob.ar">micomisaria@salta.gob.ar</a></p>
+  </div>
+</footer>
+
 <!-- Supabase (backend: guarda las solicitudes, incluidas las fotos comprimidas) -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-config.js"></script>
@@ -920,7 +1136,7 @@ function camposParaTarget(target) {
   if (prefijo === 'car') return { nombre: 'nombre', dni: 'dni', fechaNacimiento: null };
   return null;
 }
-  
+
 /* ============================================================
    ANÁLISIS DE FOTO (oscuridad + nitidez)
    ============================================================ */
@@ -972,7 +1188,6 @@ function resetCaptura(captura){
   const btnFlash = captura.querySelector('.btn-flash');
   const scanIndicador = captura.querySelector('.scan-indicador');
 
-  // Detener cualquier loop de escaneo
   if (captura._scanInterval) {
     clearInterval(captura._scanInterval);
     captura._scanInterval = null;
@@ -1030,14 +1245,12 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
   let intentosSinDeteccion = 0;
   let detector = null;
 
-  // Si el navegador no soporta BarcodeDetector, avisamos pero igual permitimos foto manual
   const barcodeDisponible = !!window.BarcodeDetector;
 
   if (!barcodeDisponible) {
     escaneoEstado.textContent = 'Escaneo automático no disponible. Se sacará la foto igual.';
   }
 
-  /* ---------- Iniciar cámara y escaneo ---------- */
   btnCamara.addEventListener('click', async () => {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       estado.textContent = 'Este navegador no permite acceder a la cámara.';
@@ -1060,7 +1273,6 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
       estado.classList.remove('ok');
       estado.classList.remove('error');
 
-      // Detectar flash
       trackActual = stream.getVideoTracks()[0];
       const capacidades = trackActual.getCapabilities ? trackActual.getCapabilities() : {};
       flashSoportado = !!capacidades.torch;
@@ -1068,7 +1280,6 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
         btnFlash.classList.add('activo');
       }
 
-      // Iniciar escaneo automático
       iniciarEscaneo();
     } catch (err) {
       estado.textContent = 'No se pudo acceder a la cámara (revisá los permisos).';
@@ -1076,14 +1287,12 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
     }
   });
 
-  /* ---------- Cancelar ---------- */
   if (btnCancelar) {
     btnCancelar.addEventListener('click', () => {
       resetCaptura(captura);
     });
   }
 
-  /* ---------- Flash ---------- */
   if (btnFlash) {
     btnFlash.addEventListener('click', async () => {
       if (!trackActual || !flashSoportado) return;
@@ -1095,13 +1304,11 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
     });
   }
 
-  /* ---------- Escaneo automático ---------- */
   function iniciarEscaneo() {
     if (scannerActivo) return;
     scannerActivo = true;
     intentosSinDeteccion = 0;
 
-    // Crear detector si se puede
     if (barcodeDisponible && !detector) {
       try {
         detector = new BarcodeDetector({ formats: ['pdf417'] });
@@ -1110,9 +1317,7 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
       }
     }
 
-    // Analizar 1 frame por segundo (para no trabar el celular)
     captura._scanInterval = setInterval(escanearFrame, 1000);
-    // Y hacer un primer intento a los 500ms
     setTimeout(escanearFrame, 500);
   }
 
@@ -1121,7 +1326,6 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
     if (!video.srcObject || video.readyState < 2 || !video.videoWidth) return;
 
     try {
-      // Tomar frame del video
       const anchoMax = 1600;
       const escala = Math.min(1, anchoMax / video.videoWidth);
       canvas.width = Math.round(video.videoWidth * escala);
@@ -1139,10 +1343,8 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
         }
       }
 
-      // Sin detección todavía
       intentosSinDeteccion++;
       if (intentosSinDeteccion === 20) {
-        // 20 intentos * 1 segundo = ~20 segundos
         mostrarTimeout();
       }
     } catch (err) {
@@ -1151,14 +1353,12 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
   }
 
   function exitoEscaneo(datos, canvasFoto) {
-    // Detener escaneo
     scannerActivo = false;
     if (captura._scanInterval) {
       clearInterval(captura._scanInterval);
       captura._scanInterval = null;
     }
 
-    // Guardar foto y actualizar estado
     const dataUrl = canvasFoto.toDataURL('image/jpeg', 0.7);
     hiddenInput.value = dataUrl;
     guardarFotoEnStorage(captura.dataset.target, dataUrl);
@@ -1170,7 +1370,6 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
     if (btnFlash) btnFlash.classList.remove('activo');
     if (btnCancelar) btnCancelar.hidden = true;
 
-    // Apagar cámara
     if (flashEncendido && trackActual) {
       trackActual.applyConstraints({ advanced: [{ torch: false }] }).catch(()=>{});
       flashEncendido = false;
@@ -1181,7 +1380,6 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
     }
     trackActual = null;
 
-    // Autocompletar campos
     if (campos) {
       if (datos.nombreCompleto && form.querySelector(`[name="${campos.nombre}"]`)) {
         form.querySelector(`[name="${campos.nombre}"]`).value = datos.nombreCompleto;
@@ -1214,17 +1412,14 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
     estado.classList.add('error');
   }
 
-  /* ---------- Aviso: Reintentar ---------- */
   if (btnRepetirAviso) {
     btnRepetirAviso.addEventListener('click', () => {
       resetCaptura(captura);
     });
   }
 
-  /* ---------- Aviso: Tomar foto igual (guardar frame actual) ---------- */
   if (btnUsarIgual) {
     btnUsarIgual.addEventListener('click', () => {
-      // Si la cámara sigue activa, tomamos el frame actual
       if (video.srcObject && video.videoWidth) {
         const anchoMax = 1600;
         const escala = Math.min(1, anchoMax / video.videoWidth);
