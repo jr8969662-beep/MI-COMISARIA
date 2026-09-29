@@ -17,6 +17,25 @@
   ve que la asignación no es la correcta, puede reasignarla manualmente.
 */
 
+/*
+  CORRECCIONES MANUALES POR BARRIO
+  ---------------------------------
+  La detección automática asigna la comisaría por cercanía geográfica, pero
+  la jurisdicción real de la Policía no siempre coincide con "la más cercana
+  en el mapa". Acá se pueden cargar excepciones conocidas: si el domicilio
+  que escribe la persona menciona alguno de estos barrios, se usa la
+  comisaría indicada DIRECTAMENTE, sin pasar por el cálculo de cercanía.
+
+  Cómo agregar una corrección:
+  - La clave (a la izquierda) es el nombre del barrio tal como lo escribiría
+    la gente, en minúsculas y sin tildes.
+  - El valor (a la derecha) es el nombre exacto de la comisaría, copiado tal
+    cual de la lista DEPENDENCIAS_POLICIALES de más abajo.
+*/
+const CORRECCIONES_BARRIO = {
+  "juan pablo ii": "Comisaria N°103 - Bº 17 de Octubre - Salta",
+};
+
 const DEPENDENCIAS_POLICIALES = [
   { nombre: "Comisaria N°105 - Hipolito Irigoyen Nº 841 - La Merced", lat: -24.970175, lon: -65.489828 },
   { nombre: "Comisaria N°106 - Etapa 5-Mza. 5 Casa 1 - Av. Ralle s/nº - Limache", lat: -24.852619, lon: -65.431589 },
@@ -241,6 +260,22 @@ async function geocodificarDireccion(domicilio, localidad) {
   return null;
 }
 
+/* Saca tildes y pasa a minúsculas, para comparar nombres de barrio sin importar mayúsculas/tildes */
+function normalizarTexto(texto) {
+  return (texto || '')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+}
+
+/* Si el domicilio menciona alguno de los barrios de CORRECCIONES_BARRIO, devuelve esa comisaría */
+function buscarCorreccionBarrio(domicilio) {
+  const texto = normalizarTexto(domicilio);
+  for (const [barrio, comisaria] of Object.entries(CORRECCIONES_BARRIO)) {
+    if (texto.includes(barrio)) return comisaria;
+  }
+  return null;
+}
+
 /*
   Función principal: recibe el domicilio en texto y devuelve
   { comisaria, distanciaKm, direccionEncontrada } o null si no se pudo
@@ -248,6 +283,14 @@ async function geocodificarDireccion(domicilio, localidad) {
 */
 async function asignarComisariaPorDireccion(domicilio, localidad) {
   if (!domicilio) return null;
+
+  // 1) Primero, ¿hay una corrección manual cargada para este barrio?
+  const comisariaCorregida = buscarCorreccionBarrio(domicilio);
+  if (comisariaCorregida) {
+    return { comisaria: comisariaCorregida, distanciaKm: null, direccionEncontrada: domicilio };
+  }
+
+  // 2) Si no, se calcula por cercanía geográfica como siempre
   const ubicacion = await geocodificarDireccion(domicilio, localidad);
   if (!ubicacion) return null;
   const { dependencia, distanciaKm: dist } = dependenciaMasCercana(ubicacion.lat, ubicacion.lon);
