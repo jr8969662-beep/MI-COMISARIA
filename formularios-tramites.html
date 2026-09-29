@@ -691,7 +691,11 @@
 <script src="supabase-config.js"></script>
 <script src="comisarias-config.js"></script>
 <script>
-const tarjetas = document.querySelectorAll('.tarjeta');
+window.onerror = function(msg, url, line) {
+  alert('ERROR (línea ' + line + '):\n\n' + msg);
+  return false;
+};
+  const tarjetas = document.querySelectorAll('.tarjeta');
 const forms = {
   residencia: document.getElementById('form-residencia'),
   convivencia: document.getElementById('form-convivencia'),
