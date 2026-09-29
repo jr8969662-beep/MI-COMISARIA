@@ -13,11 +13,9 @@
     --dorado:#c9a961;
     --dorado-claro:#e6c988;
     --dorado-brilloso:#f0d78c;
-    --gris:#f4f6f9;
-    --gris-claro:#fafbfc;
-    --borde:#d7dde5;
-    --texto:#1f2937;
-    --texto-suave:#6b7280;
+    --verde:#15803d;
+    --rojo:#b91c1c;
+    --amarillo:#ca8a04;
     --sombra-suave:0 2px 8px rgba(13,42,77,0.08);
     --sombra-media:0 4px 16px rgba(13,42,77,0.12);
     --sombra-fuerte:0 8px 32px rgba(13,42,77,0.16);
@@ -28,7 +26,7 @@
     font-family:'Segoe UI', -apple-system, BlinkMacSystemFont, Arial, sans-serif;
     background:var(--azul-fondo);
     margin:0;
-    color:var(--texto);
+    color:#fff;
     position:relative;
     overflow-x:hidden;
     min-height:100vh;
@@ -46,13 +44,13 @@
     background-size:contain;
     background-repeat:no-repeat;
     background-position:center;
-    opacity:0.45;
+    opacity:0.55;
     pointer-events:none;
     z-index:0;
-    filter:drop-shadow(0 0 60px rgba(201,169,97,0.4));
   }
   body > *{position:relative; z-index:1;}
 
+  /* HEADER */
   header{
     background:linear-gradient(135deg, var(--azul-oscuro) 0%, var(--azul) 100%);
     color:#fff;
@@ -77,6 +75,24 @@
     margin:0 auto;
     position:relative;
     z-index:2;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:18px;
+    flex-wrap:wrap;
+  }
+  header .header-logo{
+    width:64px;
+    height:64px;
+    background-image:url('logo-policia.png.jpeg');
+    background-size:contain;
+    background-repeat:no-repeat;
+    background-position:center;
+    filter:drop-shadow(0 2px 8px rgba(0,0,0,0.4));
+    flex-shrink:0;
+  }
+  header .header-texto{
+    text-align:left;
   }
   header h1{
     margin:0;
@@ -84,7 +100,7 @@
     font-weight:700;
     letter-spacing:-0.02em;
     color:#fff;
-    text-shadow:0 2px 4px rgba(0,0,0,0.2);
+    text-shadow:0 2px 4px rgba(0,0,0,0.3);
   }
   header h1::after{
     content:'';
@@ -92,7 +108,7 @@
     width:60px;
     height:3px;
     background:linear-gradient(90deg, var(--dorado), var(--dorado-claro));
-    margin:8px auto 0;
+    margin:8px 0 0;
     border-radius:2px;
   }
   header p{
@@ -105,7 +121,7 @@
   header .sub{
     margin:4px 0 0;
     font-size:0.78rem;
-    opacity:0.8;
+    opacity:0.85;
     color:#e0e7f1;
   }
 
@@ -117,6 +133,7 @@
     flex:1;
   }
 
+  /* TARJETAS TRANSPARENTES */
   .tarjetas{
     display:grid;
     grid-template-columns:repeat(auto-fit, minmax(210px, 1fr));
@@ -124,8 +141,9 @@
     margin-bottom:32px;
   }
   .tarjeta{
-    background:#fff;
-    border:1px solid var(--borde);
+    background:rgba(13,42,77,0.6);
+    backdrop-filter:blur(8px);
+    border:1px solid rgba(201,169,97,0.4);
     border-top:3px solid var(--dorado);
     border-radius:12px;
     padding:24px 20px 20px;
@@ -133,7 +151,7 @@
     text-align:left;
     font-size:0.95rem;
     font-family:inherit;
-    color:var(--texto);
+    color:#fff;
     transition:all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow:var(--sombra-suave);
     position:relative;
@@ -147,19 +165,20 @@
     position:absolute;
     top:0; left:0; right:0;
     height:3px;
-    background:linear-gradient(90deg, var(--dorado), var(--azul-claro));
+    background:linear-gradient(90deg, var(--dorado), var(--dorado-claro));
     opacity:0;
     transition:opacity 0.25s;
   }
   .tarjeta:hover{
     border-color:var(--dorado);
-    box-shadow:var(--sombra-fuerte);
+    box-shadow:0 8px 32px rgba(201,169,97,0.3);
     transform:translateY(-4px);
+    background:rgba(13,42,77,0.75);
   }
   .tarjeta:hover::before{opacity:1;}
   .tarjeta.activa{
-    border-color:var(--azul);
-    background:linear-gradient(135deg, #eef3fa, #f6f9fc);
+    border-color:var(--dorado);
+    background:rgba(26,58,107,0.85);
     box-shadow:var(--sombra-media);
   }
   .tarjeta .tarjeta-icono{
@@ -171,13 +190,14 @@
   .tarjeta b{
     display:block;
     margin-bottom:10px;
-    color:var(--azul-oscuro);
+    color:var(--dorado-claro);
     font-size:1.02rem;
     font-weight:700;
     line-height:1.3;
+    text-shadow:0 2px 4px rgba(0,0,0,0.3);
   }
   .tarjeta .tarjeta-desc{
-    color:var(--texto-suave);
+    color:rgba(255,255,255,0.85);
     font-size:0.86rem;
     line-height:1.5;
     flex:1;
@@ -187,47 +207,152 @@
     align-items:center;
     gap:6px;
     margin-top:14px;
-    color:var(--azul);
+    color:var(--dorado);
     font-weight:600;
     font-size:0.85rem;
     transition:gap 0.2s;
   }
   .tarjeta:hover .tarjeta-cta{
     gap:10px;
-    color:var(--dorado);
+    color:var(--dorado-brilloso);
   }
 
+  /* FORMULARIOS TRANSPARENTES */
   form{
-    background:#fff; border:1px solid var(--borde); border-radius:10px; padding:22px; display:none;
+    background:rgba(13,42,77,0.6);
+    backdrop-filter:blur(8px);
+    border:1px solid rgba(201,169,97,0.35);
+    border-top:3px solid var(--dorado);
+    border-radius:10px;
+    padding:22px;
+    display:none;
     box-shadow:var(--sombra-suave);
   }
   form.activo{display:block;}
-  form h2{margin-top:0; color:var(--azul); font-size:1.1rem;}
-  form h3.seccion{font-size:0.85rem; color:var(--azul-claro); text-transform:uppercase; letter-spacing:.03em; margin:24px 0 4px; border-top:1px solid var(--borde); padding-top:16px;}
-  label{display:block; margin:14px 0 6px; font-size:0.88rem; font-weight:600;}
-  input, select, textarea{
-    width:100%; padding:9px 10px; border:1px solid var(--borde); border-radius:6px; font-size:0.9rem; font-family:inherit;
-  }
-  textarea{resize:vertical; min-height:70px;}
-  .fila{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
-  .btns{margin-top:20px; display:flex; gap:10px; flex-wrap:wrap;}
-  button{
-    padding:10px 18px; border:none; border-radius:6px; font-size:0.9rem; cursor:pointer;
-  }
-  .btn-primario{background:var(--azul); color:#fff;}
-  .btn-secundario{background:#e5e9ef; color:var(--texto);}
-  .nota{font-size:0.78rem; color:#6b7280; margin-top:10px;}
 
+  form h2{
+    margin-top:0;
+    color:var(--dorado-claro);
+    font-size:1.1rem;
+    text-shadow:0 2px 4px rgba(0,0,0,0.3);
+  }
+
+  form h3.seccion{
+    font-size:0.85rem;
+    color:var(--dorado);
+    text-transform:uppercase;
+    letter-spacing:.05em;
+    margin:24px 0 4px;
+    border-top:1px solid rgba(201,169,97,0.3);
+    padding-top:16px;
+    font-weight:700;
+  }
+
+  label{
+    display:block;
+    margin:14px 0 6px;
+    font-size:0.88rem;
+    font-weight:600;
+    color:var(--dorado-claro);
+  }
+
+  /* INPUTS OSCUROS */
+  input, select, textarea{
+    width:100%;
+    padding:10px 12px;
+    border:1px solid rgba(201,169,97,0.35);
+    border-radius:6px;
+    font-size:0.9rem;
+    font-family:inherit;
+    background:rgba(0,0,0,0.35);
+    color:#fff;
+    transition:all 0.2s;
+  }
+  input::placeholder,
+  textarea::placeholder{
+    color:rgba(255,255,255,0.4);
+  }
+  input:focus,
+  select:focus,
+  textarea:focus{
+    outline:none;
+    border-color:var(--dorado);
+    box-shadow:0 0 0 3px rgba(201,169,97,0.2);
+    background:rgba(0,0,0,0.5);
+  }
+  select option{
+    background:var(--azul-oscuro);
+    color:#fff;
+  }
+
+  textarea{resize:vertical; min-height:70px;}
+
+  .fila{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
+
+  .btns{margin-top:20px; display:flex; gap:10px; flex-wrap:wrap;}
+
+  button{
+    padding:11px 20px;
+    border:none;
+    border-radius:6px;
+    font-size:0.9rem;
+    font-family:inherit;
+    cursor:pointer;
+    font-weight:600;
+    transition:all 0.2s;
+  }
+
+  .btn-primario{
+    background:linear-gradient(135deg, var(--azul) 0%, var(--azul-claro) 100%);
+    color:#fff;
+    border:1px solid rgba(201,169,97,0.3);
+  }
+  .btn-primario:hover{
+    background:linear-gradient(135deg, var(--azul-claro) 0%, var(--azul) 100%);
+    transform:translateY(-1px);
+    box-shadow:0 4px 12px rgba(201,169,97,0.3);
+  }
+
+  .btn-secundario{
+    background:rgba(255,255,255,0.1);
+    color:#fff;
+    border:1px solid rgba(255,255,255,0.2);
+  }
+  .btn-secundario:hover{
+    background:rgba(255,255,255,0.2);
+    border-color:var(--dorado);
+  }
+
+  .nota{
+    font-size:0.78rem;
+    color:rgba(255,255,255,0.6);
+    margin-top:10px;
+    line-height:1.5;
+  }
+
+  /* CAPTURA DE FOTO */
   .captura-foto{
-    border:1px dashed var(--borde); border-radius:8px; padding:14px; margin-top:8px; background:#fafbfc;
+    border:1px dashed rgba(201,169,97,0.4);
+    border-radius:8px;
+    padding:14px;
+    margin-top:8px;
+    background:rgba(0,0,0,0.2);
   }
   .captura-visor{
-    position:relative; width:100%; max-width:340px; margin:0 auto;
+    position:relative;
+    width:100%;
+    max-width:340px;
+    margin:0 auto;
   }
-  .captura-visor video, .captura-visor img{
-    width:100%; border-radius:6px; background:#000; display:block;
+  .captura-visor video,
+  .captura-visor img{
+    width:100%;
+    border-radius:6px;
+    background:#000;
+    display:block;
   }
-  .captura-visor video[hidden], .captura-visor img[hidden]{display:none;}
+  .captura-visor video[hidden],
+  .captura-visor img[hidden]{display:none;}
 
   .marco-dni{
     position:absolute; top:50%; left:50%;
@@ -294,60 +419,91 @@
   .btn-flash.encendido{background:rgba(250,204,21,0.9); color:#1f2937;}
 
   .aviso-foto{
-    background:#fff8e1; border:1px solid #ffe082; color:#8a6400;
-    padding:10px 14px; border-radius:8px; font-size:0.85rem;
-    margin-top:10px; display:none;
+    background:rgba(138,100,0,0.3);
+    border:1px solid rgba(255,224,130,0.5);
+    color:#ffd54f;
+    padding:10px 14px;
+    border-radius:8px;
+    font-size:0.85rem;
+    margin-top:10px;
+    display:none;
   }
   .aviso-foto.activo{display:block;}
   .aviso-foto .acciones{
-    margin-top:8px; display:flex; gap:8px; flex-wrap:wrap;
+    margin-top:8px;
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
   }
   .aviso-foto .acciones button{
-    padding:6px 12px; font-size:0.8rem; border-radius:6px; border:none;
+    padding:6px 12px;
+    font-size:0.8rem;
+    border-radius:6px;
+    border:none;
     cursor:pointer;
   }
   .aviso-foto .btn-repetir-aviso{background:#8a6400; color:#fff;}
-  .aviso-foto .btn-usar-igual{background:#e5e9ef; color:#1f2937;}
+  .aviso-foto .btn-usar-igual{background:rgba(255,255,255,0.2); color:#fff;}
 
   .captura-botones{display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; justify-content:center;}
   .captura-botones button{padding:7px 12px; font-size:0.82rem;}
-  .captura-estado{font-size:0.78rem; color:#6b7280; margin-top:6px; text-align:center;}
-  .captura-estado.ok{color:#1a7f3c; font-weight:600;}
-  .captura-estado.error{color:#b91c1c; font-weight:600;}
-  .escaneo-estado{font-size:0.78rem; color:#2c5aa0; margin-top:4px; font-weight:600; text-align:center;}
+  .captura-estado{font-size:0.78rem; color:rgba(255,255,255,0.7); margin-top:6px; text-align:center;}
+  .captura-estado.ok{color:#86efac; font-weight:600;}
+  .captura-estado.error{color:#fca5a5; font-weight:600;}
+  .escaneo-estado{font-size:0.78rem; color:var(--dorado-claro); margin-top:4px; font-weight:600; text-align:center;}
 
   .aviso-borrador{
-    background:#fff8e1; border:1px solid #ffe082; color:#8a6400;
-    padding:10px 14px; border-radius:8px; font-size:0.85rem; margin-bottom:16px;
+    background:rgba(138,100,0,0.3);
+    border:1px solid rgba(255,224,130,0.5);
+    color:#ffd54f;
+    padding:10px 14px;
+    border-radius:8px;
+    font-size:0.85rem;
+    margin-bottom:16px;
     display:none;
   }
   .aviso-borrador.activo{display:block;}
   .aviso-borrador button{
-    background:transparent; color:#8a6400; text-decoration:underline;
-    padding:0; font-size:0.85rem; margin-left:6px;
+    background:transparent;
+    color:#ffd54f;
+    text-decoration:underline;
+    padding:0;
+    font-size:0.85rem;
+    margin-left:6px;
+    border:none;
+    cursor:pointer;
   }
 
-  #documento{display:none; background:#fff; border:1px solid var(--borde); border-radius:10px; padding:30px;}
+  /* DOCUMENTO FINAL */
+  #documento{
+    display:none;
+    background:rgba(13,42,77,0.75);
+    backdrop-filter:blur(10px);
+    border:1px solid rgba(201,169,97,0.4);
+    border-top:3px solid var(--dorado);
+    border-radius:10px;
+    padding:30px;
+  }
   #documento.activo{display:block;}
-  #documento h2{text-align:center; color:var(--azul); font-size:1.05rem; margin-bottom:4px;}
-  #documento .subt{text-align:center; font-size:0.8rem; color:#6b7280; margin-bottom:24px;}
+  #documento h2{text-align:center; color:var(--dorado-claro); font-size:1.05rem; margin-bottom:4px;}
+  #documento .subt{text-align:center; font-size:0.8rem; color:rgba(255,255,255,0.7); margin-bottom:24px;}
   #documento dl{margin:0;}
-  #documento dt{font-size:0.78rem; color:#6b7280; margin-top:12px;}
-  #documento dd{margin:2px 0 0; font-size:0.95rem;}
-  #documento dd img{max-width:220px; border:1px solid var(--borde); border-radius:6px; display:block; margin-top:4px;}
+  #documento dt{font-size:0.78rem; color:var(--dorado-claro); margin-top:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.03em;}
+  #documento dd{margin:2px 0 0; font-size:0.95rem; color:#fff;}
+  #documento dd img{max-width:220px; border:1px solid rgba(255,255,255,0.3); border-radius:6px; display:block; margin-top:4px;}
   #documento .firma{margin-top:50px; display:flex; justify-content:space-between; font-size:0.8rem; flex-wrap:wrap; gap:16px;}
-  #documento .firma div{border-top:1px solid #333; padding-top:6px; width:30%; text-align:center; min-width:150px;}
+  #documento .firma div{border-top:1px solid rgba(255,255,255,0.4); padding-top:6px; width:30%; text-align:center; min-width:150px; color:rgba(255,255,255,0.8);}
 
+  /* FOOTER TRANSPARENTE CON TEXTO DORADO */
   footer.site-footer{
-    background:linear-gradient(135deg, #f0d78c 0%, #e6c988 30%, #c9a961 70%, #b8954a 100%);
-    color:#0d2a4d;
-    padding:22px 20px;
+    background:transparent;
+    color:var(--dorado-claro);
+    padding:28px 20px;
     margin-top:auto;
-    border-top:3px solid #fff8e1;
+    border-top:1px solid rgba(201,169,97,0.3);
     text-align:center;
-    font-size:0.82rem;
+    font-size:1rem;
     line-height:1.7;
-    box-shadow:0 -4px 24px rgba(201,169,97,0.5);
     position:relative;
     z-index:2;
   }
@@ -357,38 +513,36 @@
   }
   footer.site-footer p{
     margin:4px 0;
-    color:#0d2a4d;
+    color:var(--dorado-brilloso);
     font-weight:500;
+    text-shadow:0 0 10px rgba(240,215,140,0.4), 0 1px 2px rgba(0,0,0,0.5);
   }
   footer.site-footer strong{
-    color:#0d2a4d;
+    color:var(--dorado-brilloso);
     font-weight:700;
-  }
-  footer.site-footer a{
-    color:#0d2a4d;
-    text-decoration:none;
-    font-weight:600;
-    border-bottom:1px solid rgba(13,42,77,0.3);
-    transition:all 0.2s;
-  }
-  footer.site-footer a:hover{
-    border-bottom-color:#0d2a4d;
-    color:#1a3a6b;
+    text-shadow:0 0 10px rgba(240,215,140,0.5), 0 1px 2px rgba(0,0,0,0.5);
   }
 
   @media print{
     header, .tarjetas, form, .no-print, footer.site-footer{display:none !important;}
-    #documento{display:block !important; border:none; box-shadow:none;}
+    #documento{display:block !important; border:none; box-shadow:none; background:#fff;}
+    #documento h2, #documento dt{color:#0d2a4d;}
+    #documento dd, #documento .subt{color:#1f2937;}
     body{background:#fff;}
     body::before{display:none !important;}
   }
 
   @media (max-width: 600px){
+    header .header-inner{flex-direction:column; text-align:center;}
+    header .header-texto{text-align:center;}
+    header h1::after{margin:8px auto 0;}
     header h1{font-size:1.3rem;}
+    header .header-logo{width:56px; height:56px;}
     header{padding:22px 18px 20px;}
     main{margin:24px auto;}
     .tarjeta{padding:20px 16px; min-height:auto;}
-    body::before{width:110vmin; height:110vmin; opacity:0.35;}
+    body::before{width:110vmin; height:110vmin; opacity:0.45;}
+    .fila{grid-template-columns:1fr;}
   }
 </style>
 </head>
@@ -396,9 +550,12 @@
 
 <header>
   <div class="header-inner">
-    <h1>Mi Comisaría</h1>
-    <p>Trámites policiales en línea</p>
-    <p class="sub">Policía de Salta · DMI (JP)</p>
+    <div class="header-logo"></div>
+    <div class="header-texto">
+      <h1>Mi Comisaría</h1>
+      <p>Trámites policiales en línea</p>
+      <p class="sub">Policía de Salta · DMI (JP)</p>
+    </div>
   </div>
 </header>
 
@@ -967,7 +1124,6 @@
 <footer class="site-footer">
   <div class="footer-inner">
     <p><strong>© 2026 Policía de Salta</strong> · Dirección de Modernización e Innovación Tecnológica (JP)</p>
-    <p>Contacto: <a href="mailto:micomisaria@salta.gob.ar">micomisaria@salta.gob.ar</a></p>
   </div>
 </footer>
 
