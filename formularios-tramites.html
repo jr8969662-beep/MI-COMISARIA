@@ -63,6 +63,18 @@
   .captura-estado.ok{color:#1a7f3c; font-weight:600;}
   .escaneo-estado{font-size:0.78rem; color:#2c5aa0; margin-top:4px; font-weight:600;}
 
+  /* Aviso de borrador recuperado */
+  .aviso-borrador{
+    background:#fff8e1; border:1px solid #ffe082; color:#8a6400;
+    padding:10px 14px; border-radius:8px; font-size:0.85rem; margin-bottom:16px;
+    display:none;
+  }
+  .aviso-borrador.activo{display:block;}
+  .aviso-borrador button{
+    background:transparent; color:#8a6400; text-decoration:underline;
+    padding:0; font-size:0.85rem; margin-left:6px;
+  }
+
   /* Vista de documento generado */
   #documento{display:none; background:#fff; border:1px solid var(--borde); border-radius:10px; padding:30px;}
   #documento.activo{display:block;}
@@ -222,7 +234,7 @@
       <button type="submit" class="btn-primario">Generar certificado</button>
       <button type="button" class="btn-secundario volver">Volver</button>
     </div>
-    <p class="nota">Las fotos se toman con la cámara del dispositivo y se usan solo para generar este documento; no se suben a ningún servidor.</p>
+    <p class="nota">Las fotos se envían a la comisaría correspondiente a través de un servidor seguro (Supabase) y se usan solo para generar este documento.</p>
   </form>
 
   <!-- Formulario: Convivencia -->
@@ -349,7 +361,7 @@
       <button type="submit" class="btn-primario">Generar certificado</button>
       <button type="button" class="btn-secundario volver">Volver</button>
     </div>
-    <p class="nota">Las fotos se toman con la cámara del dispositivo y se usan solo para generar este documento; no se suben a ningún servidor.</p>
+    <p class="nota">Las fotos se envían a la comisaría correspondiente a través de un servidor seguro (Supabase) y se usan solo para generar este documento.</p>
   </form>
 
   <!-- Formulario: Carencia de recursos -->
@@ -488,7 +500,7 @@
       <button type="submit" class="btn-primario">Generar certificado</button>
       <button type="button" class="btn-secundario volver">Volver</button>
     </div>
-    <p class="nota">Las fotos se toman con la cámara del dispositivo y se usan solo para generar este documento; no se suben a ningún servidor.</p>
+    <p class="nota">Las fotos se envían a la comisaría correspondiente a través de un servidor seguro (Supabase) y se usan solo para generar este documento.</p>
   </form>
 
   <!-- Documento generado -->
@@ -525,6 +537,7 @@ const forms = {
 };
 const tarjetasEl = document.getElementById('tarjetas');
 const documento = document.getElementById('documento');
+const avisoBorrador = document.getElementById('aviso-borrador');
 
 const etiquetas = {
   nombre: 'Nombre completo', dni: 'DNI', fechaNacimiento: 'Fecha de nacimiento',
@@ -564,6 +577,92 @@ const titulos = {
   carencia: 'Certificado de Carencia de Recursos',
 };
 
+/* ============================================================
+   LOCALSTORAGE: guardado de fotos y borrador del formulario
+   Sirve para que, si el ciudadano recarga la página mientras
+   completa el formulario, no pierda las fotos que ya sacó.
+   ============================================================ */
+
+function guardarFotoEnStorage(clave, dataUrl) {
+  try {
+    localStorage.setItem('foto_' + clave, dataUrl);
+  } catch (e) {
+    console.warn('No se pudo guardar la foto en localStorage:', e);
+  }
+}
+
+function borrarFotoDeStorage(clave) {
+  try {
+    localStorage.removeItem('foto_' + clave);
+  } catch (e) {}
+}
+
+function limpiarTodasLasFotosDeStorage() {
+  document.querySelectorAll('.captura-foto').forEach(c => {
+    borrarFotoDeStorage(c.dataset.target);
+  });
+  try { localStorage.removeItem('tramite_activo'); } catch(e){}
+}
+
+function hayFotosGuardadas() {
+  return document.querySelectorAll('.captura-foto').length > 0 &&
+    Array.from(document.querySelectorAll('.captura-foto')).some(c =>
+      localStorage.getItem('foto_' + c.dataset.target)
+    );
+}
+
+function mostrarAvisoBorrador() {
+  if (hayFotosGuardadas()) {
+    avisoBorrador.classList.add('activo');
+  }
+}
+
+/* Restaurar fotos guardadas al cargar la página */
+window.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.captura-foto').forEach(captura => {
+    const clave = captura.dataset.target;
+    const guardada = localStorage.getItem('foto_' + clave);
+    if (!guardada) return;
+
+    const img = captura.querySelector('img');
+    const estado = captura.querySelector('.captura-estado');
+    const hiddenInput = captura.querySelector('input[type=hidden]');
+    const btnCamara = captura.querySelector('.btn-camara');
+    const btnRepetir = captura.querySelector('.btn-repetir');
+
+    img.src = guardada;
+    img.hidden = false;
+    hiddenInput.value = guardada;
+    estado.textContent = 'Foto recuperada (se había guardado antes).';
+    estado.classList.add('ok');
+    btnCamara.hidden = true;
+    btnRepetir.hidden = false;
+  });
+
+  // Restaurar qué trámite estaba activo (si había uno)
+  const tramiteGuardado = localStorage.getItem('tramite_activo');
+  if (tramiteGuardado && forms[tramiteGuardado]) {
+    tarjetas.forEach(x => x.classList.remove('activa'));
+    const tarjetaActiva = document.querySelector(`.tarjeta[data-tramite="${tramiteGuardado}"]`);
+    if (tarjetaActiva) tarjetaActiva.classList.add('activa');
+    Object.values(forms).forEach(f => f.classList.remove('activo'));
+    forms[tramiteGuardado].classList.add('activo');
+    tarjetasEl.style.display = 'none';
+  }
+
+  mostrarAvisoBorrador();
+});
+
+/* Botón para descartar todas las fotos guardadas */
+document.getElementById('btn-descartar-borrador').addEventListener('click', () => {
+  if (!confirm('¿Seguro que querés borrar las fotos guardadas y empezar de nuevo?')) return;
+  limpiarTodasLasFotosDeStorage();
+  document.querySelectorAll('.captura-foto').forEach(c => resetCaptura(c));
+  avisoBorrador.classList.remove('activo');
+  Object.values(forms).forEach(f => f.classList.remove('activo'));
+  tarjetasEl.style.display = 'grid';
+});
+
 tarjetas.forEach(t => {
   t.addEventListener('click', () => {
     const tramite = t.dataset.tramite;
@@ -572,6 +671,7 @@ tarjetas.forEach(t => {
     Object.values(forms).forEach(f => f.classList.remove('activo'));
     forms[tramite].classList.add('activo');
     tarjetasEl.style.display = 'none';
+    try { localStorage.setItem('tramite_activo', tramite); } catch(e){}
   });
 });
 
@@ -579,12 +679,14 @@ document.querySelectorAll('.volver').forEach(btn => {
   btn.addEventListener('click', () => {
     Object.values(forms).forEach(f => f.classList.remove('activo'));
     tarjetasEl.style.display = 'grid';
+    try { localStorage.removeItem('tramite_activo'); } catch(e){}
   });
 });
 
 document.getElementById('doc-volver').addEventListener('click', () => {
   documento.classList.remove('activo');
   tarjetasEl.style.display = 'grid';
+  try { localStorage.removeItem('tramite_activo'); } catch(e){}
 });
 
 /* --- Captura de foto del DNI --- */
@@ -609,6 +711,8 @@ function resetCaptura(captura){
   btnCamara.hidden = false;
   btnCapturar.hidden = true;
   btnRepetir.hidden = true;
+  // borrar también de localStorage
+  borrarFotoDeStorage(captura.dataset.target);
 }
 
 document.querySelectorAll('.captura-foto').forEach(captura => {
@@ -642,7 +746,6 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
   });
 
   btnCapturar.addEventListener('click', () => {
-    // reducimos el tamaño de la foto para que ocupe poco espacio en Firestore
     const anchoMax = 700;
     const escala = Math.min(1, anchoMax / video.videoWidth);
     canvas.width = video.videoWidth * escala;
@@ -650,6 +753,10 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
     canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
     const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
     hiddenInput.value = dataUrl;
+
+    // guardar en localStorage para no perderla al recargar
+    guardarFotoEnStorage(captura.dataset.target, dataUrl);
+
     img.src = dataUrl;
     img.hidden = false;
     video.hidden = true;
@@ -669,11 +776,6 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
 });
 
 /* --- Escanear el código de barras del DNI (PDF417) y autocompletar --- */
-
-/*
-  El código PDF417 del DNI argentino trae los campos separados por "@":
-  N° de trámite @ Apellido @ Nombre @ Sexo @ DNI @ Ejemplar @ Fecha nac. (DD/MM/AAAA) @ Fecha emisión @ CUIL...
-*/
 function parsearCodigoDNI(texto) {
   const partes = texto.split('@');
   if (partes.length < 7) return null;
@@ -689,13 +791,11 @@ function parsearCodigoDNI(texto) {
   };
 }
 
-/* Según qué persona es (data-target), a qué campos del formulario hay que volcar los datos */
 function camposParaTarget(target) {
   const [prefijo, persona] = target.split('-');
   if (persona === 'testigo1' || persona === 'testigo2') {
     return { nombre: `${persona}Nombre`, dni: `${persona}Dni`, fechaNacimiento: null };
   }
-  // solicitante
   if (prefijo === 'res') return { nombre: 'nombre', dni: 'dni', fechaNacimiento: 'fechaNacimiento' };
   if (prefijo === 'con') return { nombre: 'nombreSolicitante', dni: 'dniSolicitante', fechaNacimiento: null };
   if (prefijo === 'car') return { nombre: 'nombre', dni: 'dni', fechaNacimiento: null };
@@ -728,7 +828,6 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
     escaneoEstado.textContent = 'Activando cámara para escanear...';
 
     try {
-      // si la cámara de la foto no está activa, la prendemos para el escaneo
       if (!video.srcObject) {
         const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
         video.srcObject = stream;
@@ -770,12 +869,11 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
   });
 });
 
-/* --- Generar documento y guardar en Firestore al enviar (las fotos van comprimidas dentro del mismo documento, sin usar Storage) --- */
+/* --- Generar documento y guardar en Supabase al enviar --- */
 Object.entries(forms).forEach(([tramite, form]) => {
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
 
-    // Las fotos del DNI de los dos testigos son obligatorias
     for (const n of [1, 2]) {
       const foto = form.querySelector(`input[name="foto_testigo${n}"]`);
       if (!foto || !foto.value) {
@@ -789,7 +887,7 @@ Object.entries(forms).forEach(([tramite, form]) => {
     btnEnviar.textContent = 'Enviando...';
 
     const datos = new FormData(form);
-    const registro = {}; // campos del formulario (incluye las fotos comprimidas)
+    const registro = {};
     const contenido = document.getElementById('doc-contenido');
     contenido.innerHTML = '';
 
@@ -812,7 +910,6 @@ Object.entries(forms).forEach(([tramite, form]) => {
         contenido.appendChild(dd);
       }
 
-      // Detectar automáticamente la comisaría según el domicilio escrito
       btnEnviar.textContent = 'Ubicando domicilio...';
       const campoDomicilio = CAMPO_DOMICILIO[tramite];
       const asignacion = await asignarComisariaPorDireccion(registro[campoDomicilio], registro.localidad);
@@ -842,6 +939,8 @@ Object.entries(forms).forEach(([tramite, form]) => {
       documento.classList.add('activo');
       form.reset();
       form.querySelectorAll('.captura-foto').forEach(c => resetCaptura(c));
+      limpiarTodasLasFotosDeStorage();
+      avisoBorrador.classList.remove('activo');
     } catch (err) {
       console.error(err);
       alert('No se pudo enviar el trámite. Revisá tu conexión e intentá de nuevo.');
