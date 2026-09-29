@@ -469,7 +469,6 @@
     cursor:pointer;
   }
 
-  /* AVISO DE COMISARÍA ASIGNADA */
   .comisaria-asignada{
     margin-top:16px;
     padding:14px 18px;
@@ -1750,10 +1749,11 @@ function buscarComisariaPorCoordenadas(lat, lon) {
   return null;
 }
 
-async function geocodificarConNominatim(domicilio, localidad) {
-  const consulta = `${domicilio}, ${localidad}, Salta, Argentina`;
+/* ------------------------------------------------------------
+   HELPERS DE GEOCODING
+   ------------------------------------------------------------ */
+async function consultarNominatim(consulta) {
   const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=ar&q=${encodeURIComponent(consulta)}`;
-
   try {
     const resp = await fetch(url, {
       headers: { 'Accept-Language': 'es' }
@@ -1768,9 +1768,91 @@ async function geocodificarConNominatim(domicilio, localidad) {
     }
     return null;
   } catch (err) {
-    console.error('Error geocodificando:', err);
+    console.error('Error consultando Nominatim:', err);
     return null;
   }
+}
+
+function convertirRomanoAArabigo(texto) {
+  const romanos = {
+    'VIII': '8', 'VII': '7', 'VI': '6', 'IV': '4', 'IX': '9', 'III': '3',
+    'II': '2', 'V': '5', 'X': '10', 'I': '1'
+  };
+  let resultado = texto;
+  for (const [romano, arabigo] of Object.entries(romanos)) {
+    const regex = new RegExp(`\\b${romano}\\b`, 'gi');
+    resultado = resultado.replace(regex, arabigo);
+  }
+  return resultado;
+}
+
+function convertirArabigoARomano(texto) {
+  const arabigos = {
+    '10': 'X', '9': 'IX', '8': 'VIII', '7': 'VII', '6': 'VI',
+    '5': 'V', '4': 'IV', '3': 'III', '2': 'II', '1': 'I'
+  };
+  let resultado = texto;
+  for (const [arabigo, romano] of Object.entries(arabigos)) {
+    const regex = new RegExp(`\\b${arabigo}\\b`, 'g');
+    resultado = resultado.replace(regex, romano);
+  }
+  return resultado;
+}
+
+async function geocodificarConNominatim(domicilio, localidad) {
+  const localidadLimpia = (localidad || '').replace(/\s*\(.*?\)\s*/g, ' ').trim();
+  const domicilioRomano = convertirRomanoAArabigo(domicilio);
+  const domicilioArabigo = convertirArabigoARomano(domicilio);
+
+  // Intentos en orden de prioridad
+  const intentos = [
+    { desc: 'tal cual', texto: `${domicilio}, ${localidadLimpia}, Salta, Argentina` },
+    { desc: 'romano→arábigo', texto: domicilioRomano !== domicilio
+        ? `${domicilioRomano}, ${localidadLimpia}, Salta, Argentina` : null },
+    { desc: 'arábigo→romano', texto: domicilioArabigo !== domicilio
+        ? `${domicilioArabigo}, ${localidadLimpia}, Salta, Argentina` : null },
+  ].filter(i => i.texto);
+
+  // Probar los primeros 3 intentos
+  for (const intento of intentos) {
+    console.log(`🔍 Intento (${intento.desc}):`, intento.texto);
+    const resultado = await consultarNominatim(intento.texto);
+    if (resultado) {
+      console.log('✅ Encontrado:', intento.desc);
+      return resultado;
+    }
+  }
+
+  // Intentos con solo el barrio (probando todas las variantes)
+  const domiciliosVariantes = [domicilio, domicilioRomano, domicilioArabigo];
+  const barriosProbados = new Set();
+
+  for (const dom of domiciliosVariantes) {
+    const matchBarrio = dom.match(/\b(?:barrio|b°|bº|b\.)\s*([a-záéíóúñ\s]+\s*\d*)/i);
+    if (matchBarrio) {
+      const nombreBarrio = matchBarrio[1].trim();
+      if (barriosProbados.has(nombreBarrio)) continue;
+      barriosProbados.add(nombreBarrio);
+
+      const intentoBarrio = `Barrio ${nombreBarrio}, ${localidadLimpia}, Salta, Argentina`;
+      console.log('🔍 Intento barrio:', intentoBarrio);
+      let resultado = await consultarNominatim(intentoBarrio);
+      if (resultado) return resultado;
+
+      const intentoSinBarrio = `${nombreBarrio}, ${localidadLimpia}, Salta, Argentina`;
+      console.log('🔍 Intento sin "Barrio":', intentoSinBarrio);
+      resultado = await consultarNominatim(intentoSinBarrio);
+      if (resultado) return resultado;
+    }
+  }
+
+  // Último intento: solo la localidad
+  console.log('🔍 Intento final (solo localidad):', localidadLimpia);
+  const resultadoFinal = await consultarNominatim(`${localidadLimpia}, Salta, Argentina`);
+  if (resultadoFinal) return resultadoFinal;
+
+  console.log('❌ No se pudo geocodificar');
+  return null;
 }
 
 async function asignarComisariaPorJurisdiccion(domicilio, localidad) {
