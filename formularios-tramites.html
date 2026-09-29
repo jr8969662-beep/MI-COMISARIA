@@ -1113,8 +1113,10 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
     return;
   }
 
-  const hints = new Map();
+   const hints = new Map();
   hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [ZXing.BarcodeFormat.PDF_417]);
+  hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
+  hints.set(ZXing.DecodeHintType.CHARACTER_SET, 'UTF-8');
   const lector = new ZXing.BrowserMultiFormatReader(hints);
   let escaneando = false;
 
