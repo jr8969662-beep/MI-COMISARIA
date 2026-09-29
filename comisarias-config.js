@@ -191,15 +191,10 @@ function dependenciaMasCercana(lat, lon) {
 }
 
 /*
-  Convierte un domicilio escrito en texto a coordenadas, usando el
-  servicio gratuito Nominatim (OpenStreetMap). No requiere API key.
-  Devuelve {lat, lon, direccionEncontrada} o null si no se pudo ubicar.
+  Hace una única consulta de geocodificación a Nominatim con el texto dado.
+  Devuelve {lat, lon, direccionEncontrada} o null.
 */
-async function geocodificarDireccion(domicilio, localidad) {
-  // Se le saca lo que esté entre paréntesis, ej: "Salta (Capital)" -> "Salta"
-  const localidadLimpia = (localidad || '').replace(/\s*\(.*?\)\s*/g, ' ').trim();
-  const partes = [domicilio, localidadLimpia, 'Salta', 'Argentina'].filter(Boolean);
-  const consulta = partes.join(', ');
+async function consultarNominatim(consulta) {
   const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=ar&q=${encodeURIComponent(consulta)}`;
   try {
     const resp = await fetch(url, { headers: { 'Accept-Language': 'es' } });
@@ -214,6 +209,36 @@ async function geocodificarDireccion(domicilio, localidad) {
     console.error('Error geocodificando:', err);
     return null;
   }
+}
+
+/*
+  Convierte un domicilio escrito en texto a coordenadas, usando el
+  servicio gratuito Nominatim (OpenStreetMap). No requiere API key.
+  Prueba primero con la dirección completa; si no la encuentra (muy común
+  en domicilios tipo "Manzana/Lote", que no son calle con altura), prueba
+  de nuevo usando solo el nombre del barrio, si el domicilio menciona uno.
+  Devuelve {lat, lon, direccionEncontrada} o null si no se pudo ubicar.
+*/
+async function geocodificarDireccion(domicilio, localidad) {
+  // Se le saca lo que esté entre paréntesis, ej: "Salta (Capital)" -> "Salta"
+  const localidadLimpia = (localidad || '').replace(/\s*\(.*?\)\s*/g, ' ').trim();
+
+  // Intento 1: dirección completa tal cual la escribió la persona
+  const partesCompletas = [domicilio, localidadLimpia, 'Salta', 'Argentina'].filter(Boolean);
+  let resultado = await consultarNominatim(partesCompletas.join(', '));
+  if (resultado) return resultado;
+
+  // Intento 2: si el domicilio menciona un barrio, buscar solo ese barrio
+  // (sirve para domicilios tipo "Barrio X, Mza 12 Lote 3", que Nominatim no entiende)
+  const coincidenciaBarrio = (domicilio || '').match(/\bb(?:arrio)?°?\.?\s+([a-záéíóúñü\s]+?)(?=\s+(?:mza\.?|manzana|lote|block|bloque|casa|dpto\.?|depto\.?|nro\.?|n°|km|,)\b|\s*\d|$)/i);
+  if (coincidenciaBarrio) {
+    const nombreBarrio = coincidenciaBarrio[1].trim();
+    const partesBarrio = [`Barrio ${nombreBarrio}`, localidadLimpia, 'Salta', 'Argentina'].filter(Boolean);
+    resultado = await consultarNominatim(partesBarrio.join(', '));
+    if (resultado) return resultado;
+  }
+
+  return null;
 }
 
 /*
