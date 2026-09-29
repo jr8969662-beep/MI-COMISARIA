@@ -1,305 +1,515 @@
 /*
-  DATOS REALES de dependencias de la Policía de la Provincia de Salta
-  (Comisarías, Sub Comisarías, Destacamentos y Puestos Policiales),
-  con sus coordenadas reales, tomados del mapa oficial de la Policía de Salta
-  "DEPENDENCIAS POLICIA PROVINCIA DE SALTA" (zona Capital y alrededores).
-
-  Cómo funciona la asignación automática:
-  1. La persona escribe su domicilio en el formulario.
-  2. Ese texto se convierte en coordenadas (latitud/longitud) usando un
-     servicio gratuito de geocodificación (Nominatim / OpenStreetMap).
-  3. Se calcula cuál de las dependencias de la lista de abajo está más
-     cerca de esas coordenadas, y esa es la que se asigna al trámite.
-
-  Importante: esto es una APROXIMACIÓN por cercanía geográfica, no la
-  jurisdicción oficial exacta (que depende de límites de barrio definidos
-  por la Policía, no solo de la distancia). Si en algún caso el personal
-  ve que la asignación no es la correcta, puede reasignarla manualmente.
+  Configuración de comisarías de Salta
+  - CORRECCIONES_BARRIO: barrio → comisaría(s)
+    - STRING: una sola comisaría → asignación automática
+    - ARRAY: múltiples comisarías → el ciudadano elige
+  - DEPENDENCIAS_POLICIALES: fallback por coordenadas
+  - LOCALIDADES_SALTA: municipios para el desplegable
 */
 
-/*
-  CORRECCIONES MANUALES POR BARRIO
-  ---------------------------------
-  La detección automática asigna la comisaría por cercanía geográfica, pero
-  la jurisdicción real de la Policía no siempre coincide con "la más cercana
-  en el mapa". Acá se pueden cargar excepciones conocidas: si el domicilio
-  que escribe la persona menciona alguno de estos barrios, se usa la
-  comisaría indicada DIRECTAMENTE, sin pasar por el cálculo de cercanía.
-
-  Cómo agregar una corrección:
-  - La clave (a la izquierda) es el nombre del barrio tal como lo escribiría
-    la gente, en minúsculas y sin tildes.
-  - El valor (a la derecha) es el nombre exacto de la comisaría, copiado tal
-    cual de la lista DEPENDENCIAS_POLICIALES de más abajo.
-*/
 const CORRECCIONES_BARRIO = {
-  "juan pablo ii": "Comisaria N°103 - Bº 17 de Octubre - Salta",
+  // ============================================================
+  // BARRIOS CON ASIGNACIÓN ÚNICA (automático)
+  // ============================================================
+
+  // COMISARÍA N° 1 - Micro y Macrocentro
+  "microcentro": "Comisaría N°1 - Centro",
+  "macrocentro": "Comisaría N°1 - Centro",
+  "cuadrante comercial": "Comisaría N°1 - Centro",
+
+  // COMISARÍA N° 2 - Zona Sur-Este
+  "santa cecilia": "Comisaría N°2 - Santa Cecilia",
+  "villa san antonio": "Comisaría N°2 - Santa Cecilia",
+  "hernando de lerma": "Comisaría N°2 - Santa Cecilia",
+
+  // COMISARÍA N° 3 - Zona Norte
+  "tres cerritos": "Comisaría N°3 - Tres Cerritos",
+  "jose vicente sola": "Comisaría N°3 - Tres Cerritos",
+
+  // COMISARÍA N° 4 - Zona Oeste Baja
+  "pompilio guzman": "Comisaría N°4 - Villa Mitre",
+  "plaza las industrias": "Comisaría N°4 - Villa Mitre",
+
+  // COMISARÍA N° 5 - Zona Sur-Este Alta
+  "solidaridad": "Comisaría N°5 - Solidaridad",
+  "juan calchaqui": "Comisaría N°5 - Solidaridad",
+  "provipo": "Comisaría N°5 - Solidaridad",
+  "campo caseros": "Comisaría N°5 - Solidaridad",
+  "el carmen": "Comisaría N°5 - Solidaridad",
+
+  // COMISARÍA N° 6 - Zona Norte Alta
+  "ciudad del milagro": "Comisaría N°6 - Ciudad del Milagro",
+  "1 de mayo": "Comisaría N°6 - Ciudad del Milagro",
+  "primero de mayo": "Comisaría N°6 - Ciudad del Milagro",
+
+  // COMISARÍA N° 7 - Zona Centro-Oeste / Alta
+  "20 de febrero": "Comisaría N°7 - El Tribuno",
+  "veinte de febrero": "Comisaría N°7 - El Tribuno",
+  "villa belgrano": "Comisaría N°7 - El Tribuno",
+  "barrio pilar": "Comisaría N°7 - El Tribuno",
+  "villa lujan": "Comisaría N°7 - El Tribuno",
+
+  // COMISARÍA N° 8 - Zona Sur-Oeste
+  "santa ana": "Comisaría N°8 - Santa Ana",
+  "santa ana i": "Comisaría N°8 - Santa Ana",
+  "santa ana ii": "Comisaría N°8 - Santa Ana",
+  "santa ana iii": "Comisaría N°8 - Santa Ana",
+  "santa ana iv": "Destacamento Santa Ana IV",
+  "santa ana 4": "Destacamento Santa Ana IV",
+  "aerolineas": "Comisaría N°8 - Santa Ana",
+
+  // COMISARÍA N° 9 - Zona Sudeste Baja
+  "san jose": "Comisaría N°9 - Portezuelo Sur",
+  "villa san lorenzo": "Comisaría N°9 - Portezuelo Sur",
+  "portezuelo sur": "Comisaría N°9 - Portezuelo Sur",
+  "la trinidad": "Comisaría N°9 - Portezuelo Sur",
+
+  // COMISARÍA N° 10 - Zona Norte / San Lorenzo
+  "villa veraniega": "Comisaría N°10 - Santa Cecilia",
+
+  // COMISARÍA N° 11 - Zona Norte Periférica
+  "juan pablo ii": "Comisaría N°11 - 17 de Octubre",
+  "juan pablo 2": "Comisaría N°11 - 17 de Octubre",
+  "17 de octubre": "Comisaría N°11 - 17 de Octubre",
+  "juan manuel de rosas": "Comisaría N°11 - 17 de Octubre",
+  "balneario": "Comisaría N°11 - 17 de Octubre",
+  "la tradicion": "Comisaría N°11 - 17 de Octubre",
+
+  // COMISARÍA N° 13 - Zona Sur (Ruta 26)
+  "san remo": "Comisaría N°13 - Cerrillos",
+  "scalabrini ortiz": "Comisaría N°13 - Cerrillos",
+  "villa palacios": "Comisaría N°13 - Cerrillos",
+
+  // COMISARÍA N° 14 - Zona Norte
+  "castanares": "Comisaría N°14 - Campo Santo",
+  "parque belgrano": "Comisaría N°14 - Campo Santo",
+
+  // COMISARÍA N° 15 - Zona Suroeste
+  "valle hermoso": "Comisaría N°15 - San Remo",
+
+  // COMISARÍA N° 17 - Zona Sudeste (Bajo)
+  "boulogne sur mer": "Comisaría N°17 - Solidaridad",
+
+  // COMISARÍA N° 18 - Zona Sudeste Periférica
+  "san justo": "Comisaría N°18 - Chicoana",
+  "loteo esmeralda": "Comisaría N°18 - Chicoana",
+  "vertedero san javier": "Comisaría N°18 - Chicoana",
+
+  // COMISARÍA N° 19 - Zona Norte / Frontera
+  "15 de febrero": "Comisaría N°19 - El Carril",
+  "quince de febrero": "Comisaría N°19 - El Carril",
+
+  // COMISARÍA N° 20 - Zona Oeste / Enlace
+  "la ribera": "Comisaría N°20 - La Ribera",
+  "costas del rio arenas": "Comisaría N°20 - La Ribera",
+  "rio arenas": "Comisaría N°20 - La Ribera",
+
+  // COMISARÍA N° 24 - Zona Centro-Norte
+  "lujan este": "Comisaría N°24 - Centro Norte",
+  "vias del ferrocarril": "Comisaría N°24 - Centro Norte",
+
+  // COMISARÍA N° 25 - Zona Oeste / San Lorenzo
+  "circunvalacion oeste": "Comisaría N°25 - San Lorenzo Chico",
+
+  // COMISARÍA N° 101 - Zona Sur / Cerrillos
+  "ruta 21": "Comisaría N°101 - Santa Rita",
+
+  // COMISARÍA N° 102 - Zona Sur-Este Extrema
+  "la paz": "Comisaría N°102 - Atocha II",
+  "ampliacion solidaridad": "Comisaría N°102 - Atocha II",
+
+  // COMISARÍA N° 103 - Zona Oeste / San Lorenzo
+  "nueva esperanza": "Comisaría N°103 - 17 de Octubre",
+  "pie del cerro": "Comisaría N°103 - 17 de Octubre",
+
+  // COMISARÍA N° 104 - Zona Oeste Alta
+  "palermo i": "Comisaría N°104 - Palermo",
+  "palermo ii": "Comisaría N°104 - Palermo",
+  "palermo iii": "Comisaría N°104 - Palermo",
+  "palermo 1": "Comisaría N°104 - Palermo",
+  "palermo 2": "Comisaría N°104 - Palermo",
+  "palermo 3": "Comisaría N°104 - Palermo",
+  "roberto romero": "Comisaría N°104 - Palermo",
+  "divino nino": "Comisaría N°104 - Palermo",
+  "el progreso": "Comisaría N°104 - Palermo",
+
+  // COMISARÍA N° 105 - Zona Sudeste
+  "siglo xxi": "Comisaría N°105 - La Merced",
+  "siglo 21": "Comisaría N°105 - La Merced",
+  "santa anita": "Comisaría N°105 - La Merced",
+
+  // COMISARÍA N° 106 - Zona Sur Plena
+  "san francisco": "Comisaría N°106 - Limache",
+  "ciudad valdivia": "Comisaría N°106 - Limache",
+  "limache": "Comisaría N°106 - Limache",
+
+  // COMISARÍA N° 107 - Zona Sur / San Carlos
+  "loteo san benito": "Comisaría N°107 - San Carlos",
+  "ex combatientes de malvinas": "Comisaría N°107 - San Carlos",
+
+  // COMISARÍA N° 108 - Zona Suroeste Extrema
+  "santa clara de asis": "Comisaría N°108 - Campo Quijano",
+  "av kennedy": "Comisaría N°108 - Campo Quijano",
+  "avenida kennedy": "Comisaría N°108 - Campo Quijano",
+
+  // COMISARÍA N° 110 - Zona Norte / Huaico II
+  "el huaico iv": "Comisaría N°110 - Huaico II",
+  "el huaico v": "Comisaría N°110 - Huaico II",
+  "huaico iv": "Comisaría N°110 - Huaico II",
+  "huaico v": "Comisaría N°110 - Huaico II",
+  "valle de lerma": "Comisaría N°110 - Huaico II",
+
+  // COMISARÍA N° 111 - Zona Sur / Limache Nuevo
+  "loteo san gabriel": "Comisaría N°111 - Limache Nuevo",
+  "centro de convenciones": "Comisaría N°111 - Limache Nuevo",
+  "valdivia": "Comisaría N°111 - Limache Nuevo",
+
+  // COMISARÍA N° 112 - Zona Oeste de Enlace
+  "la silleta norte": "Comisaría N°112 - La Silleta",
+  "la silleta": "Comisaría N°112 - La Silleta",
+  "las lenas": "Comisaría N°112 - La Silleta",
+
+  // COMISARÍA N° 115 - Zona Sudeste Extrema
+  "el circulo": "Comisaría N°115 - El Círculo",
+  "solares de san jose": "Comisaría N°115 - El Círculo",
+
+  // COMISARÍA N° 118 - Zona Sudeste Nueva
+  "cerveceros": "Comisaría N°118 - Cerveceros",
+  "las tunas norte": "Comisaría N°118 - Cerveceros",
+  "cooperativas ruta 26": "Comisaría N°118 - Cerveceros",
+
+  // SUBCOMISARÍA VILLA LAVALLE
+  "villa lavalle": "Subcomisaría Villa Lavalle",
+  "papa francisco": "Subcomisaría Villa Lavalle",
+  "convivencia": "Subcomisaría Villa Lavalle",
+
+  // SUBCOMISARÍA BARRIO DOCENTE
+  "barrio docente": "Subcomisaría Barrio Docente",
+  "docente": "Subcomisaría Barrio Docente",
+  "intersindical": "Subcomisaría Barrio Docente",
+  "periodista": "Subcomisaría Barrio Docente",
+
+  // SUBCOMISARÍA VILLA ASUNCIÓN
+  "villa asuncion": "Subcomisaría Villa Asunción",
+  "villa costanera": "Subcomisaría Villa Asunción",
+  "solis pizarro": "Subcomisaría Villa Asunción",
+
+  // SUBCOMISARÍA GRAND BOURG
+  "los perales": "Subcomisaría Grand Bourg Este",
+  "altos de grand bourg": "Subcomisaría Grand Bourg Este",
+  "centro administrativo": "Subcomisaría Grand Bourg",
+
+  // SUBCOMISARÍA BARRIO POLICIAL
+  "barrio policial": "Subcomisaría Barrio Policial",
+  "villa cristina": "Subcomisaría Barrio Policial",
+  "velez sarsfield": "Subcomisaría Barrio Policial",
+
+  // SUBCOMISARÍA EL AYBAL
+  "el aybal": "Subcomisaría El Aybal",
+  "ampliacion el aybal": "Subcomisaría El Aybal",
+  "sociedad rural": "Subcomisaría El Aybal",
+  "predio rural": "Subcomisaría El Aybal",
+  "acceso aeropuerto": "Subcomisaría El Aybal",
+
+  // SUBCOMISARÍA DE EL HUAICO
+  "escuela de cadetes": "Subcomisaría de El Huaico",
+
+  // SUBCOMISARÍA DE ATOCHA
+  "atocha i": "Subcomisaría de Atocha",
+  "atocha ii": "Subcomisaría de Atocha",
+  "atocha iii": "Subcomisaría de Atocha",
+  "la cienaga": "Subcomisaría de Atocha",
+
+  // DESTACAMENTO EL TRIÁNGULO
+  "el triangulo": "Destacamento El Triángulo",
+
+  // DESTACAMENTO LAS COSTAS
+  "finca las costas": "Destacamento Las Costas",
+  "la quebrada": "Destacamento Las Costas",
+  "cordon occidental": "Destacamento Las Costas",
+
+  // DESTACAMENTO PARQUE INDUSTRIAL
+  "parque industrial": "Destacamento Parque Industrial",
+  "barrio constitucion": "Destacamento Parque Industrial",
+  "constitucion": "Destacamento Parque Industrial",
+
+  // DESTACAMENTO LIMACHE
+  "ipv limache": "Destacamento Limache",
+  "limache industrial": "Destacamento Limache",
+  "rotonda sur": "Destacamento Limache",
+
+  // DESTACAMENTO SAN RAFAEL
+  "san rafael": "Destacamento San Rafael",
+
+  // DESTACAMENTO MERCADO COFRUTHOS
+  "mercado cofruthos": "Destacamento Mercado Cofruthos",
+  "av paraguay": "Destacamento Mercado Cofruthos",
+  "avenida paraguay": "Destacamento Mercado Cofruthos",
+
+  // DESTACAMENTO VILLA LAS ROSAS
+  "villa las rosas": "Destacamento Villa Las Rosas",
+  "ampliacion las rosas": "Destacamento Villa Las Rosas",
+  "complejo penitenciario": "Destacamento Villa Las Rosas",
+  "penal de salta": "Destacamento Villa Las Rosas",
+
+  // DESTACAMENTO SAN IGNACIO
+  "san ignacio": "Destacamento San Ignacio",
+  "fraternidad": "Destacamento San Ignacio",
+  "girasoles": "Destacamento San Ignacio",
+
+  // BASE OPERATIVA SAN AGUSTÍN
+  "san agustin": "Base Operativa San Agustín",
+  "loteos industriales": "Base Operativa San Agustín",
+
+  // PUESTO POLICIAL SAN LUIS CENTRO
+  "villa san luis": "Puesto Policial San Luis Centro",
+  "finca valdivia": "Puesto Policial San Luis Centro",
+  "caballerizas": "Puesto Policial San Luis Centro",
+
+  // DESTACAMENTO SAN CAYETANO
+  "san cayetano": "Destacamento San Cayetano",
+  "faldeos cerro 20 de febrero": "Destacamento San Cayetano",
+  "cuarteles": "Destacamento San Cayetano",
+
+  // SIN CONFLICTO
+  "san benito": "Comisaría N°105 - La Merced",
+
+  // ============================================================
+  // BARRIOS CON MÚLTIPLES OPCIONES (el ciudadano elige)
+  // ============================================================
+
+  "grand bourg": [
+    "Comisaría N°10 - Santa Cecilia",
+    "Comisaría N°16 - El Centro",
+    "Subcomisaría Grand Bourg",
+    "Subcomisaría Grand Bourg Este",
+  ],
+
+  "la almudena": [
+    "Comisaría N°10 - Santa Cecilia",
+    "Comisaría N°16 - El Centro",
+    "Comisaría N°19 - El Carril",
+  ],
+  "almudena": [
+    "Comisaría N°10 - Santa Cecilia",
+    "Comisaría N°16 - El Centro",
+    "Comisaría N°19 - El Carril",
+  ],
+
+  "general mosconi": [
+    "Comisaría N°14 - Campo Santo",
+    "Comisaría N°24 - Centro Norte",
+  ],
+
+  "villa mitre": [
+    "Comisaría N°4 - Villa Mitre",
+    "Comisaría N°12 - Santa Ana I",
+    "Subcomisaría Villa Mitre",
+  ],
+
+  "el sol": [
+    "Comisaría N°12 - Santa Ana I",
+    "Comisaría N°17 - Solidaridad",
+    "Subcomisaría El Sol",
+  ],
+  "barrio el sol": [
+    "Comisaría N°12 - Santa Ana I",
+    "Comisaría N°17 - Solidaridad",
+    "Subcomisaría El Sol",
+  ],
+
+  "juanita": [
+    "Comisaría N°17 - Solidaridad",
+    "Subcomisaría El Sol",
+  ],
+  "villa juanita": [
+    "Comisaría N°17 - Solidaridad",
+    "Subcomisaría El Sol",
+  ],
+
+  "santa lucia": [
+    "Comisaría N°20 - La Ribera",
+    "Subcomisaría Villa Asunción",
+  ],
+
+  "san carlos": [
+    "Comisaría N°107 - San Carlos",
+    "Subcomisaría Barrio Docente",
+  ],
+
+  "palermo": [
+    "Comisaría N°104 - Palermo",
+    "Subcomisaría Grand Bourg Este",
+  ],
+
+  "universitario": [
+    "Comisaría N°3 - Tres Cerritos",
+    "Comisaría N°14 - Campo Santo",
+  ],
+  "barrio universitario": [
+    "Comisaría N°3 - Tres Cerritos",
+    "Comisaría N°14 - Campo Santo",
+  ],
+
+  "las tunas": [
+    "Comisaría N°101 - Santa Rita",
+    "Comisaría N°118 - Cerveceros",
+  ],
+
+  "atocha": [
+    "Comisaría N°102 - Atocha II",
+    "Subcomisaría de Atocha",
+  ],
+
+  "villa esmeralda": [
+    "Comisaría N°9 - Portezuelo Sur",
+    "Comisaría N°15 - San Remo",
+    "Destacamento Villa Rebeca",
+  ],
+
+  "villa rebeca": [
+    "Comisaría N°9 - Portezuelo Sur",
+    "Destacamento Villa Rebeca",
+  ],
+
+  "el huaico": [
+    "Comisaría N°6 - Ciudad del Milagro",
+    "Comisaría N°110 - Huaico II",
+    "Subcomisaría de El Huaico",
+  ],
+
+  "mirasoles": [
+    "Comisaría N°6 - Ciudad del Milagro",
+    "Comisaría N°110 - Huaico II",
+    "Subcomisaría de El Huaico",
+  ],
+
+  "san luis": [
+    "Comisaría N°15 - San Remo",
+    "Subcomisaría San Luis",
+    "Puesto Policial San Luis Centro",
+  ],
+
+  "casa del sol": [
+    "Comisaría N°15 - San Remo",
+    "Subcomisaría San Luis",
+  ],
+
+  "portezuelo": [
+    "Comisaría N°12 - Santa Ana I",
+    "Destacamento Autódromo",
+  ],
+
+  "el tribuno": [
+    "Comisaría N°7 - El Tribuno",
+    "Comisaría N°13 - Cerrillos",
+    "Subcomisaría Barrio Docente",
+  ],
+
+  "las costas": [
+    "Comisaría N°16 - El Centro",
+    "Destacamento Las Costas",
+  ],
+
+  "la loma": [
+    "Comisaría N°16 - El Centro",
+    "Subcomisaría Grand Bourg",
+  ],
+
+  "el tipal": [
+    "Comisaría N°16 - El Centro",
+    "Subcomisaría Grand Bourg",
+  ],
+
+  "san lorenzo chico": [
+    "Comisaría N°9 - Portezuelo Sur",
+    "Comisaría N°25 - San Lorenzo Chico",
+  ],
+
+  "autodromo": [
+    "Comisaría N°12 - Santa Ana I",
+    "Destacamento Autódromo",
+  ],
+
+  "ceferino": [
+    "Comisaría N°2 - Santa Cecilia",
+    "Destacamento Ceferino",
+  ],
+
+  "chachapoyas": [
+    "Comisaría N°3 - Tres Cerritos",
+    "Destacamento Chachapoyas",
+  ],
+
+  "casino": [
+    "Destacamento Mercado Cofruthos",
+    "Destacamento Barrio Casino",
+  ],
+
+  "villa chartas": [
+    "Comisaría N°4 - Villa Mitre",
+    "Subcomisaría Barrio Policial",
+  ],
+
+  "costanera": [
+    "Subcomisaría Barrio Policial",
+    "Subcomisaría Villa Asunción",
+  ],
+
+  "san martin": [
+    "Comisaría N°4 - Villa Mitre",
+    "Comisaría N°5 - Solidaridad",
+  ],
 };
 
+
+// ============================================================
+// DEPENDENCIAS POLICIALES (con coordenadas)
+// Fallback si no hay corrección de barrio
+// ============================================================
 const DEPENDENCIAS_POLICIALES = [
-  { nombre: "Comisaria N°105 - Hipolito Irigoyen Nº 841 - La Merced", lat: -24.970175, lon: -65.489828 },
-  { nombre: "Comisaria N°106 - Etapa 5-Mza. 5 Casa 1 - Av. Ralle s/nº - Limache", lat: -24.852619, lon: -65.431589 },
-  { nombre: "Comisaria N°108 - Avda. 9 de Julio Nº 358 - Campo Quijano", lat: -24.9079653, lon: -65.6423614 },
-  { nombre: "Comisaria N°100 - Juan Carlos Davalos y B.Mitre - San Lorenzo", lat: -24.73125, lon: -65.490778 },
-  { nombre: "Comisaria N°11 - Rivadavia 246 - Gral. Güemes", lat: -24.675149, lon: -65.047344 },
-  { nombre: "Comisaria N°12 - Avda. 4 - Calle 5 - Santa Ana I - Salta", lat: -24.857336, lon: -65.470575 },
-  { nombre: "Comisaria N°13 - Egidio Bonato N° 235 - Cerrillos", lat: -24.903533, lon: -65.487753 },
-  { nombre: "Comisaria N°14 - Mariano Moreno N° 7 - Rosario de Lerma", lat: -24.984603, lon: -65.578833 },
-  { nombre: "Comisaria N°15 - Mar Mediterraneo 223 - B° San Remo", lat: -24.829231, lon: -65.423578 },
-  { nombre: "Comisaria N°16 - Julio Cornejo N° 192 - B° El Centro - Campo Santo", lat: -24.681389, lon: -65.1032 },
-  { nombre: "Comisaria N°8 - Calle 6 Medidor 300 - B° Santa Lucia", lat: -24.807981, lon: -65.439922 },
-  { nombre: "Comisaria N°7 - La Razon s/n esquina Los Andes - B° El tribuno", lat: -24.846625, lon: -65.441169 },
-  { nombre: "Comisaria N°6 - Tte.Mayol s/n - Ciudad del Milagro", lat: -24.723614, lon: -65.408431 },
-  { nombre: "Comisaria N°3 - Los Guayacanes Nº 244 - B° Tres Cerritos", lat: -24.764263, lon: -65.399474 },
-  { nombre: "Comisaria N°4 - Pompilio Guzmán - V° Mitre", lat: -24.816072, lon: -65.378484 },
-  { nombre: "Comisaria N°10 - Calle Felipe Varela N° 500 - B° Santa Cecilia", lat: -24.829139, lon: -65.397831 },
-  { nombre: "Comisaria N°9 - Gomez Recio Nº 632 - Portezuelo Sur", lat: -24.796094, lon: -65.394222 },
-  { nombre: "Comisaria N°101 - Los Tarcos 800 esq. Cebiles - Bº Santa Rita - La Banda", lat: -24.663811, lon: -65.038328 },
-  { nombre: "Comisaria N°102 - San Rafael - Atocha II - San Lorenzo", lat: -24.811761, lon: -65.459939 },
-  { nombre: "Comisaria N°104 - Palermo - Avda. Jockey - Bº Palermo I", lat: -24.787304, lon: -65.459397 },
-  { nombre: "Comisaria N°17 - Mza 450 A Lote 1 - Bº Solidaridad", lat: -24.843314, lon: -65.396283 },
-  { nombre: "Comisaria N°1 - Gral. Guemes Nº 405", lat: -24.786744, lon: -65.408122 },
-  { nombre: "Comisaria N°5 - Calle Rivadavia, entre Junín y República de Siria", lat: -24.7807724, lon: -65.4274511 },
-  { nombre: "Comisaria N°2 - Pellegrini Nº 752", lat: -24.799021, lon: -65.416157 },
-  { nombre: "Destacamento 20 de Febrero - Acceso a predio Antenas", lat: -24.786131, lon: -65.392531 },
-  { nombre: "Destacamento Atocha - César Perdiguero S/N°", lat: -24.817547, lon: -65.478836 },
-  { nombre: "Destacamento Betania - Ruta Provincial Nº 160", lat: -24.686431, lon: -65.146236 },
-  { nombre: "Destacamento Cobos - Avda. Julio Cornejo s/nº", lat: -24.740256, lon: -65.083097 },
-  { nombre: "Destacamento Delmi - Martin Cornejo esq. O'higuins", lat: -24.775619, lon: -65.421961 },
-  { nombre: "Destacamento Docente - Mza 8 Casa 1 - B° Docente", lat: -24.844689, lon: -65.460928 },
-  { nombre: "Destacamento La Silleta - Islas Malvinas N° 999", lat: -24.874681, lon: -65.589781 },
-  { nombre: "Destacamento Los Alamos - Mza. 12 B Lote 4", lat: -24.863158, lon: -65.462336 },
-  { nombre: "Destacamento Parque Industrial - R. Nac. Nº 34 Km. 1134", lat: -24.692428, lon: -65.040922 },
-  { nombre: "Destacamento La Isla - Bº Santa Rita 1 (Ruta 26 km. 3 1/2)", lat: -24.876379, lon: -65.394297 },
-  { nombre: "Destacamento San Antonio - Ruta 51 km. 10 - La Silleta", lat: -24.865282, lon: -65.564011 },
-  { nombre: "Destacamento San Agustin - Martinez Saravia s/nº", lat: -24.995942, lon: -65.441222 },
-  { nombre: "Destacamento San Bernardo - Guardia Hospital San Bernardo", lat: -24.790825, lon: -65.399414 },
-  { nombre: "Destacamento San Carlos - Mza. 57 C 7 - Bº San Carlos", lat: -24.855319, lon: -65.437408 },
-  { nombre: "Destacamento San Ignacio - Mors y Castro Mza 43", lat: -24.833422, lon: -65.383267 },
-  { nombre: "Destacamento Tribunales - Avda. Bolivia nº 4671 - Ciudad Judicial", lat: -24.728386, lon: -65.411872 },
-  { nombre: "Destacamento Villa Palacios - Mza. 37 C13 - Av. Contreras esq. Saavedra", lat: -24.810319, lon: -65.429642 },
-  { nombre: "Puesto Policial Bicentenario - Parque Bicentenario", lat: -24.73014, lon: -65.416426 },
-  { nombre: "Puesto Policial Catolica - Avda. Patron Costa (al Final)", lat: -24.741556, lon: -65.395803 },
-  { nombre: "Puesto Policial Cofruthos - Av. Ragone S/N°", lat: -24.823782, lon: -65.426048 },
-  { nombre: "Puesto Policial Martearena - Estadio Padre Martearena", lat: -24.820408, lon: -65.419717 },
-  { nombre: "Puesto Policial Puente Blanco", lat: -24.816517, lon: -65.406458 },
-  { nombre: "Puesto Policial Sanidad - Leloir y calle 233 - Bº Sanidad I", lat: -24.849027, lon: -65.402504 },
-  { nombre: "Puesto Policial Terminal Omnibus Ciudad Gral. Guemes", lat: -24.667878, lon: -65.051619 },
-  { nombre: "Puesto Policial Terminal Omnibus Salta Capital", lat: -24.795444, lon: -65.398511 },
-  { nombre: "Comisaria N°18 - Pje Sarmiento Nº 55 - Chicoana", lat: -25.102669, lon: -65.536167 },
-  { nombre: "Puesto Policial Vicente Solá - Mitre N° 2550", lat: -24.757231, lon: -65.410836 },
-  { nombre: "Sub Comisaría Lola Mora - Lola Mora N° 850", lat: -24.804325, lon: -65.425658 },
-  { nombre: "Sub Comisaria San Jorge - Hernán F. Reyes y Dávalos - B° S. Jorge", lat: -24.984531, lon: -65.565731 },
-  { nombre: "Sub Comisaria San Luis - Mza 22 Pcla Nº 5 - R. Nac 51 Km 8 1/2", lat: -24.84755, lon: -65.512757 },
-  { nombre: "Sub Comisaria Vaqueros - San Martin s/n - R.Nac. Nº 9 Km 1610", lat: -24.695778, lon: -65.409728 },
-  { nombre: "Sub Comisaria Asuncion - Mza. N° 22 - Villa Asunción", lat: -24.795886, lon: -65.446858 },
-  { nombre: "Comisaria N°19 - Gral. Güemes Nº 975 - El Carril", lat: -25.077181, lon: -65.488851 },
-  { nombre: "Sub Comisaria Autodromo - Oscar Cabalen N° 530 - B° Autódromo", lat: -24.796439, lon: -65.371367 },
-  { nombre: "Sub Comisaria Campo Castañares - B° Universitario", lat: -24.732989, lon: -65.400703 },
-  { nombre: "Sub Comisaria El Bordo - Bº San Antonio", lat: -24.657875, lon: -65.102372 },
-  { nombre: "Sub Comisaria Finca Las Costas - Km 3 - R.P. 150", lat: -24.773922, lon: -65.493103 },
-  { nombre: "Sub Comisaria Grand Bourg - Avda. Di Pasquo 3100", lat: -24.775905, lon: -65.445818 },
-  { nombre: "Sub Comisaria La Caldera - Avda. Gral. Güemes Nº 007", lat: -24.6065, lon: -65.382714 },
-  { nombre: "Sub Comisaria Los Pinares - Bº Los Pinares", lat: -24.860542, lon: -65.399197 },
-  { nombre: "Sub Comisaria Villa El Sol - Avda. Fco. de Gurruchaga Nº 250", lat: -24.818622, lon: -65.3918 },
-  { nombre: "Sub Comisaria Villa Lavalle - Int. San Miguel Nº 2449", lat: -24.821367, lon: -65.404258 },
-  { nombre: "Comisaria N°103 - Bº 17 de Octubre - Salta", lat: -24.71865, lon: -65.398062 },
-  { nombre: "Puesto Policial Viñaco", lat: -25.1717395, lon: -65.4965437 },
-  { nombre: "Puesto Policial El Circulo", lat: -24.836051, lon: -65.4190408 },
+  { nombre: "Comisaria N°105 - La Merced", lat: -24.970175, lon: -65.489828 },
+  { nombre: "Comisaria N°106 - Limache", lat: -24.852619, lon: -65.431589 },
+  { nombre: "Comisaria N°108 - Campo Quijano", lat: -24.9079653, lon: -65.6423614 },
+  { nombre: "Comisaria N°100 - San Lorenzo", lat: -24.73125, lon: -65.490778 },
+  { nombre: "Comisaria N°12 - Santa Ana I", lat: -24.857336, lon: -65.470575 },
+  { nombre: "Comisaria N°13 - Cerrillos", lat: -24.903533, lon: -65.487753 },
+  { nombre: "Comisaria N°14 - Campo Santo", lat: -24.681389, lon: -65.1032 },
+  { nombre: "Comisaria N°15 - San Remo", lat: -24.829231, lon: -65.423578 },
+  { nombre: "Comisaria N°8 - Santa Ana", lat: -24.807981, lon: -65.439922 },
+  { nombre: "Comisaria N°7 - El Tribuno", lat: -24.846625, lon: -65.441169 },
+  { nombre: "Comisaria N°6 - Ciudad del Milagro", lat: -24.723614, lon: -65.408431 },
+  { nombre: "Comisaria N°3 - Tres Cerritos", lat: -24.764263, lon: -65.399474 },
+  { nombre: "Comisaria N°4 - Villa Mitre", lat: -24.816072, lon: -65.378484 },
+  { nombre: "Comisaria N°10 - Santa Cecilia", lat: -24.829139, lon: -65.397831 },
+  { nombre: "Comisaria N°9 - Portezuelo Sur", lat: -24.796094, lon: -65.394222 },
+  { nombre: "Comisaria N°101 - Santa Rita", lat: -24.663811, lon: -65.038328 },
+  { nombre: "Comisaria N°102 - Atocha II", lat: -24.811761, lon: -65.459939 },
+  { nombre: "Comisaria N°104 - Palermo", lat: -24.787304, lon: -65.459397 },
+  { nombre: "Comisaria N°17 - Solidaridad", lat: -24.843314, lon: -65.396283 },
+  { nombre: "Comisaria N°1 - Centro", lat: -24.786744, lon: -65.408122 },
+  { nombre: "Comisaria N°5 - Solidaridad", lat: -24.7807724, lon: -65.4274511 },
+  { nombre: "Comisaria N°2 - Santa Cecilia", lat: -24.799021, lon: -65.416157 },
+  { nombre: "Comisaria N°11 - 17 de Octubre", lat: -24.71865, lon: -65.398062 },
 ];
 
-/*
-  Localidades de Salta que se muestran en el desplegable del formulario:
-  los 60 municipios de la provincia (que cubren todo el territorio).
-  Fuente: Anexo "Municipios de la provincia de Salta" (Wikipedia, 60 municipios en 2020).
-*/
+
+// ============================================================
+// LOCALIDADES DE SALTA (para el desplegable)
+// ============================================================
 const LOCALIDADES_SALTA = [
   "Salta (Capital)",
-  "Aguaray",
-  "Aguas Blancas",
-  "Angastaco",
-  "Animaná",
-  "Apolinario Saravia",
-  "Cachi",
-  "Cafayate",
-  "Campo Quijano",
-  "Campo Santo",
-  "Cerrillos",
-  "Chicoana",
-  "Colonia Santa Rosa",
-  "Coronel Moldes",
-  "El Bordo",
-  "El Carril",
-  "El Galpón",
-  "El Jardín",
-  "El Potrero",
-  "El Quebrachal",
-  "El Tala",
-  "Embarcación",
-  "General Ballivián",
-  "General Güemes",
-  "General Mosconi",
-  "General Pizarro",
-  "Guachipas",
-  "Hipólito Yrigoyen",
-  "Iruya",
-  "Isla de Cañas",
-  "Joaquín V. González",
-  "La Caldera",
-  "La Candelaria",
-  "La Merced",
-  "La Poma",
-  "La Viña",
-  "Las Lajitas",
-  "Los Toldos",
-  "Molinos",
-  "Nazareno",
-  "Payogasta",
-  "Pichanal",
-  "Profesor Salvador Mazza",
-  "Río Piedras",
-  "Rivadavia Banda Norte",
-  "Rivadavia Banda Sur",
-  "Rosario de la Frontera",
-  "Rosario de Lerma",
-  "San Antonio de los Cobres",
-  "San Carlos",
-  "San José de Metán",
-  "San Lorenzo",
-  "San Ramón de la Nueva Orán",
-  "Santa Victoria Este",
-  "Santa Victoria Oeste",
-  "Seclantás",
-  "Tartagal",
-  "Tolar Grande",
-  "Urundel",
-  "Vaqueros",
+  "Aguaray", "Aguas Blancas", "Angastaco", "Animaná", "Apolinario Saravia",
+  "Cachi", "Cafayate", "Campo Quijano", "Campo Santo", "Cerrillos",
+  "Chicoana", "Colonia Santa Rosa", "Coronel Moldes", "El Bordo", "El Carril",
+  "El Galpón", "El Jardín", "El Potrero", "El Quebrachal", "El Tala",
+  "Embarcación", "General Ballivián", "General Güemes", "General Mosconi",
+  "General Pizarro", "Guachipas", "Hipólito Yrigoyen", "Iruya", "Isla de Cañas",
+  "Joaquín V. González", "La Caldera", "La Candelaria", "La Merced", "La Poma",
+  "La Viña", "Las Lajitas", "Los Toldos", "Molinos", "Nazareno", "Payogasta",
+  "Pichanal", "Profesor Salvador Mazza", "Río Piedras", "Rivadavia Banda Norte",
+  "Rivadavia Banda Sur", "Rosario de la Frontera", "Rosario de Lerma",
+  "San Antonio de los Cobres", "San Carlos", "San José de Metán", "San Lorenzo",
+  "San Ramón de la Nueva Orán", "Santa Victoria Este", "Santa Victoria Oeste",
+  "Seclantás", "Tartagal", "Tolar Grande", "Urundel", "Vaqueros",
 ];
-
-/*
-  Si la dependencia más cercana queda a más de esta distancia, se considera
-  que el domicilio está fuera de la zona cubierta por el mapa (que solo
-  incluye Capital y alrededores) y NO se asigna comisaría automáticamente.
-*/
-const DISTANCIA_MAXIMA_KM = 15;
-
-/* Distancia entre dos puntos (fórmula de Haversine), en kilómetros */
-function distanciaKm(lat1, lon1, lat2, lon2) {
-  const R = 6371;
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-    Math.sin(dLon / 2) ** 2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
-
-/* Dada una latitud/longitud, devuelve la dependencia policial más cercana */
-function dependenciaMasCercana(lat, lon) {
-  let mejor = null;
-  let mejorDistancia = Infinity;
-  for (const dep of DEPENDENCIAS_POLICIALES) {
-    const d = distanciaKm(lat, lon, dep.lat, dep.lon);
-    if (d < mejorDistancia) {
-      mejorDistancia = d;
-      mejor = dep;
-    }
-  }
-  return { dependencia: mejor, distanciaKm: mejorDistancia };
-}
-
-/*
-  Hace una única consulta de geocodificación a Nominatim con el texto dado.
-  Devuelve {lat, lon, direccionEncontrada} o null.
-*/
-async function consultarNominatim(consulta) {
-  const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=ar&q=${encodeURIComponent(consulta)}`;
-  try {
-    const resp = await fetch(url, { headers: { 'Accept-Language': 'es' } });
-    const data = await resp.json();
-    if (!data || !data.length) return null;
-    return {
-      lat: parseFloat(data[0].lat),
-      lon: parseFloat(data[0].lon),
-      direccionEncontrada: data[0].display_name,
-    };
-  } catch (err) {
-    console.error('Error geocodificando:', err);
-    return null;
-  }
-}
-
-/*
-  Convierte un domicilio escrito en texto a coordenadas, usando el
-  servicio gratuito Nominatim (OpenStreetMap). No requiere API key.
-  Prueba primero con la dirección completa; si no la encuentra (muy común
-  en domicilios tipo "Manzana/Lote", que no son calle con altura), prueba
-  de nuevo usando solo el nombre del barrio, si el domicilio menciona uno.
-  Devuelve {lat, lon, direccionEncontrada} o null si no se pudo ubicar.
-*/
-async function geocodificarDireccion(domicilio, localidad) {
-  // Se le saca lo que esté entre paréntesis, ej: "Salta (Capital)" -> "Salta"
-  const localidadLimpia = (localidad || '').replace(/\s*\(.*?\)\s*/g, ' ').trim();
-
-  // Intento 1: dirección completa tal cual la escribió la persona
-  const partesCompletas = [domicilio, localidadLimpia, 'Salta', 'Argentina'].filter(Boolean);
-  let resultado = await consultarNominatim(partesCompletas.join(', '));
-  if (resultado) return resultado;
-
-  // Intento 2: si el domicilio menciona un barrio, buscar solo ese barrio
-  // (sirve para domicilios tipo "Barrio X, Mza 12 Lote 3", que Nominatim no entiende)
-  const coincidenciaBarrio = (domicilio || '').match(/\bb(?:arrio)?°?\.?\s+([a-záéíóúñü\s]+?)(?=\s+(?:mza\.?|manzana|lote|block|bloque|casa|dpto\.?|depto\.?|nro\.?|n°|km|,)\b|\s*\d|$)/i);
-  if (coincidenciaBarrio) {
-    const nombreBarrio = coincidenciaBarrio[1].trim();
-    const partesBarrio = [`Barrio ${nombreBarrio}`, localidadLimpia, 'Salta', 'Argentina'].filter(Boolean);
-    resultado = await consultarNominatim(partesBarrio.join(', '));
-    if (resultado) return resultado;
-  }
-
-  return null;
-}
-
-/* Saca tildes y pasa a minúsculas, para comparar nombres de barrio sin importar mayúsculas/tildes */
-function normalizarTexto(texto) {
-  return (texto || '')
-    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase();
-}
-
-/* Si el domicilio menciona alguno de los barrios de CORRECCIONES_BARRIO, devuelve esa comisaría */
-function buscarCorreccionBarrio(domicilio) {
-  const texto = normalizarTexto(domicilio);
-  for (const [barrio, comisaria] of Object.entries(CORRECCIONES_BARRIO)) {
-    if (texto.includes(barrio)) return comisaria;
-  }
-  return null;
-}
-
-/*
-  Función principal: recibe el domicilio en texto y devuelve
-  { comisaria, distanciaKm, direccionEncontrada } o null si no se pudo
-  determinar (por ejemplo, dirección no encontrada).
-*/
-async function asignarComisariaPorDireccion(domicilio, localidad) {
-  if (!domicilio) return null;
-
-  // 1) Primero, ¿hay una corrección manual cargada para este barrio?
-  const comisariaCorregida = buscarCorreccionBarrio(domicilio);
-  if (comisariaCorregida) {
-    return { comisaria: comisariaCorregida, distanciaKm: null, direccionEncontrada: domicilio };
-  }
-
-  // 2) Si no, se calcula por cercanía geográfica como siempre
-  const ubicacion = await geocodificarDireccion(domicilio, localidad);
-  if (!ubicacion) return null;
-  const { dependencia, distanciaKm: dist } = dependenciaMasCercana(ubicacion.lat, ubicacion.lon);
-  if (!dependencia) return null;
-  // Fuera de la zona cubierta por el mapa: que lo asigne el personal
-  if (dist > DISTANCIA_MAXIMA_KM) return null;
-  return {
-    comisaria: dependencia.nombre,
-    distanciaKm: dist,
-    direccionEncontrada: ubicacion.direccionEncontrada,
-  };
-}
