@@ -690,11 +690,7 @@
 <script src="supabase-config.js"></script>
 <script src="comisarias-config.js"></script>
 <script>
-window.onerror = function(msg, url, line) {
-  alert('ERROR (línea ' + line + '):\n\n' + msg);
-  return false;
-};
-  const tarjetas = document.querySelectorAll('.tarjeta');
+const tarjetas = document.querySelectorAll('.tarjeta');
 const forms = {
   residencia: document.getElementById('form-residencia'),
   convivencia: document.getElementById('form-convivencia'),
@@ -741,40 +737,23 @@ const titulos = {
 };
 
 /* ============================================================
-   LOCALSTORAGE: guardado de fotos y borrador del formulario
+   LOCALSTORAGE
    ============================================================ */
-
 function guardarFotoEnStorage(clave, dataUrl) {
-  try {
-    localStorage.setItem('foto_' + clave, dataUrl);
-  } catch (e) {
-    console.warn('No se pudo guardar la foto en localStorage:', e);
-  }
+  try { localStorage.setItem('foto_' + clave, dataUrl); } catch (e) {}
 }
-
 function borrarFotoDeStorage(clave) {
-  try {
-    localStorage.removeItem('foto_' + clave);
-  } catch (e) {}
+  try { localStorage.removeItem('foto_' + clave); } catch (e) {}
 }
-
 function limpiarTodasLasFotosDeStorage() {
-  document.querySelectorAll('.captura-foto').forEach(c => {
-    borrarFotoDeStorage(c.dataset.target);
-  });
+  document.querySelectorAll('.captura-foto').forEach(c => borrarFotoDeStorage(c.dataset.target));
   try { localStorage.removeItem('tramite_activo'); } catch(e){}
 }
-
 function hayFotosGuardadas() {
-  return Array.from(document.querySelectorAll('.captura-foto')).some(c =>
-    localStorage.getItem('foto_' + c.dataset.target)
-  );
+  return Array.from(document.querySelectorAll('.captura-foto')).some(c => localStorage.getItem('foto_' + c.dataset.target));
 }
-
 function mostrarAvisoBorrador() {
-  if (hayFotosGuardadas()) {
-    avisoBorrador.classList.add('activo');
-  }
+  if (hayFotosGuardadas()) avisoBorrador.classList.add('activo');
 }
 
 window.addEventListener('DOMContentLoaded', () => {
@@ -782,13 +761,11 @@ window.addEventListener('DOMContentLoaded', () => {
     const clave = captura.dataset.target;
     const guardada = localStorage.getItem('foto_' + clave);
     if (!guardada) return;
-
     const img = captura.querySelector('img');
     const estado = captura.querySelector('.captura-estado');
     const hiddenInput = captura.querySelector('input[type=hidden]');
     const btnCamara = captura.querySelector('.btn-camara');
     const btnRepetir = captura.querySelector('.btn-repetir');
-
     img.src = guardada;
     img.hidden = false;
     hiddenInput.value = guardada;
@@ -797,7 +774,6 @@ window.addEventListener('DOMContentLoaded', () => {
     btnCamara.hidden = true;
     btnRepetir.hidden = false;
   });
-
   const tramiteGuardado = localStorage.getItem('tramite_activo');
   if (tramiteGuardado && forms[tramiteGuardado]) {
     tarjetas.forEach(x => x.classList.remove('activa'));
@@ -807,7 +783,6 @@ window.addEventListener('DOMContentLoaded', () => {
     forms[tramiteGuardado].classList.add('activo');
     tarjetasEl.style.display = 'none';
   }
-
   mostrarAvisoBorrador();
 });
 
@@ -847,7 +822,7 @@ document.getElementById('doc-volver').addEventListener('click', () => {
 });
 
 /* ============================================================
-   ANÁLISIS DE FOTO: detecta si está oscura o borrosa
+   ANÁLISIS DE FOTO
    ============================================================ */
 function analizarFoto(canvas) {
   const ctx = canvas.getContext('2d');
@@ -855,20 +830,16 @@ function analizarFoto(canvas) {
   const h = canvas.height;
   const imageData = ctx.getImageData(0, 0, w, h);
   const data = imageData.data;
-
   let suma = 0;
   for (let i = 0; i < data.length; i += 4) {
     suma += 0.299 * data[i] + 0.587 * data[i+1] + 0.114 * data[i+2];
   }
   const luminosidad = suma / (data.length / 4);
-
   const gris = new Uint8ClampedArray(w * h);
   for (let i = 0, j = 0; i < data.length; i += 4, j++) {
     gris[j] = 0.299 * data[i] + 0.587 * data[i+1] + 0.114 * data[i+2];
   }
-  let sumaLap = 0;
-  let sumaLap2 = 0;
-  let count = 0;
+  let sumaLap = 0, sumaLap2 = 0, count = 0;
   for (let y = 1; y < h - 1; y++) {
     for (let x = 1; x < w - 1; x++) {
       const i = y * w + x;
@@ -880,16 +851,8 @@ function analizarFoto(canvas) {
   }
   const media = sumaLap / count;
   const varianza = (sumaLap2 / count) - (media * media);
-
-  const UMBRAL_OSCURA = 60;
-  const UMBRAL_BORROSA = 50;
-
-  if (luminosidad < UMBRAL_OSCURA) {
-    return { ok: false, motivo: 'muy oscura (probá con más luz)' };
-  }
-  if (varianza < UMBRAL_BORROSA) {
-    return { ok: false, motivo: 'borrosa o desenfocada' };
-  }
+  if (luminosidad < 60) return { ok: false, motivo: 'muy oscura (probá con más luz)' };
+  if (varianza < 50) return { ok: false, motivo: 'borrosa o desenfocada' };
   return { ok: true };
 }
 
@@ -945,7 +908,6 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
   const btnRepetirAviso = captura.querySelector('.btn-repetir-aviso');
   const btnUsarIgual = captura.querySelector('.btn-usar-igual');
   const btnFlash = captura.querySelector('.btn-flash');
-
   let trackActual = null;
   let flashEncendido = false;
   let flashSoportado = false;
@@ -971,8 +933,6 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
       estado.textContent = 'Encuadrá el DNI dentro del marco y tocá "Tomar foto".';
       estado.classList.remove('ok');
       estado.classList.remove('error');
-
-      // Detectar si soporta flash (torch)
       trackActual = stream.getVideoTracks()[0];
       const capacidades = trackActual.getCapabilities ? trackActual.getCapabilities() : {};
       flashSoportado = !!capacidades.torch;
@@ -992,13 +952,9 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
       if (!trackActual || !flashSoportado) return;
       try {
         flashEncendido = !flashEncendido;
-        await trackActual.applyConstraints({
-          advanced: [{ torch: flashEncendido }]
-        });
+        await trackActual.applyConstraints({ advanced: [{ torch: flashEncendido }] });
         btnFlash.classList.toggle('encendido', flashEncendido);
-      } catch (err) {
-        console.warn('No se pudo cambiar el flash:', err);
-      }
+      } catch (err) {}
     });
   }
 
@@ -1010,16 +966,12 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
     canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
     const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
     hiddenInput.value = dataUrl;
-
     const analisis = analizarFoto(canvas);
-
-    // Apagar flash si estaba encendido
     if (flashEncendido && trackActual) {
       trackActual.applyConstraints({ advanced: [{ torch: false }] }).catch(()=>{});
       flashEncendido = false;
       if (btnFlash) btnFlash.classList.remove('encendido');
     }
-
     guardarFotoEnStorage(captura.dataset.target, dataUrl);
     img.src = dataUrl;
     img.hidden = false;
@@ -1032,7 +984,6 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
     }
     trackActual = null;
     btnCapturar.hidden = true;
-
     if (analisis.ok) {
       if (avisoFoto) avisoFoto.classList.remove('activo');
       btnRepetir.hidden = false;
@@ -1049,16 +1000,8 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
     }
   });
 
-  btnRepetir.addEventListener('click', () => {
-    resetCaptura(captura);
-  });
-
-  if (btnRepetirAviso) {
-    btnRepetirAviso.addEventListener('click', () => {
-      resetCaptura(captura);
-    });
-  }
-
+  btnRepetir.addEventListener('click', () => resetCaptura(captura));
+  if (btnRepetirAviso) btnRepetirAviso.addEventListener('click', () => resetCaptura(captura));
   if (btnUsarIgual) {
     btnUsarIgual.addEventListener('click', () => {
       if (avisoFoto) avisoFoto.classList.remove('activo');
@@ -1071,36 +1014,24 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
 });
 
 /* ============================================================
-   ESCANEO PDF417 DEL DNI
-   ============================================================ */
-/* ============================================================
-   ESCANEO DEL DNI (usando BarcodeDetector nativo del navegador)
+   ESCANEO DEL DNI (BarcodeDetector nativo)
    ============================================================ */
 function parsearCodigoDNI(texto) {
   const contenido = String(texto || "").replace(/[\r\n]+/g, "@");
   const partes = contenido.split("@").map(p => p.trim()).filter(Boolean);
-  
-  // DNI: buscar cualquier número de 7-8 dígitos
   const dniMatch = contenido.match(/\b\d{7,8}\b/);
   const dni = dniMatch ? dniMatch[0] : "";
-  
-  // Sexo: buscar M, F o X como parte aislada
   let sexo = "";
   const sexoParte = partes.map(p => p.toUpperCase()).find(p =>
-    p === "M" || p === "F" || p === "X" ||
-    p === "MASCULINO" || p === "FEMENINO"
+    p === "M" || p === "F" || p === "X" || p === "MASCULINO" || p === "FEMENINO"
   );
   if (sexoParte === "M" || sexoParte === "MASCULINO") sexo = "Masculino";
   else if (sexoParte === "F" || sexoParte === "FEMENINO") sexo = "Femenino";
   else if (sexoParte === "X") sexo = "Otro / Prefiero no especificar";
-  
-  // Nombre y apellido: buscar partes alfabéticas (excluyendo palabras conocidas)
   const candidatosNombre = partes
     .filter(p => /^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ ]{3,}$/.test(p))
     .filter(p => !/^(ARG|ARGENTINA|IDARG|DNI|EJEMPLAR|NACIONALIDAD|APELLIDO|NOMBRE|MERCOSUR)$/i.test(p));
   const nombre = candidatosNombre.slice(0, 2).join(" ").trim();
-  
-  // Fecha de nacimiento: buscar formato DD/MM/AAAA o AAAAMMDD
   let fechaISO = "";
   const fechaParte = partes.find(p => {
     if (/^\d{2}[/-]\d{2}[/-]\d{4}$/.test(p)) return true;
@@ -1116,38 +1047,29 @@ function parsearCodigoDNI(texto) {
       fechaISO = `${anio}-${mes}-${dia}`;
     }
   }
-  
   if (!dni && !nombre) return null;
-  
-  return {
-    nombreCompleto: nombre,
-    dni: dni,
-    sexo: sexo,
-    fechaNacimientoISO: fechaISO,
-  };
+  return { nombreCompleto: nombre, dni: dni, sexo: sexo, fechaNacimientoISO: fechaISO };
 }
 
 function camposParaTarget(target) {
   const [prefijo, persona] = target.split('-');
   if (persona === 'testigo1' || persona === 'testigo2') {
-    return { nombre: `${persona}Nombre`, dni: `${persona}Dni`, sexo: null, fechaNacimiento: null };
+    return { nombre: `${persona}Nombre`, dni: `${persona}Dni`, fechaNacimiento: null };
   }
-  if (prefijo === 'res') return { nombre: 'nombre', dni: 'dni', sexo: null, fechaNacimiento: 'fechaNacimiento' };
-  if (prefijo === 'con') return { nombre: 'nombreSolicitante', dni: 'dniSolicitante', sexo: null, fechaNacimiento: null };
-  if (prefijo === 'car') return { nombre: 'nombre', dni: 'dni', sexo: null, fechaNacimiento: null };
+  if (prefijo === 'res') return { nombre: 'nombre', dni: 'dni', fechaNacimiento: 'fechaNacimiento' };
+  if (prefijo === 'con') return { nombre: 'nombreSolicitante', dni: 'dniSolicitante', fechaNacimiento: null };
+  if (prefijo === 'car') return { nombre: 'nombre', dni: 'dni', fechaNacimiento: null };
   return null;
 }
 
 document.querySelectorAll('.captura-foto').forEach(captura => {
   const video = captura.querySelector('video');
   const escaneoEstado = captura.querySelector('.escaneo-estado');
-  const btnCamara = captura.querySelector('.btn-camara');
   const btnEscanear = captura.querySelector('.btn-escanear');
   const form = captura.closest('form');
   const campos = camposParaTarget(captura.dataset.target);
   const canvas = captura.querySelector('canvas');
 
-  // Verificar si BarcodeDetector está disponible
   if (!window.BarcodeDetector) {
     escaneoEstado.textContent = 'Tu navegador no soporta lectura de códigos. Completá los datos a mano.';
     if (btnEscanear) btnEscanear.style.display = 'none';
@@ -1161,43 +1083,32 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
     }
     btnEscanear.disabled = true;
     escaneoEstado.textContent = 'Tomando foto y analizando...';
-
     try {
-      // Tomar una foto del video actual
-      const anchoMax = 1280;
+      const anchoMax = 1600;
       const escala = Math.min(1, anchoMax / video.videoWidth);
       canvas.width = video.videoWidth * escala;
       canvas.height = video.videoHeight * escala;
       canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
-
-      // Ver qué formatos soporta el navegador
-      const formatosSolicitados = ['pdf417', 'qr_code', 'code_128', 'code_39'];
       const formatosSoportados = await BarcodeDetector.getSupportedFormats();
-      const formatos = formatosSolicitados.filter(f => formatosSoportados.includes(f));
-
+      const formatos = ['pdf417', 'qr_code', 'code_128', 'code_39'].filter(f => formatosSoportados.includes(f));
       if (!formatos.length) {
         escaneoEstado.textContent = 'Tu navegador no soporta PDF417. Completá los datos a mano.';
         btnEscanear.disabled = false;
         return;
       }
-
       const detector = new BarcodeDetector({ formats: formatos });
       const codigos = await detector.detect(canvas);
-
       if (!codigos.length) {
         escaneoEstado.textContent = 'No se detectó código. Acercate más al código de barras y probá de nuevo.';
         btnEscanear.disabled = false;
         return;
       }
-
       const datos = parsearCodigoDNI(codigos[0].rawValue);
       if (!datos) {
         escaneoEstado.textContent = 'No se pudieron interpretar los datos del DNI.';
         btnEscanear.disabled = false;
         return;
       }
-
-      // Autocompletar los campos del formulario
       if (campos) {
         if (datos.nombreCompleto && form.querySelector(`[name="${campos.nombre}"]`)) {
           form.querySelector(`[name="${campos.nombre}"]`).value = datos.nombreCompleto;
@@ -1210,11 +1121,9 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
           if (inputFecha) inputFecha.value = datos.fechaNacimientoISO;
         }
       }
-
       escaneoEstado.textContent = `✓ DNI escaneado: ${datos.nombreCompleto} (${datos.dni})`;
       escaneoEstado.style.color = '#1a7f3c';
       btnEscanear.disabled = false;
-
     } catch (err) {
       console.error(err);
       escaneoEstado.textContent = 'Error al escanear. Probá de nuevo.';
@@ -1229,7 +1138,6 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
 Object.entries(forms).forEach(([tramite, form]) => {
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
-
     for (const n of [1, 2]) {
       const foto = form.querySelector(`input[name="foto_testigo${n}"]`);
       if (!foto || !foto.value) {
@@ -1241,17 +1149,14 @@ Object.entries(forms).forEach(([tramite, form]) => {
     const textoOriginal = btnEnviar.textContent;
     btnEnviar.disabled = true;
     btnEnviar.textContent = 'Enviando...';
-
     const datos = new FormData(form);
     const registro = {};
     const contenido = document.getElementById('doc-contenido');
     contenido.innerHTML = '';
-
     try {
       for (const [campo, valor] of datos.entries()) {
         if (!valor) continue;
         registro[campo] = valor;
-
         const dt = document.createElement('dt');
         dt.textContent = etiquetas[campo] || campo;
         const dd = document.createElement('dd');
@@ -1265,14 +1170,11 @@ Object.entries(forms).forEach(([tramite, form]) => {
         contenido.appendChild(dt);
         contenido.appendChild(dd);
       }
-
       btnEnviar.textContent = 'Ubicando domicilio...';
       const campoDomicilio = CAMPO_DOMICILIO[tramite];
       const asignacion = await asignarComisariaPorDireccion(registro[campoDomicilio], registro.localidad);
       btnEnviar.textContent = 'Enviando...';
-
       const comisariaAsignada = asignacion ? asignacion.comisaria : 'No se pudo determinar automáticamente (a asignar por el personal)';
-
       const { error } = await supabaseClient.from('solicitudes').insert([{
         tramite: tramite,
         tramite_titulo: titulos[tramite],
@@ -1280,16 +1182,13 @@ Object.entries(forms).forEach(([tramite, form]) => {
         estado: 'pendiente',
         datos: registro,
       }]);
-
       if (error) throw error;
-
       const dt = document.createElement('dt');
       dt.textContent = 'Comisaría asignada';
       const dd = document.createElement('dd');
       dd.textContent = comisariaAsignada;
       contenido.appendChild(dt);
       contenido.appendChild(dd);
-
       document.getElementById('doc-titulo').textContent = titulos[tramite];
       form.classList.remove('activo');
       documento.classList.add('activo');
