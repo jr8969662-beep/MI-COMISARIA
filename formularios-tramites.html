@@ -50,7 +50,6 @@
   }
   body > *{position:relative; z-index:1;}
 
-  /* HEADER */
   header{
     background:linear-gradient(135deg, var(--azul-oscuro) 0%, var(--azul) 100%);
     color:#fff;
@@ -133,7 +132,6 @@
     flex:1;
   }
 
-  /* TARJETAS TRANSPARENTES */
   .tarjetas{
     display:grid;
     grid-template-columns:repeat(auto-fit, minmax(210px, 1fr));
@@ -217,7 +215,6 @@
     color:var(--dorado-brilloso);
   }
 
-  /* FORMULARIOS TRANSPARENTES */
   form{
     background:rgba(13,42,77,0.6);
     backdrop-filter:blur(8px);
@@ -256,7 +253,6 @@
     color:var(--dorado-claro);
   }
 
-  /* INPUTS OSCUROS */
   input, select, textarea{
     width:100%;
     padding:10px 12px;
@@ -330,7 +326,6 @@
     line-height:1.5;
   }
 
-  /* CAPTURA DE FOTO */
   .captura-foto{
     border:1px dashed rgba(201,169,97,0.4);
     border-radius:8px;
@@ -474,7 +469,45 @@
     cursor:pointer;
   }
 
-  /* DOCUMENTO FINAL */
+  /* AVISO DE COMISARÍA ASIGNADA */
+  .comisaria-asignada{
+    margin-top:16px;
+    padding:14px 18px;
+    background:rgba(21,128,61,0.25);
+    border:1px solid rgba(134,239,172,0.5);
+    border-left:4px solid #86efac;
+    border-radius:8px;
+    color:#fff;
+    font-size:0.92rem;
+    line-height:1.5;
+    display:none;
+    animation:fadeInComisaria 0.4s ease-out;
+  }
+  .comisaria-asignada.activo{display:block;}
+  .comisaria-asignada.cargando{
+    background:rgba(44,90,160,0.25);
+    border-color:rgba(201,169,97,0.5);
+    border-left-color:var(--dorado);
+  }
+  .comisaria-asignada.error{
+    background:rgba(185,28,28,0.25);
+    border-color:rgba(252,165,165,0.5);
+    border-left-color:#fca5a5;
+  }
+  .comisaria-asignada strong{
+    color:#86efac;
+    font-weight:700;
+    display:block;
+    margin-top:4px;
+    font-size:1rem;
+  }
+  .comisaria-asignada.cargando strong{color:var(--dorado-claro);}
+  .comisaria-asignada.error strong{color:#fca5a5;}
+  @keyframes fadeInComisaria{
+    from{opacity:0; transform:translateY(-6px);}
+    to{opacity:1; transform:translateY(0);}
+  }
+
   #documento{
     display:none;
     background:rgba(13,42,77,0.75);
@@ -494,7 +527,6 @@
   #documento .firma{margin-top:50px; display:flex; justify-content:space-between; font-size:0.8rem; flex-wrap:wrap; gap:16px;}
   #documento .firma div{border-top:1px solid rgba(255,255,255,0.4); padding-top:6px; width:30%; text-align:center; min-width:150px; color:rgba(255,255,255,0.8);}
 
-  /* FOOTER TRANSPARENTE CON TEXTO DORADO */
   footer.site-footer{
     background:transparent;
     color:var(--dorado-claro);
@@ -611,6 +643,11 @@
     <select name="localidad" class="select-localidad" required>
       <option value="">Seleccionar</option>
     </select>
+
+    <div class="comisaria-asignada" data-comisaria-aviso>
+      <span class="texto">📍 Calculando comisaría...</span>
+      <strong class="nombre"></strong>
+    </div>
 
     <label>Motivo del trámite</label>
     <textarea name="motivo" required></textarea>
@@ -814,6 +851,11 @@
       <option value="">Seleccionar</option>
     </select>
 
+    <div class="comisaria-asignada" data-comisaria-aviso>
+      <span class="texto">📍 Calculando comisaría...</span>
+      <strong class="nombre"></strong>
+    </div>
+
     <label>Tiempo de convivencia</label>
     <input type="text" name="tiempoConvivencia" placeholder="Ej: 2 años" required>
 
@@ -950,6 +992,11 @@
     <select name="localidad" class="select-localidad" required>
       <option value="">Seleccionar</option>
     </select>
+
+    <div class="comisaria-asignada" data-comisaria-aviso>
+      <span class="texto">📍 Calculando comisaría...</span>
+      <strong class="nombre"></strong>
+    </div>
 
     <div class="fila">
       <div>
@@ -1102,7 +1149,6 @@
     <p class="nota">Las fotos se envían a la comisaría correspondiente a través de un servidor seguro (Supabase) y se usan solo para generar este documento.</p>
   </form>
 
-  <!-- Documento generado -->
   <div id="documento">
     <h2 id="doc-titulo">Certificado</h2>
     <p class="subt">Policía de Salta</p>
@@ -1127,7 +1173,6 @@
   </div>
 </footer>
 
-<!-- Supabase (backend: guarda las solicitudes, incluidas las fotos comprimidas) -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-config.js"></script>
 <script src="comisarias-config.js"></script>
@@ -1630,6 +1675,212 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
 });
 
 /* ============================================================
+   ASIGNACIÓN AUTOMÁTICA POR POLÍGONOS (JURISDICCIÓN REAL)
+   ============================================================ */
+
+const POLIGONOS_DDP = {};
+let poligonosCargados = false;
+let cargandoPoligonos = false;
+
+async function cargarTodosLosPoligonos() {
+  if (poligonosCargados || cargandoPoligonos) return;
+  cargandoPoligonos = true;
+
+  const promesas = [];
+  for (let i = 1; i <= 14; i++) {
+    promesas.push(
+      fetch(`DDP-${i}.json`)
+        .then(r => r.json())
+        .then(data => {
+          POLIGONOS_DDP[i] = data.poligonos || [];
+        })
+        .catch(err => {
+          console.warn(`No se pudo cargar DDP-${i}.json:`, err);
+          POLIGONOS_DDP[i] = [];
+        })
+    );
+  }
+
+  try {
+    await Promise.all(promesas);
+    poligonosCargados = true;
+    const total = Object.values(POLIGONOS_DDP).reduce((sum, p) => sum + p.length, 0);
+    console.log('✅ Polígonos cargados:', total, 'polígonos');
+  } catch (e) {
+    console.warn('Error cargando polígonos:', e);
+  } finally {
+    cargandoPoligonos = false;
+  }
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  cargarTodosLosPoligonos();
+});
+
+function puntoEnPoligono(lat, lon, coordenadas) {
+  let dentro = false;
+  const n = coordenadas.length;
+
+  for (let i = 0, j = n - 1; i < n; j = i++) {
+    const [xi, yi] = coordenadas[i];
+    const [xj, yj] = coordenadas[j];
+
+    const intersecta = ((yi > lat) !== (yj > lat)) &&
+      (lon < (xj - xi) * (lat - yi) / (yj - yi) + xi);
+
+    if (intersecta) dentro = !dentro;
+  }
+
+  return dentro;
+}
+
+function buscarComisariaPorCoordenadas(lat, lon) {
+  for (const [numDDP, poligonos] of Object.entries(POLIGONOS_DDP)) {
+    for (const poligono of poligonos) {
+      if (puntoEnPoligono(lat, lon, poligono.c)) {
+        return {
+          ddp: parseInt(numDDP),
+          nombre: poligono.n,
+          lat: lat,
+          lon: lon
+        };
+      }
+    }
+  }
+  return null;
+}
+
+async function geocodificarConNominatim(domicilio, localidad) {
+  const consulta = `${domicilio}, ${localidad}, Salta, Argentina`;
+  const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=ar&q=${encodeURIComponent(consulta)}`;
+
+  try {
+    const resp = await fetch(url, {
+      headers: { 'Accept-Language': 'es' }
+    });
+    const data = await resp.json();
+    if (data && data.length > 0) {
+      return {
+        lat: parseFloat(data[0].lat),
+        lon: parseFloat(data[0].lon),
+        direccionEncontrada: data[0].display_name
+      };
+    }
+    return null;
+  } catch (err) {
+    console.error('Error geocodificando:', err);
+    return null;
+  }
+}
+
+async function asignarComisariaPorJurisdiccion(domicilio, localidad) {
+  if (!domicilio || !localidad) {
+    return { error: 'Falta domicilio o localidad' };
+  }
+
+  if (!poligonosCargados) {
+    await cargarTodosLosPoligonos();
+  }
+
+  const ubicacion = await geocodificarConNominatim(domicilio, localidad);
+  if (!ubicacion) {
+    return { error: 'No se pudo ubicar el domicilio' };
+  }
+
+  const comisaria = buscarComisariaPorCoordenadas(ubicacion.lat, ubicacion.lon);
+  if (!comisaria) {
+    return {
+      error: 'El domicilio no está dentro de ninguna jurisdicción conocida',
+      lat: ubicacion.lat,
+      lon: ubicacion.lon
+    };
+  }
+
+  return {
+    comisaria: comisaria.nombre,
+    ddp: comisaria.ddp,
+    lat: ubicacion.lat,
+    lon: ubicacion.lon
+  };
+}
+
+function mostrarAvisoComisaria(form, estado, nombre) {
+  const aviso = form.querySelector('[data-comisaria-aviso]');
+  if (!aviso) return;
+
+  aviso.classList.remove('activo', 'cargando', 'error');
+  const texto = aviso.querySelector('.texto');
+  const nombreEl = aviso.querySelector('.nombre');
+
+  if (estado === 'cargando') {
+    aviso.classList.add('activo', 'cargando');
+    texto.textContent = '⏳ Calculando comisaría...';
+    nombreEl.textContent = '';
+  } else if (estado === 'ok') {
+    aviso.classList.add('activo');
+    texto.textContent = '📍 Comisaría asignada:';
+    nombreEl.textContent = nombre;
+  } else if (estado === 'error') {
+    aviso.classList.add('activo', 'error');
+    texto.textContent = '⚠️ No se pudo determinar la comisaría';
+    nombreEl.textContent = 'Se asignará manualmente';
+  } else {
+    aviso.classList.remove('activo');
+  }
+}
+
+Object.entries(forms).forEach(([tramite, form]) => {
+  const campoDomicilio = CAMPO_DOMICILIO[tramite];
+  const inputDomicilio = form.querySelector(`[name="${campoDomicilio}"]`);
+  const selectLocalidad = form.querySelector('[name="localidad"]');
+
+  if (!inputDomicilio || !selectLocalidad) return;
+
+  let timeoutId = null;
+  let ultimaConsulta = '';
+
+  async function calcularComisaria() {
+    const domicilio = inputDomicilio.value.trim();
+    const localidad = selectLocalidad.value;
+
+    if (!domicilio || !localidad || domicilio.length < 5) {
+      mostrarAvisoComisaria(form, 'oculto');
+      return;
+    }
+
+    const consulta = `${domicilio}|${localidad}`;
+    if (consulta === ultimaConsulta) return;
+    ultimaConsulta = consulta;
+
+    mostrarAvisoComisaria(form, 'cargando');
+
+    try {
+      const resultado = await asignarComisariaPorJurisdiccion(domicilio, localidad);
+
+      if (resultado.comisaria) {
+        mostrarAvisoComisaria(form, 'ok', resultado.comisaria);
+        form.dataset.comisariaAsignada = resultado.comisaria;
+      } else {
+        mostrarAvisoComisaria(form, 'error');
+        form.dataset.comisariaAsignada = '';
+      }
+    } catch (err) {
+      console.error(err);
+      mostrarAvisoComisaria(form, 'error');
+      form.dataset.comisariaAsignada = '';
+    }
+  }
+
+  function debounceCalcular() {
+    if (timeoutId) clearTimeout(timeoutId);
+    timeoutId = setTimeout(calcularComisaria, 1200);
+  }
+
+  inputDomicilio.addEventListener('input', debounceCalcular);
+  selectLocalidad.addEventListener('change', calcularComisaria);
+});
+
+/* ============================================================
    ENVÍO DEL TRÁMITE A SUPABASE
    ============================================================ */
 Object.entries(forms).forEach(([tramite, form]) => {
@@ -1669,9 +1920,11 @@ Object.entries(forms).forEach(([tramite, form]) => {
       }
       btnEnviar.textContent = 'Ubicando domicilio...';
       const campoDomicilio = CAMPO_DOMICILIO[tramite];
-      const asignacion = await asignarComisariaPorDireccion(registro[campoDomicilio], registro.localidad);
+      const asignacion = await asignarComisariaPorJurisdiccion(registro[campoDomicilio], registro.localidad);
       btnEnviar.textContent = 'Enviando...';
-      const comisariaAsignada = asignacion ? asignacion.comisaria : 'No se pudo determinar automáticamente (a asignar por el personal)';
+      const comisariaAsignada = asignacion && asignacion.comisaria
+        ? asignacion.comisaria
+        : (form.dataset.comisariaAsignada || 'No se pudo determinar automáticamente (a asignar por el personal)');
       const { error } = await supabaseClient.from('solicitudes').insert([{
         tramite: tramite,
         tramite_titulo: titulos[tramite],
