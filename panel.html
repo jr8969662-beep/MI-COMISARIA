@@ -33,25 +33,32 @@
   tr.fila-solicitud:hover{background:#f8fafc;}
   .etiqueta{padding:3px 8px; border-radius:12px; font-size:0.72rem; font-weight:600;}
   .etiqueta.pendiente{background:#fff3cd; color:#8a6400;}
-  .etiqueta.procesado{background:#d1f5e0; color:#146c43;}
+  .etiqueta.validado{background:#d1f5e0; color:#146c43;}
+  .etiqueta.denegado{background:#fde2e1; color:#b91c1c;}
 
   /* Detalle */
   #detalle{display:none; background:#fff; border:1px solid var(--borde); border-radius:10px; padding:24px; margin-top:18px;}
   #detalle dt{font-size:0.75rem; color:#6b7280; margin-top:10px;}
   #detalle dd{margin:2px 0 0; font-size:0.92rem;}
   #detalle dd img{max-width:220px; border:1px solid var(--borde); border-radius:6px; margin-top:4px; display:block;}
-  #detalle .btns{margin-top:20px; display:flex; gap:10px;}
+  #detalle .btns{margin-top:20px; display:flex; gap:10px; flex-wrap:wrap;}
   #detalle button{padding:9px 16px; border:none; border-radius:6px; cursor:pointer; font-size:0.85rem;}
-  #btn-procesar{background:var(--azul); color:#fff;}
+  #btn-validar{background:#146c43; color:#fff;}
+  #btn-denegar{background:#b91c1c; color:#fff;}
+  #btn-pendiente{background:#e5e9ef; color:var(--texto);}
   #btn-cerrar-detalle{background:#e5e9ef; color:var(--texto);}
   .vacio{padding:30px; text-align:center; color:#6b7280; font-size:0.9rem;}
+  #btn-pantalla-completa{background:#fff; color:var(--azul); border:none; padding:8px 14px; border-radius:6px; cursor:pointer; font-size:0.85rem; margin-right:8px;}
 </style>
 </head>
 <body>
 
 <header>
   <h1>Mi Comisaría - Panel del personal</h1>
-  <button id="btn-salir">Salir</button>
+  <div>
+    <button id="btn-pantalla-completa" type="button" title="Ver en pantalla completa">⛶ Pantalla completa</button>
+    <button id="btn-salir">Salir</button>
+  </div>
 </header>
 
 <main>
@@ -73,7 +80,8 @@
       <select id="filtro-estado">
         <option value="">Todos los estados</option>
         <option value="pendiente">Pendientes</option>
-        <option value="procesado">Procesados</option>
+        <option value="validado">Validados</option>
+        <option value="denegado">Denegados</option>
       </select>
       <select id="filtro-comisaria">
         <option value="">Todas las comisarías</option>
@@ -103,9 +111,12 @@
 
     <div id="detalle">
       <h3 id="detalle-titulo"></h3>
+      <p id="detalle-estado-actual" style="font-size:0.85rem; color:#6b7280;"></p>
       <dl id="detalle-contenido"></dl>
       <div class="btns">
-        <button id="btn-procesar">Marcar como procesado</button>
+        <button id="btn-validar">✓ Validar</button>
+        <button id="btn-denegar">✕ Denegar</button>
+        <button id="btn-pendiente">Marcar pendiente</button>
         <button id="btn-cerrar-detalle">Cerrar</button>
       </div>
     </div>
@@ -197,6 +208,12 @@ supabaseClient
   .on('postgres_changes', { event: '*', schema: 'public', table: 'solicitudes' }, cargarSolicitudes)
   .subscribe();
 
+function etiquetaEstado(estado) {
+  if (estado === 'validado') return 'Validado';
+  if (estado === 'denegado') return 'Denegado';
+  return 'Pendiente';
+}
+
 function renderTabla() {
   const estado = document.getElementById('filtro-estado').value;
   const comisaria = document.getElementById('filtro-comisaria').value;
@@ -223,7 +240,7 @@ function renderTabla() {
       <td>${s.tramite_titulo || s.tramite || '-'}</td>
       <td>${nombreSolicitante}</td>
       <td>${s.comisaria_asignada || '-'}</td>
-      <td><span class="etiqueta ${s.estado}">${s.estado === 'procesado' ? 'Procesado' : 'Pendiente'}</span></td>
+      <td><span class="etiqueta ${s.estado}">${etiquetaEstado(s.estado)}</span></td>
     `;
     tr.addEventListener('click', () => mostrarDetalle(s));
     tbody.appendChild(tr);
@@ -265,8 +282,7 @@ function mostrarDetalle(s) {
     cont.appendChild(dd);
   });
 
-  document.getElementById('btn-procesar').textContent =
-    s.estado === 'procesado' ? 'Marcar como pendiente' : 'Marcar como procesado';
+  document.getElementById('detalle-estado-actual').textContent = `Estado actual: ${etiquetaEstado(s.estado)}`;
   document.getElementById('detalle').style.display = 'block';
   document.getElementById('detalle').scrollIntoView({ behavior: 'smooth' });
 }
@@ -275,12 +291,24 @@ document.getElementById('btn-cerrar-detalle').addEventListener('click', () => {
   document.getElementById('detalle').style.display = 'none';
 });
 
-document.getElementById('btn-procesar').addEventListener('click', async () => {
+async function cambiarEstado(nuevoEstado) {
   if (!solicitudAbierta) return;
-  const nuevoEstado = solicitudAbierta.estado === 'procesado' ? 'pendiente' : 'procesado';
   const { error } = await supabaseClient.from('solicitudes').update({ estado: nuevoEstado }).eq('id', solicitudAbierta.id);
   if (error) console.error(error);
   document.getElementById('detalle').style.display = 'none';
+}
+
+document.getElementById('btn-validar').addEventListener('click', () => cambiarEstado('validado'));
+document.getElementById('btn-denegar').addEventListener('click', () => cambiarEstado('denegado'));
+document.getElementById('btn-pendiente').addEventListener('click', () => cambiarEstado('pendiente'));
+
+/* --- Pantalla completa --- */
+document.getElementById('btn-pantalla-completa').addEventListener('click', () => {
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen().catch(() => {});
+  } else {
+    document.exitFullscreen();
+  }
 });
 </script>
 
