@@ -235,6 +235,7 @@
   input:focus,select:focus,textarea:focus{
     outline:none;border-color:var(--dorado);box-shadow:0 0 0 3px rgba(201,169,97,0.2);background:rgba(0,0,0,0.5);
   }
+  input:disabled{opacity:0.4;cursor:not-allowed;}
   select option{background:var(--azul-oscuro);color:#fff;}
   textarea{resize:vertical;min-height:70px;}
   .fila{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
@@ -380,6 +381,12 @@
       <span class="tarjeta-icono">📋</span>
       <b>Certificado de Carencia de Recursos</b>
       <span class="tarjeta-desc">Acredita la situación de falta de recursos económicos.</span>
+      <span class="tarjeta-cta">Iniciar trámite →</span>
+    </button>
+    <button class="tarjeta" data-tramite="autorizacion">
+      <span class="tarjeta-icono">🧒</span>
+      <b>Autorización de Viaje de Menor</b>
+      <span class="tarjeta-desc">Genera el acta de autorización para que un menor pueda viajar.</span>
       <span class="tarjeta-cta">Iniciar trámite →</span>
     </button>
   </div>
@@ -831,6 +838,185 @@
     <p class="nota">Las fotos se envían a la comisaría correspondiente a través de un servidor seguro (Supabase) y se usan solo para generar este documento.</p>
   </form>
 
+  <!-- Formulario: Autorización de Viaje de Menor -->
+  <form id="form-autorizacion">
+    <h2>Autorización de Viaje de Menor</h2>
+
+    <h3 class="seccion" style="border-top:none;margin-top:0;padding-top:0;">Datos del Menor</h3>
+    <div class="fila">
+      <div><label>Nombre completo del menor</label><input type="text" name="nombreMenor" required></div>
+      <div><label>DNI del menor</label><input type="text" name="dniMenor" pattern="[0-9]{7,8}" required></div>
+    </div>
+    <div class="fila">
+      <div><label>Fecha de nacimiento</label><input type="date" name="fechaNacimientoMenor" required></div>
+      <div><label>Nacionalidad</label><input type="text" name="nacionalidadMenor" value="Argentina" required></div>
+    </div>
+
+    <h3 class="seccion">Datos del Progenitor que Autoriza</h3>
+    <div class="fila">
+      <div><label>Nombre completo del progenitor</label><input type="text" name="nombreProgenitor" required></div>
+      <div><label>DNI del progenitor</label><input type="text" name="dniProgenitor" pattern="[0-9]{7,8}" required></div>
+    </div>
+    <div class="fila">
+      <div>
+        <label>Vínculo con el menor</label>
+        <select name="vinculoProgenitor" required>
+          <option value="">Seleccionar</option>
+          <option>Padre</option>
+          <option>Madre</option>
+          <option>Tutor/a</option>
+        </select>
+      </div>
+      <div>
+        <label>Email (para avisarte cuando esté listo)</label>
+        <input type="email" name="email" placeholder="tucorreo@ejemplo.com" required>
+      </div>
+    </div>
+    <label>Teléfono / WhatsApp</label>
+    <input type="tel" name="telefono" placeholder="Ej: 3874123456" required>
+
+    <h3 class="seccion">Datos del Viaje</h3>
+    <div class="fila">
+      <div><label>Destino (Ciudad/Provincia/País)</label><input type="text" name="destino" required></div>
+      <div>
+        <label>Motivo del viaje</label>
+        <select name="motivoViaje" required>
+          <option value="">Seleccionar</option>
+          <option>Turismo</option>
+          <option>Salud</option>
+          <option>Familiar</option>
+          <option>Estudios</option>
+          <option>Otro</option>
+        </select>
+      </div>
+    </div>
+    <div class="fila">
+      <div><label>Fecha de salida</label><input type="date" name="fechaSalida" required></div>
+      <div><label>Fecha de regreso</label><input type="date" name="fechaRegreso" required></div>
+    </div>
+
+    <div class="fila">
+      <div>
+        <label>Empresa de transporte</label>
+        <select name="empresaTransporte" id="aut-empresa" required>
+          <option value="">Seleccionar empresa</option>
+          <option>Flecha Bus</option>
+          <option>Balut</option>
+          <option>El Norte</option>
+          <option>Vía Bariloche</option>
+          <option>Andesmar</option>
+          <option>Chevallier</option>
+          <option>Crucero del Norte</option>
+          <option>Singer</option>
+          <option>Cóndor Estrella</option>
+          <option>Plusmar</option>
+          <option>Fono Bus</option>
+          <option>ERSA</option>
+          <option>Transporte Salta</option>
+          <option>Vehículo particular</option>
+          <option>Otro (especificar abajo)</option>
+        </select>
+      </div>
+      <div>
+        <label>Si elegiste "Otro", escribí cuál</label>
+        <input type="text" name="empresaOtra" id="aut-empresa-otra" placeholder="Ej: Empresa X" disabled>
+      </div>
+    </div>
+
+    <label>¿El menor viaja solo o acompañado?</label>
+    <select name="tipoViaje" id="aut-tipo-viaje" required>
+      <option value="">Seleccionar</option>
+      <option value="solo">Viaja SOLO (sin acompañante)</option>
+      <option value="acompanado">Viaja ACOMPAÑADO</option>
+    </select>
+
+    <div id="aut-bloque-acompanante" style="display:none;">
+      <h3 class="seccion">Datos del Acompañante</h3>
+      <div class="fila">
+        <div><label>Nombre completo</label><input type="text" name="nombreAcompanante"></div>
+        <div><label>DNI</label><input type="text" name="dniAcompanante" pattern="[0-9]{7,8}"></div>
+      </div>
+      <label>Vínculo con el menor (si corresponde)</label>
+      <input type="text" name="vinculoAcompanante" placeholder="Ej: Abuelo/a, Tío/a">
+    </div>
+
+    <h3 class="seccion">Datos del Otro Progenitor</h3>
+    <div class="fila">
+      <div><label>Nombre completo</label><input type="text" name="nombreOtroProgenitor"></div>
+      <div><label>DNI</label><input type="text" name="dniOtroProgenitor" pattern="[0-9]{7,8}"></div>
+    </div>
+
+    <h3 class="seccion">Fotos de DNI (opcional)</h3>
+    <label>Foto del DNI (menor)</label>
+    <div class="captura-foto" data-target="aut-menor">
+      <div class="captura-visor">
+        <video autoplay playsinline muted></video>
+        <div class="marco-dni"><div class="marco-dni-texto">Encuadrá el DNI dentro del marco</div></div>
+        <div class="scan-indicador"><span>Buscando código</span><span class="scan-dot"></span><span class="scan-dot"></span><span class="scan-dot"></span></div>
+        <button type="button" class="btn-flash" title="Activar/desactivar flash">🔦</button>
+        <img hidden alt="Foto del DNI capturada">
+      </div>
+      <canvas hidden></canvas>
+      <input type="hidden" name="foto_menor" value="">
+      <div class="aviso-foto">
+        ⚠️ <span class="motivo-texto">No pudimos leer el código del DNI.</span>
+        <div class="acciones">
+          <button type="button" class="btn-repetir-aviso">Reintentar</button>
+          <button type="button" class="btn-usar-igual">Tomar foto igual</button>
+        </div>
+      </div>
+      <div class="captura-botones">
+        <button type="button" class="btn-secundario btn-camara">Activar cámara</button>
+        <button type="button" class="btn-secundario btn-cancelar" hidden>Cancelar</button>
+      </div>
+      <p class="captura-estado">Sin foto capturada</p>
+      <p class="escaneo-estado"></p>
+    </div>
+
+    <label>Foto del DNI (progenitor autorizante)</label>
+    <div class="captura-foto" data-target="aut-progenitor">
+      <div class="captura-visor">
+        <video autoplay playsinline muted></video>
+        <div class="marco-dni"><div class="marco-dni-texto">Encuadrá el DNI dentro del marco</div></div>
+        <div class="scan-indicador"><span>Buscando código</span><span class="scan-dot"></span><span class="scan-dot"></span><span class="scan-dot"></span></div>
+        <button type="button" class="btn-flash" title="Activar/desactivar flash">🔦</button>
+        <img hidden alt="Foto del DNI capturada">
+      </div>
+      <canvas hidden></canvas>
+      <input type="hidden" name="foto_progenitor" value="">
+      <div class="aviso-foto">
+        ⚠️ <span class="motivo-texto">No pudimos leer el código del DNI.</span>
+        <div class="acciones">
+          <button type="button" class="btn-repetir-aviso">Reintentar</button>
+          <button type="button" class="btn-usar-igual">Tomar foto igual</button>
+        </div>
+      </div>
+      <div class="captura-botones">
+        <button type="button" class="btn-secundario btn-camara">Activar cámara</button>
+        <button type="button" class="btn-secundario btn-cancelar" hidden>Cancelar</button>
+      </div>
+      <p class="captura-estado">Sin foto capturada</p>
+      <p class="escaneo-estado"></p>
+    </div>
+
+    <label>Domicilio (calle, número, barrio)</label>
+    <input type="text" name="domicilio" required>
+    <label>Localidad</label>
+    <select name="localidad" class="select-localidad" required>
+      <option value="">Seleccionar</option>
+    </select>
+    <div class="comisaria-asignada" data-comisaria-aviso>
+      <span class="texto">📍 Calculando comisaría...</span>
+      <strong class="nombre"></strong>
+    </div>
+
+    <div class="btns">
+      <button type="submit" class="btn-primario">Generar Acta de Autorización</button>
+      <button type="button" class="btn-secundario volver">Volver</button>
+    </div>
+    <p class="nota">Esta acta es un borrador. Debe ser certificada por escribano público, juez de paz o Registro Civil para tener validez legal.</p>
+  </form>
+
   <div id="documento">
     <h2 id="doc-titulo">Certificado</h2>
     <p class="subt">Policía de Salta</p>
@@ -863,6 +1049,7 @@ const forms = {
   residencia: document.getElementById('form-residencia'),
   convivencia: document.getElementById('form-convivencia'),
   carencia: document.getElementById('form-carencia'),
+  autorizacion: document.getElementById('form-autorizacion'),
 };
 const tarjetasEl = document.getElementById('tarjetas');
 const documento = document.getElementById('documento');
@@ -888,12 +1075,32 @@ const etiquetas = {
   foto_solicitante: 'Foto del DNI - Solicitante',
   foto_testigo1: 'Foto del DNI - Testigo 1',
   foto_testigo2: 'Foto del DNI - Testigo 2',
+  // Autorización de menor
+  nombreMenor: 'Nombre del menor', dniMenor: 'DNI del menor',
+  fechaNacimientoMenor: 'Fecha de nacimiento del menor',
+  nacionalidadMenor: 'Nacionalidad del menor',
+  nombreProgenitor: 'Nombre del progenitor que autoriza',
+  dniProgenitor: 'DNI del progenitor que autoriza',
+  vinculoProgenitor: 'Vínculo con el menor',
+  destino: 'Destino del viaje', motivoViaje: 'Motivo del viaje',
+  fechaSalida: 'Fecha de salida', fechaRegreso: 'Fecha de regreso',
+  empresaTransporte: 'Empresa de transporte',
+  empresaOtra: 'Empresa de transporte (otra)',
+  tipoViaje: 'Tipo de viaje',
+  nombreAcompanante: 'Nombre del acompañante',
+  dniAcompanante: 'DNI del acompañante',
+  vinculoAcompanante: 'Vínculo del acompañante',
+  nombreOtroProgenitor: 'Nombre del otro progenitor',
+  dniOtroProgenitor: 'DNI del otro progenitor',
+  foto_menor: 'Foto del DNI - Menor',
+  foto_progenitor: 'Foto del DNI - Progenitor autorizante',
 };
 
 const CAMPO_DOMICILIO = {
   residencia: 'domicilio',
   convivencia: 'domicilioComun',
   carencia: 'domicilio',
+  autorizacion: 'domicilio',
 };
 
 document.querySelectorAll('.select-localidad').forEach(select => {
@@ -909,6 +1116,7 @@ const titulos = {
   residencia: 'Certificado de Residencia',
   convivencia: 'Certificado de Convivencia',
   carencia: 'Certificado de Carencia de Recursos',
+  autorizacion: 'Autorización de Viaje de Menor',
 };
 
 /* ============================================================
@@ -1040,42 +1248,11 @@ function camposParaTarget(target) {
   if (prefijo === 'res') return { nombre: 'nombre', dni: 'dni', fechaNacimiento: 'fechaNacimiento' };
   if (prefijo === 'con') return { nombre: 'nombreSolicitante', dni: 'dniSolicitante', fechaNacimiento: null };
   if (prefijo === 'car') return { nombre: 'nombre', dni: 'dni', fechaNacimiento: null };
+  if (prefijo === 'aut') {
+    if (persona === 'menor') return { nombre: 'nombreMenor', dni: 'dniMenor', fechaNacimiento: 'fechaNacimientoMenor' };
+    if (persona === 'progenitor') return { nombre: 'nombreProgenitor', dni: 'dniProgenitor', fechaNacimiento: null };
+  }
   return null;
-}
-
-/* ============================================================
-   ANÁLISIS DE FOTO (oscuridad + nitidez)
-   ============================================================ */
-function analizarFoto(canvas) {
-  const ctx = canvas.getContext('2d');
-  const w = canvas.width;
-  const h = canvas.height;
-  const imageData = ctx.getImageData(0, 0, w, h);
-  const data = imageData.data;
-  let suma = 0;
-  for (let i = 0; i < data.length; i += 4) {
-    suma += 0.299 * data[i] + 0.587 * data[i+1] + 0.114 * data[i+2];
-  }
-  const luminosidad = suma / (data.length / 4);
-  const gris = new Uint8ClampedArray(w * h);
-  for (let i = 0, j = 0; i < data.length; i += 4, j++) {
-    gris[j] = 0.299 * data[i] + 0.587 * data[i+1] + 0.114 * data[i+2];
-  }
-  let sumaLap = 0, sumaLap2 = 0, count = 0;
-  for (let y = 1; y < h - 1; y++) {
-    for (let x = 1; x < w - 1; x++) {
-      const i = y * w + x;
-      const lap = 4 * gris[i] - gris[i-1] - gris[i+1] - gris[i-w] - gris[i+w];
-      sumaLap += lap;
-      sumaLap2 += lap * lap;
-      count++;
-    }
-  }
-  const media = sumaLap / count;
-  const varianza = (sumaLap2 / count) - (media * media);
-  if (luminosidad < 60) return { ok: false, motivo: 'muy oscura (probá con más luz)' };
-  if (varianza < 50) return { ok: false, motivo: 'borrosa o desenfocada' };
-  return { ok: true };
 }
 
 /* ============================================================
@@ -1358,6 +1535,49 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
       estado.classList.add('ok');
       estado.classList.remove('error');
       escaneoEstado.textContent = 'Foto guardada. Completá los datos manualmente.';
+    });
+  }
+});
+
+/* ============================================================
+   LÓGICA ESPECÍFICA DE AUTORIZACIÓN DE MENOR
+   ============================================================ */
+document.addEventListener('DOMContentLoaded', () => {
+  const selectEmpresa = document.getElementById('aut-empresa');
+  const inputEmpresaOtra = document.getElementById('aut-empresa-otra');
+  const selectTipoViaje = document.getElementById('aut-tipo-viaje');
+  const bloqueAcompanante = document.getElementById('aut-bloque-acompanante');
+
+  if (selectEmpresa && inputEmpresaOtra) {
+    selectEmpresa.addEventListener('change', () => {
+      if (selectEmpresa.value === 'Otro (especificar abajo)') {
+        inputEmpresaOtra.disabled = false;
+        inputEmpresaOtra.required = true;
+        inputEmpresaOtra.focus();
+      } else {
+        inputEmpresaOtra.disabled = true;
+        inputEmpresaOtra.required = false;
+        inputEmpresaOtra.value = '';
+      }
+    });
+  }
+
+  if (selectTipoViaje && bloqueAcompanante) {
+    selectTipoViaje.addEventListener('change', () => {
+      if (selectTipoViaje.value === 'acompanado') {
+        bloqueAcompanante.style.display = 'block';
+        bloqueAcompanante.querySelectorAll('input').forEach(inp => {
+          if (inp.name === 'nombreAcompanante' || inp.name === 'dniAcompanante') {
+            inp.required = true;
+          }
+        });
+      } else {
+        bloqueAcompanante.style.display = 'none';
+        bloqueAcompanante.querySelectorAll('input').forEach(inp => {
+          inp.required = false;
+          inp.value = '';
+        });
+      }
     });
   }
 });
@@ -1755,7 +1975,6 @@ async function subirFotoAStorage(dataUrl, tramite, nombreArchivo) {
     throw new Error(`No se pudo subir la foto ${nombreArchivo}: ${errorSubida.message}`);
   }
 
-  // ✅ Devolvemos SOLO la ruta (no URL pública, porque el bucket es privado)
   return ruta;
 }
 
@@ -1766,11 +1985,13 @@ Object.entries(forms).forEach(([tramite, form]) => {
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
 
-    for (const n of [1, 2]) {
-      const foto = form.querySelector(`input[name="foto_testigo${n}"]`);
-      if (!foto || !foto.value) {
-        alert(`Falta la foto del DNI del testigo ${n}. Tocá "Activar cámara" y sacala.`);
-        return;
+    if (tramite !== 'autorizacion') {
+      for (const n of [1, 2]) {
+        const foto = form.querySelector(`input[name="foto_testigo${n}"]`);
+        if (!foto || !foto.value) {
+          alert(`Falta la foto del DNI del testigo ${n}. Tocá "Activar cámara" y sacala.`);
+          return;
+        }
       }
     }
 
@@ -1785,7 +2006,6 @@ Object.entries(forms).forEach(([tramite, form]) => {
     contenido.innerHTML = '';
 
     try {
-      // Separar fotos de datos de texto
       const fotos = {};
       for (const [campo, valor] of datos.entries()) {
         if (!valor) continue;
@@ -1798,7 +2018,6 @@ Object.entries(forms).forEach(([tramite, form]) => {
         }
       }
 
-      // === SUBIR FOTOS A STORAGE ===
       btnEnviar.textContent = 'Subiendo fotos...';
       const entradasFotos = Object.entries(fotos);
 
@@ -1806,10 +2025,9 @@ Object.entries(forms).forEach(([tramite, form]) => {
         const [campo, base64] = entradasFotos[i];
         btnEnviar.textContent = `Subiendo foto ${i + 1}/${entradasFotos.length}...`;
         const ruta = await subirFotoAStorage(base64, tramite, campo);
-        registro[campo] = ruta; // ✅ Guardamos la RUTA, no la URL pública
+        registro[campo] = ruta;
       }
 
-      // === CALCULAR COMISARÍA ===
       btnEnviar.textContent = 'Ubicando domicilio...';
       const campoDomicilio = CAMPO_DOMICILIO[tramite];
       const asignacion = await asignarComisariaPorJurisdiccion(registro[campoDomicilio], registro.localidad);
@@ -1829,7 +2047,6 @@ Object.entries(forms).forEach(([tramite, form]) => {
         comisariaAsignada = form.dataset.comisariaAsignada || 'No se pudo determinar automáticamente (a asignar por el personal)';
       }
 
-      // === INSERTAR EN LA TABLA ===
       btnEnviar.textContent = 'Guardando trámite...';
       const { error } = await supabaseClient.from('solicitudes').insert([{
         tramite: tramite,
@@ -1841,18 +2058,16 @@ Object.entries(forms).forEach(([tramite, form]) => {
 
       if (error) throw error;
 
-      // === ARMAR EL COMPROBANTE EN PANTALLA ===
       for (const [campo, valor] of Object.entries(registro)) {
         const dt = document.createElement('dt');
         dt.textContent = etiquetas[campo] || campo;
         const dd = document.createElement('dd');
 
         if (campo.startsWith('foto_')) {
-          // ✅ Generar URL firmada temporal para mostrar en el comprobante
           const { data: signedData, error: signedError } = await supabaseClient
             .storage
             .from(BUCKET_FOTOS)
-            .createSignedUrl(valor, 600); // 10 minutos
+            .createSignedUrl(valor, 600);
 
           if (!signedError && signedData && signedData.signedUrl) {
             const img = document.createElement('img');
@@ -1879,7 +2094,6 @@ Object.entries(forms).forEach(([tramite, form]) => {
       form.classList.remove('activo');
       documento.classList.add('activo');
 
-      // === LIMPIAR ===
       form.reset();
       form.querySelectorAll('.captura-foto').forEach(c => resetCaptura(c));
       limpiarTodasLasFotosDeStorage();
