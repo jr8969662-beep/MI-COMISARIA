@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Trámites Policiales Salta</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
   :root{
     --azul-fondo:#0a1e3d;
@@ -306,6 +308,18 @@
   .comisaria-asignada.error strong{color:#fca5a5;}
   @keyframes fadeInComisaria{from{opacity:0;transform:translateY(-6px);}to{opacity:1;transform:translateY(0);}}
 
+  /* MAPA DE CONFIRMACIÓN DE DOMICILIO */
+  .mapa-confirmacion{margin-top:14px;padding:12px;background:rgba(0,0,0,0.35);border:1px solid rgba(201,169,97,0.5);border-radius:8px;}
+  .mapa-confirmacion .titulo{font-size:0.85rem;color:var(--dorado-claro);font-weight:600;margin-bottom:10px;display:flex;align-items:center;gap:6px;}
+  .mapa-confirmacion #mapa-leaflet{width:100%;height:260px;border-radius:6px;border:1px solid rgba(201,169,97,0.4);z-index:1;}
+  .mapa-confirmacion .ayuda{font-size:0.78rem;color:rgba(255,255,255,0.75);margin-top:10px;line-height:1.5;}
+  .mapa-confirmacion .coords{font-size:0.72rem;color:rgba(255,255,255,0.5);margin-top:6px;font-family:monospace;}
+  .leaflet-container{background:#0a1e3d !important;}
+  .leaflet-control-attribution{background:rgba(0,0,0,0.5) !important;color:#fff !important;font-size:0.65rem !important;}
+  .leaflet-control-attribution a{color:var(--dorado-claro) !important;}
+  .leaflet-control-zoom a{background:rgba(13,42,77,0.9) !important;color:#fff !important;border-color:rgba(201,169,97,0.4) !important;}
+  .leaflet-control-zoom a:hover{background:var(--azul) !important;}
+
   #documento{display:none;background:rgba(13,42,77,0.75);backdrop-filter:blur(10px);border:1px solid rgba(201,169,97,0.4);border-top:3px solid var(--dorado);border-radius:10px;padding:30px;}
   #documento.activo{display:block;}
   #documento h2{text-align:center;color:var(--dorado-claro);font-size:1.05rem;margin-bottom:4px;}
@@ -317,12 +331,39 @@
   #documento .firma{margin-top:50px;display:flex;justify-content:space-between;font-size:0.8rem;flex-wrap:wrap;gap:16px;}
   #documento .firma div{border-top:1px solid rgba(255,255,255,0.4);padding-top:6px;width:30%;text-align:center;min-width:150px;color:rgba(255,255,255,0.8);}
 
+  /* CERTIFICADO OFICIAL */
+  .certificado-oficial{background:#fff;color:#1f2937;padding:40px 50px;
+    font-family:'Times New Roman', Georgia, serif;line-height:1.8;
+    text-align:justify;max-width:850px;margin:0 auto;
+    border:1px solid #c9a961;border-radius:8px;}
+  .cert-header{text-align:center;margin-bottom:26px;border-bottom:2px solid #0d2a4d;padding-bottom:14px;}
+  .cert-escudo{display:inline-block;width:70px;height:70px;
+    background-image:url('logo-policia.png.jpeg');background-size:contain;
+    background-repeat:no-repeat;background-position:center;margin-bottom:6px;}
+  .cert-titulo{font-family:'Segoe UI', Arial, sans-serif;font-weight:bold;color:#0d2a4d;}
+  .cert-titulo .cert-linea1{font-size:0.88rem;letter-spacing:0.15em;}
+  .cert-titulo .cert-linea2{font-size:1.1rem;letter-spacing:0.3em;color:#c9a961;margin:4px 0;font-family:'Times New Roman', serif;}
+  .cert-titulo .cert-nombre{font-size:1.15rem;letter-spacing:0.12em;margin-top:10px;padding-top:10px;border-top:1px solid #c9a961;text-decoration:underline;text-underline-offset:4px;}
+  .cert-texto{font-size:1rem;margin:18px 0;text-align:justify;color:#1f2937;}
+  .cert-texto strong{font-weight:bold;text-transform:uppercase;}
+  .cert-lista-convivientes{margin:16px 0 16px 30px;padding:0;list-style:none;}
+  .cert-lista-convivientes li{font-size:1rem;margin:6px 0;color:#1f2937;font-weight:bold;text-transform:uppercase;}
+  .cert-lista-convivientes li .parentesco{font-weight:normal;text-transform:none;font-style:italic;color:#4b5563;margin-left:6px;}
+  .cert-firmas{margin-top:70px;display:flex;justify-content:space-around;gap:20px;flex-wrap:wrap;}
+  .cert-firma{text-align:center;font-size:0.85rem;color:#1f2937;width:180px;}
+  .cert-firma-espacio{height:60px;border-bottom:1px solid #1f2937;margin-bottom:6px;}
+  .cert-firmas-tres{margin-top:70px;display:flex;justify-content:space-between;gap:15px;flex-wrap:wrap;}
+  .cert-firmas-tres .cert-firma{flex:1;min-width:130px;}
+  .cert-firmas-una{margin-top:70px;display:flex;justify-content:center;}
+  .cert-firmas-una .cert-firma{width:220px;}
+  .cert-lugar-fecha{text-align:right;font-size:0.95rem;margin:24px 0 18px;color:#1f2937;font-style:italic;}
+
   footer.site-footer{background:transparent;color:var(--dorado-claro);padding:28px 20px;margin-top:auto;border-top:1px solid rgba(201,169,97,0.3);text-align:center;font-size:1rem;line-height:1.7;position:relative;z-index:2;}
   footer.site-footer .footer-inner{max-width:760px;margin:0 auto;}
   footer.site-footer p{margin:4px 0;color:var(--dorado-brilloso);font-weight:500;text-shadow:0 0 10px rgba(240,215,140,0.4), 0 1px 2px rgba(0,0,0,0.5);}
   footer.site-footer strong{color:var(--dorado-brilloso);font-weight:700;text-shadow:0 0 10px rgba(240,215,140,0.5), 0 1px 2px rgba(0,0,0,0.5);}
 
-    @media print{
+  @media print{
     header,.tarjetas,form,.no-print,footer.site-footer{display:none !important;}
     #documento{display:block !important;border:none;box-shadow:none;background:#fff;padding:0;}
     #documento h2,#documento dt{color:#0d2a4d;}
@@ -1209,6 +1250,69 @@
       <p class="captura-estado">Sin foto capturada</p>
       <p class="escaneo-estado"></p>
     </div>
+    <h3 class="seccion">Testigos (obligatorios: 2)</h3>
+    <div class="bloque-testigo" data-testigo="1" data-activo="true">
+      <div class="fila campos-testigo">
+        <div><label>Nombre del testigo 1</label><input type="text" name="testigo1Nombre" required></div>
+        <div><label>DNI del testigo 1</label><input type="text" name="testigo1Dni" pattern="[0-9]{7,8}" required></div>
+      </div>
+      <label class="campos-testigo">Foto del DNI (testigo 1)</label>
+      <div class="captura-foto campos-testigo" data-target="sup-testigo1">
+        <div class="captura-visor">
+          <video autoplay playsinline muted></video>
+          <div class="marco-dni"><div class="marco-dni-texto">Encuadrá el DNI dentro del marco</div></div>
+          <div class="scan-indicador"><span>Buscando código</span><span class="scan-dot"></span><span class="scan-dot"></span><span class="scan-dot"></span></div>
+          <button type="button" class="btn-flash" title="Activar/desactivar flash">🔦</button>
+          <img hidden alt="Foto del DNI capturada">
+        </div>
+        <canvas hidden></canvas>
+        <input type="hidden" name="foto_testigo1" value="">
+        <div class="aviso-foto">
+          ⚠️ <span class="motivo-texto">No pudimos leer el código del DNI.</span>
+          <div class="acciones">
+            <button type="button" class="btn-repetir-aviso">Reintentar</button>
+            <button type="button" class="btn-usar-igual">Tomar foto igual</button>
+          </div>
+        </div>
+        <div class="captura-botones">
+          <button type="button" class="btn-secundario btn-camara">Activar cámara</button>
+          <button type="button" class="btn-secundario btn-cancelar" hidden>Cancelar</button>
+        </div>
+        <p class="captura-estado">Sin foto capturada</p>
+        <p class="escaneo-estado"></p>
+      </div>
+    </div>
+    <div class="bloque-testigo" data-testigo="2" data-activo="true">
+      <div class="fila campos-testigo">
+        <div><label>Nombre del testigo 2</label><input type="text" name="testigo2Nombre" required></div>
+        <div><label>DNI del testigo 2</label><input type="text" name="testigo2Dni" pattern="[0-9]{7,8}" required></div>
+      </div>
+      <label class="campos-testigo">Foto del DNI (testigo 2)</label>
+      <div class="captura-foto campos-testigo" data-target="sup-testigo2">
+        <div class="captura-visor">
+          <video autoplay playsinline muted></video>
+          <div class="marco-dni"><div class="marco-dni-texto">Encuadrá el DNI dentro del marco</div></div>
+          <div class="scan-indicador"><span>Buscando código</span><span class="scan-dot"></span><span class="scan-dot"></span><span class="scan-dot"></span></div>
+          <button type="button" class="btn-flash" title="Activar/desactivar flash">🔦</button>
+          <img hidden alt="Foto del DNI capturada">
+        </div>
+        <canvas hidden></canvas>
+        <input type="hidden" name="foto_testigo2" value="">
+        <div class="aviso-foto">
+          ⚠️ <span class="motivo-texto">No pudimos leer el código del DNI.</span>
+          <div class="acciones">
+            <button type="button" class="btn-repetir-aviso">Reintentar</button>
+            <button type="button" class="btn-usar-igual">Tomar foto igual</button>
+          </div>
+        </div>
+        <div class="captura-botones">
+          <button type="button" class="btn-secundario btn-camara">Activar cámara</button>
+          <button type="button" class="btn-secundario btn-cancelar" hidden>Cancelar</button>
+        </div>
+        <p class="captura-estado">Sin foto capturada</p>
+        <p class="escaneo-estado"></p>
+      </div>
+    </div>
     <div class="btns">
       <button type="submit" class="btn-primario">Generar certificado</button>
       <button type="button" class="btn-secundario volver">Volver</button>
@@ -1474,8 +1578,10 @@ document.getElementById('doc-volver').addEventListener('click', () => {
   tarjetasEl.style.display = 'grid';
   try { localStorage.removeItem('tramite_activo'); } catch(e){}
 });
-
-/* PARSEO DEL CÓDIGO DEL DNI */
+  
+/* ============================================================
+   PARSEO DEL CÓDIGO DEL DNI
+   ============================================================ */
 function parsearCodigoDNI(texto) {
   const contenido = String(texto || "").replace(/[\r\n]+/g, "@");
   const partes = contenido.split("@").map(p => p.trim()).filter(Boolean);
@@ -1552,8 +1658,7 @@ function resetCaptura(captura){
   img.src = '';
   hiddenInput.value = '';
   estado.textContent = 'Sin foto capturada';
-  estado.classList.remove('ok');
-  estado.classList.remove('error');
+  estado.classList.remove('ok', 'error');
   if (btnCamara) btnCamara.hidden = false;
   if (btnCancelar) btnCancelar.hidden = true;
   if (btnRepetir) btnRepetir.hidden = true;
@@ -1615,8 +1720,7 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
       if (avisoFoto) avisoFoto.classList.remove('activo');
       if (scanIndicador) scanIndicador.classList.add('activo');
       estado.textContent = 'Apuntá al código de barras del DNI. Se escaneará automáticamente.';
-      estado.classList.remove('ok');
-      estado.classList.remove('error');
+      estado.classList.remove('ok', 'error');
 
       trackActual = stream.getVideoTracks()[0];
       const capacidades = trackActual.getCapabilities ? trackActual.getCapabilities() : {};
@@ -1668,10 +1772,7 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
         const codigos = await detector.detect(canvas);
         if (codigos && codigos.length) {
           const datos = parsearCodigoDNI(codigos[0].rawValue);
-          if (datos && (datos.dni || datos.nombreCompleto)) {
-            exitoEscaneo(datos, canvas);
-            return;
-          }
+          if (datos && (datos.dni || datos.nombreCompleto)) { exitoEscaneo(datos, canvas); return; }
         }
       }
       intentosSinDeteccion++;
@@ -1692,10 +1793,7 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
     if (scanIndicador) scanIndicador.classList.remove('activo');
     if (btnFlash) btnFlash.classList.remove('activo');
     if (btnCancelar) btnCancelar.hidden = true;
-    if (flashEncendido && trackActual) {
-      trackActual.applyConstraints({ advanced: [{ torch: false }] }).catch(()=>{});
-      flashEncendido = false;
-    }
+    if (flashEncendido && trackActual) { trackActual.applyConstraints({ advanced: [{ torch: false }] }).catch(()=>{}); flashEncendido = false; }
     if (video.srcObject) { video.srcObject.getTracks().forEach(t => t.stop()); video.srcObject = null; }
     trackActual = null;
     if (campos) {
@@ -1745,10 +1843,7 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
       if (scanIndicador) scanIndicador.classList.remove('activo');
       if (avisoFoto) avisoFoto.classList.remove('activo');
       if (btnCancelar) btnCancelar.hidden = true;
-      if (flashEncendido && trackActual) {
-        trackActual.applyConstraints({ advanced: [{ torch: false }] }).catch(()=>{});
-        flashEncendido = false;
-      }
+      if (flashEncendido && trackActual) { trackActual.applyConstraints({ advanced: [{ torch: false }] }).catch(()=>{}); flashEncendido = false; }
       if (video.srcObject) { video.srcObject.getTracks().forEach(t => t.stop()); video.srcObject = null; }
       trackActual = null;
       estado.textContent = 'Foto guardada sin datos escaneados. Completá los datos a mano.';
@@ -1798,7 +1893,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
-/* POLÍGONOS Y ASIGNACIÓN */
+/* POLÍGONOS */
 const POLIGONOS_DDP = {};
 let poligonosCargados = false;
 let cargandoPoligonos = false;
@@ -1850,6 +1945,7 @@ function buscarComisariaPorCoordenadas(lat, lon) {
   return null;
 }
 
+/* HELPERS GEOCODING */
 async function consultarNominatim(consulta) {
   const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=ar&q=${encodeURIComponent(consulta)}`;
   try {
@@ -1940,15 +2036,31 @@ async function asignarComisariaPorJurisdiccion(domicilio, localidad) {
   return { comisaria: comisaria.nombre, ddp: comisaria.ddp, lat: ubicacion.lat, lon: ubicacion.lon, origen: 'poligono' };
 }
 
+/* ============================================================
+   MOSTRAR AVISO CON MAPA LEAFLET
+   ============================================================ */
+let mapaLeafletActivo = null;
+let marcadorLeafletActivo = null;
+
 function mostrarAvisoComisaria(form, estado, dato) {
   const aviso = form.querySelector('[data-comisaria-aviso]');
   if (!aviso) return;
+
   aviso.classList.remove('activo', 'cargando', 'error');
   const texto = aviso.querySelector('.texto');
   const nombreEl = aviso.querySelector('.nombre');
+
   const selectViejo = aviso.querySelector('.seleccion-comisaria');
   if (selectViejo) selectViejo.remove();
+  const mapaViejo = aviso.querySelector('.mapa-confirmacion');
+  if (mapaViejo) mapaViejo.remove();
+  if (mapaLeafletActivo) {
+    mapaLeafletActivo.remove();
+    mapaLeafletActivo = null;
+    marcadorLeafletActivo = null;
+  }
   nombreEl.style.display = '';
+
   if (estado === 'cargando') {
     aviso.classList.add('activo', 'cargando');
     texto.textContent = '⏳ Calculando comisaría...';
@@ -1960,33 +2072,90 @@ function mostrarAvisoComisaria(form, estado, dato) {
     form.dataset.comisariaAsignada = dato;
   } else if (estado === 'multiple') {
     aviso.classList.add('activo', 'cargando');
-    texto.textContent = '📍 Este barrio puede pertenecer a varias comisarías. Elegí la tuya:';
+    texto.textContent = '📍 Hay varias comisarías posibles. Confirmá tu ubicación en el mapa:';
     nombreEl.textContent = '';
-    const select = document.createElement('select');
-    select.className = 'seleccion-comisaria';
-    select.style.cssText = 'margin-top:10px;width:100%;padding:10px;border-radius:6px;background:rgba(0,0,0,0.5);color:#fff;border:1px solid rgba(201,169,97,0.5);font-size:0.9rem;font-family:inherit;cursor:pointer;';
-    const optDefault = document.createElement('option');
-    optDefault.value = '';
-    optDefault.textContent = '— Seleccionar comisaría —';
-    select.appendChild(optDefault);
-    dato.forEach(comisaria => {
-      const opt = document.createElement('option');
-      opt.value = comisaria;
-      opt.textContent = comisaria;
-      select.appendChild(opt);
-    });
-    select.addEventListener('change', () => {
-      if (select.value) {
-        form.dataset.comisariaAsignada = select.value;
-        aviso.classList.remove('cargando');
-        texto.textContent = '📍 Comisaría asignada:';
-        nombreEl.textContent = select.value;
-        nombreEl.style.display = '';
-        select.remove();
-      }
-    });
-    aviso.appendChild(select);
     form.dataset.comisariaAsignada = '';
+
+    const opciones = dato.opciones || [];
+    const domicilio = dato.domicilio || '';
+    const localidad = dato.localidad || '';
+
+    const bloqueMapa = document.createElement('div');
+    bloqueMapa.className = 'mapa-confirmacion';
+    bloqueMapa.innerHTML = `
+      <div class="titulo">🗺️ <span>Arrastrá el marcador a tu domicilio exacto</span></div>
+      <div id="mapa-leaflet"></div>
+      <div class="ayuda">
+        👆 <strong>Tocá o arrastrá el marcador</strong> hasta tu casa. La comisaría se asigna automáticamente según el punto exacto.
+      </div>
+      <div class="coords" data-coords>📍 Ubicación actual: sin confirmar</div>
+    `;
+    aviso.appendChild(bloqueMapa);
+
+    setTimeout(async () => {
+      const divMapa = bloqueMapa.querySelector('#mapa-leaflet');
+      const coordsEl = bloqueMapa.querySelector('[data-coords]');
+
+      let centro = { lat: -24.786744, lng: -65.408122 };
+      try {
+        const ubic = await geocodificarConNominatim(domicilio, localidad);
+        if (ubic && ubic.lat && ubic.lon) {
+          centro = { lat: ubic.lat, lng: ubic.lon };
+        }
+      } catch (e) { console.warn('No se pudo geocodificar:', e); }
+
+      mapaLeafletActivo = L.map(divMapa, {
+        center: [centro.lat, centro.lng],
+        zoom: 16,
+        zoomControl: true,
+      });
+
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '© OpenStreetMap'
+      }).addTo(mapaLeafletActivo);
+
+      marcadorLeafletActivo = L.marker([centro.lat, centro.lng], {
+        draggable: true,
+        title: 'Arrastrame a tu domicilio'
+      }).addTo(mapaLeafletActivo);
+
+      coordsEl.textContent = `📍 Ubicación actual: ${centro.lat.toFixed(5)}, ${centro.lng.toFixed(5)}`;
+
+      async function recalcularConCoordenadas(lat, lng) {
+        coordsEl.textContent = `📍 Ubicación actual: ${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+        if (!poligonosCargados) await cargarTodosLosPoligonos();
+        const comisaria = buscarComisariaPorCoordenadas(lat, lng);
+        if (comisaria && comisaria.nombre) {
+          form.dataset.comisariaAsignada = comisaria.nombre;
+          aviso.classList.remove('cargando');
+          texto.textContent = '✅ Comisaría asignada:';
+          nombreEl.textContent = comisaria.nombre;
+          nombreEl.style.display = '';
+          const ayuda = bloqueMapa.querySelector('.ayuda');
+          ayuda.innerHTML = `✅ <strong>${comisaria.nombre}</strong> — ¡Listo, podés continuar!`;
+          ayuda.style.color = '#86efac';
+        } else {
+          form.dataset.comisariaAsignada = '';
+          texto.textContent = '⚠️ Este punto no cae en ninguna jurisdicción conocida.';
+          nombreEl.textContent = 'Se asignará manualmente';
+          nombreEl.style.display = '';
+        }
+      }
+
+      marcadorLeafletActivo.on('dragend', function (e) {
+        const pos = e.target.getLatLng();
+        recalcularConCoordenadas(pos.lat, pos.lng);
+      });
+
+      mapaLeafletActivo.on('click', function (e) {
+        marcadorLeafletActivo.setLatLng(e.latlng);
+        recalcularConCoordenadas(e.latlng.lat, e.latlng.lng);
+      });
+
+      recalcularConCoordenadas(centro.lat, centro.lng);
+      setTimeout(() => { mapaLeafletActivo.invalidateSize(); }, 200);
+    }, 50);
   } else if (estado === 'error') {
     aviso.classList.add('activo', 'error');
     texto.textContent = '⚠️ No se pudo determinar la comisaría';
@@ -2003,8 +2172,10 @@ Object.entries(forms).forEach(([tramite, form]) => {
   const inputDomicilio = form.querySelector(`[name="${campoDomicilio}"]`);
   const selectLocalidad = form.querySelector('[name="localidad"]');
   if (!inputDomicilio || !selectLocalidad) return;
+
   let timeoutId = null;
   let ultimaConsulta = '';
+
   async function calcularComisaria() {
     const domicilio = inputDomicilio.value.trim();
     const localidad = selectLocalidad.value;
@@ -2018,19 +2189,30 @@ Object.entries(forms).forEach(([tramite, form]) => {
     mostrarAvisoComisaria(form, 'cargando');
     try {
       const resultado = await asignarComisariaPorJurisdiccion(domicilio, localidad);
-      if (resultado.opciones && resultado.opciones.length > 0) mostrarAvisoComisaria(form, 'multiple', resultado.opciones);
-      else if (resultado.comisaria) mostrarAvisoComisaria(form, 'ok', resultado.comisaria);
-      else mostrarAvisoComisaria(form, 'error');
+      if (resultado.opciones && resultado.opciones.length > 0) {
+        mostrarAvisoComisaria(form, 'multiple', {
+          opciones: resultado.opciones,
+          domicilio: inputDomicilio.value.trim(),
+          localidad: selectLocalidad.value
+        });
+      } else if (resultado.comisaria) {
+        mostrarAvisoComisaria(form, 'ok', resultado.comisaria);
+      } else {
+        mostrarAvisoComisaria(form, 'error');
+      }
     } catch (err) { console.error(err); mostrarAvisoComisaria(form, 'error'); }
   }
+
   function debounceCalcular() {
     if (timeoutId) clearTimeout(timeoutId);
     timeoutId = setTimeout(calcularComisaria, 1200);
   }
+
   inputDomicilio.addEventListener('input', debounceCalcular);
   selectLocalidad.addEventListener('change', calcularComisaria);
 });
 
+/* SUBIR FOTO A STORAGE */
 async function subirFotoAStorage(dataUrl, tramite, nombreArchivo) {
   if (!dataUrl || !dataUrl.startsWith('data:image')) return null;
   const respuesta = await fetch(dataUrl);
@@ -2039,9 +2221,7 @@ async function subirFotoAStorage(dataUrl, tramite, nombreArchivo) {
   const random = Math.random().toString(36).substring(2, 8);
   const ruta = `${tramite}/${timestamp}-${random}-${nombreArchivo}.jpg`;
   const { error: errorSubida } = await supabaseClient
-    .storage
-    .from(BUCKET_FOTOS)
-    .upload(ruta, blob, { contentType: 'image/jpeg', upsert: false });
+    .storage.from(BUCKET_FOTOS).upload(ruta, blob, { contentType: 'image/jpeg', upsert: false });
   if (errorSubida) {
     console.error('❌ Error subiendo foto:', nombreArchivo, errorSubida);
     throw new Error(`No se pudo subir la foto ${nombreArchivo}: ${errorSubida.message}`);
@@ -2049,10 +2229,292 @@ async function subirFotoAStorage(dataUrl, tramite, nombreArchivo) {
   return ruta;
 }
 
+/* FORMATEADORES Y GENERADORES DE CERTIFICADOS OFICIALES */
+function formatearDni(dni) {
+  if (!dni) return '—';
+  const s = String(dni).replace(/\D/g, '');
+  if (s.length === 8) return s.slice(0,2) + '.' + s.slice(2,5) + '.' + s.slice(5);
+  if (s.length === 7) return s.slice(0,1) + '.' + s.slice(1,4) + '.' + s.slice(4);
+  return s;
+}
+
+function calcularEdad(fechaISO) {
+  if (!fechaISO) return '—';
+  const hoy = new Date();
+  const nac = new Date(fechaISO);
+  let edad = hoy.getFullYear() - nac.getFullYear();
+  const m = hoy.getMonth() - nac.getMonth();
+  if (m < 0 || (m === 0 && hoy.getDate() < nac.getDate())) edad--;
+  return edad;
+}
+
+function formatearFechaCorta(fechaISO) {
+  if (!fechaISO) return '—';
+  const f = new Date(fechaISO + 'T00:00:00');
+  if (isNaN(f)) return fechaISO;
+  const dd = String(f.getDate()).padStart(2, '0');
+  const mm = String(f.getMonth() + 1).padStart(2, '0');
+  const yy = String(f.getFullYear()).slice(-2);
+  return `${dd}/${mm}/${yy}`;
+}
+
+function obtenerFechaActual() {
+  const hoy = new Date();
+  const meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  return {
+    dia: String(hoy.getDate()).padStart(2, '0'),
+    mes: meses[hoy.getMonth()],
+    anio: hoy.getFullYear(),
+    hora: String(hoy.getHours()).padStart(2, '0') + ':' + String(hoy.getMinutes()).padStart(2, '0')
+  };
+}
+
+function certHeader(titulo) {
+  return `
+    <div class="cert-header">
+      <div class="cert-escudo"></div>
+      <div class="cert-titulo">
+        <div class="cert-linea1">POLICÍA DE LA PROVINCIA</div>
+        <div class="cert-linea2">S A L T A</div>
+        <div class="cert-nombre">${titulo}</div>
+      </div>
+    </div>`;
+}
+
+function generarCertificadoResidencia(r, comisaria) {
+  const f = obtenerFechaActual();
+  const t1 = (r.testigo1Nombre || '—').toUpperCase();
+  const t2 = (r.testigo2Nombre || '—').toUpperCase();
+  const sol = (r.nombre || '—').toUpperCase();
+  const dom = r.domicilio || '—';
+  const loc = r.localidad || '—';
+  return `
+    <div class="certificado-oficial">
+      ${certHeader('CERTIFICADO DE RESIDENCIA')}
+      <p class="cert-texto">
+        <strong>____:</strong> El Funcionario Policial que suscribe CERTIFICA de acuerdo a los
+        testimonios de los Sres. Testigos: <strong>${t1}</strong> DNI Nº ${formatearDni(r.testigo1Dni)}
+        con dlio. en ${dom} y de <strong>${t2}</strong> DNI Nº ${formatearDni(r.testigo2Dni)}
+        con dlio. en ${dom}, ambos de la Ciudad de ${loc}, a quienes les consta que la persona de
+        <strong>${sol}</strong> DNI Nº ${formatearDni(r.dni)}, argentino/a mayor de edad,
+        RESIDE: En el domicilio sito en <strong>${dom}</strong>, ${loc}.
+      </p>
+      <p class="cert-texto">
+        <strong>____:</strong> Se extiende el presente a solicitud de la parte interesada con el
+        solo objeto de ser presentado por ante ${r.motivo || '—'}. Dado en ${comisaria}, a los
+        ${f.dia} días del mes de ${f.mes} del año ${f.anio}.
+      </p>
+      <div class="cert-firmas-tres">
+        <div class="cert-firma"><div class="cert-firma-espacio"></div><div>Firma del Solicitante</div></div>
+        <div class="cert-firma"><div class="cert-firma-espacio"></div><div>Tgo. de Acto I</div></div>
+        <div class="cert-firma"><div class="cert-firma-espacio"></div><div>Tgo. de Acto II</div></div>
+      </div>
+    </div>`;
+}
+
+function generarCertificadoConvivencia(r, comisaria) {
+  const f = obtenerFechaActual();
+  const t1 = (r.testigo1Nombre || '—').toUpperCase();
+  const t2 = (r.testigo2Nombre || '—').toUpperCase();
+  const sol = (r.nombreSolicitante || '—').toUpperCase();
+  const conv = (r.nombreConviviente || '—').toUpperCase();
+  const dom = r.domicilioComun || '—';
+  const loc = r.localidad || '—';
+  return `
+    <div class="certificado-oficial">
+      ${certHeader('CERTIFICADO DE CONVIVENCIA')}
+      <p class="cert-texto">
+        <strong>____:</strong> El Funcionario Policial que suscribe CERTIFICA que de acuerdo al
+        testimonio brindado por los testigos Sres. <strong>${t1}</strong> DNI Nº
+        ${formatearDni(r.testigo1Dni)}, Dlio. en ${dom} y <strong>${t2}</strong> DNI Nº
+        ${formatearDni(r.testigo2Dni)}, con Dlio. en ${dom}, ambos del Barrio ${loc} – Salta
+        Capital, argentinos, mayores de edad, establece que la persona de <strong>${sol}</strong>,
+        DNI Nº ${formatearDni(r.dniSolicitante)}, argentino/a, mayor de edad RESIDE: en el
+        domicilio ubicado en ${dom} – ${loc} y CONVIVE con las siguientes personas:
+      </p>
+      <ul class="cert-lista-convivientes">
+        <li>${sol} DNI Nº ${formatearDni(r.dniSolicitante)} <span class="parentesco">(Solicitante)</span></li>
+        <li>${conv} DNI Nº ${formatearDni(r.dniConviviente)} <span class="parentesco">(${r.parentesco || '—'})</span></li>
+      </ul>
+      <p class="cert-texto">
+        <strong>____:</strong> Se expide el presente Certificado a solicitud de la parte interesada
+        a los fines de ser presentado por ante ${r.motivo || '—'}. Otorgado en ${comisaria} de la
+        Ciudad de Salta, Pcia. del mismo nombre, a los ${f.dia} días del mes de ${f.mes} del año ${f.anio}.
+      </p>
+      <div class="cert-firmas">
+        <div class="cert-firma"><div class="cert-firma-espacio"></div><div>Testigo Nº 1</div></div>
+        <div class="cert-firma"><div class="cert-firma-espacio"></div><div>Testigo Nº 2</div></div>
+      </div>
+    </div>`;
+}
+
+function generarCertificadoCarencia(r, comisaria) {
+  const f = obtenerFechaActual();
+  const t1 = (r.testigo1Nombre || '—').toUpperCase();
+  const t2 = (r.testigo2Nombre || '—').toUpperCase();
+  const sol = (r.nombre || '—').toUpperCase();
+  const dom = r.domicilio || '—';
+  const loc = r.localidad || '—';
+  return `
+    <div class="certificado-oficial">
+      ${certHeader('CERTIFICADO DE CARENTE DE RECURSO')}
+      <p class="cert-texto">
+        <strong>----:</strong> El Funcionario Policial que suscribe CERTIFICA que de acuerdo a los
+        testimonios brindados por los testigos Sres. <strong>${t1}</strong> DNI Nº
+        ${formatearDni(r.testigo1Dni)}, Dlio. en ${dom} y <strong>${t2}</strong> DNI Nº
+        ${formatearDni(r.testigo2Dni)}, Dlio. en ${dom}. Declaran Bajo Juramento de Ley que saben
+        y les consta que el/la Sr./Sra. <strong>${sol}</strong>, DNI Nº ${formatearDni(r.dni)},
+        Dlio. ${dom} de esta Ciudad, <strong>ES CARENTE DE RECURSOS ECONÓMICOS</strong>. Se
+        extiende el presente certificado a solicitud de la parte interesada y al solo efecto de
+        ser presentado por ante ${r.motivo || '—'}.
+      </p>
+      <p class="cert-texto" style="text-align:right;margin-top:20px;">
+        ${loc}, ${f.mes} ${f.dia} de ${f.anio}.-
+      </p>
+      <div class="cert-firmas-tres">
+        <div class="cert-firma"><div class="cert-firma-espacio"></div><div>Firma del Solicitante</div></div>
+        <div class="cert-firma"><div class="cert-firma-espacio"></div><div>Testigo Nº 1</div></div>
+        <div class="cert-firma"><div class="cert-firma-espacio"></div><div>Testigo Nº 2</div></div>
+      </div>
+    </div>`;
+}
+
+function generarConstanciaAutorizacion(r, comisaria) {
+  const f = obtenerFechaActual();
+  const prog = (r.nombreProgenitor || '—').toUpperCase();
+  const progDni = formatearDni(r.dniProgenitor);
+  const dom = r.domicilio || '—';
+  const menor = (r.nombreMenor || '—').toUpperCase();
+  const menorDni = formatearDni(r.dniMenor);
+  const edad = calcularEdad(r.fechaNacimientoMenor);
+  const destino = r.destino || '—';
+  let empresa = r.empresaTransporte || '—';
+  if (empresa === 'Otro (especificar abajo)' && r.empresaOtra) empresa = r.empresaOtra;
+  const fechaSalida = formatearFechaCorta(r.fechaSalida);
+  const fechaRegreso = formatearFechaCorta(r.fechaRegreso);
+  let viajaTexto = 'solo';
+  if (r.tipoViaje === 'acompanado') {
+    const acomp = (r.nombreAcompanante || 'acompañante').toUpperCase();
+    const vinculo = r.vinculoAcompanante ? ` (${r.vinculoAcompanante})` : '';
+    viajaTexto = `acompañado por ${acomp}${vinculo}`;
+  }
+  const prep = (empresa.toLowerCase().includes('vehículo') || empresa.toLowerCase().includes('vehiculo')) ? 'en' : 'perteneciente a la empresa';
+  return `
+    <div class="certificado-oficial">
+      ${certHeader('CONSTANCIA DE AUTORIZACIÓN')}
+      <p class="cert-texto">
+        <strong>----:</strong> La/El que suscribe <strong>${prog}</strong> DNI N° ${progDni}
+        con Dlio. en ${dom} de esta ciudad, AUTORIZO a mi hijo/a <strong>${menor}</strong>
+        DNI N° ${menorDni} de ${edad} años a viajar a la localidad de <strong>${destino}</strong>,
+        en fecha ${fechaSalida} ${prep} <strong>${empresa}</strong>, el mismo se trasladaría
+        ${viajaTexto} y retornaría de la misma manera en fecha ${fechaRegreso} a esta ciudad.
+      </p>
+      <div class="cert-lugar-fecha">
+        ${comisaria} – Salta, ${f.mes} ${f.dia} del ${f.anio}.-
+      </div>
+      <p class="cert-texto">
+        <strong>-----:</strong> El Funcionario Policial que suscribe CERTIFICA que la firma que
+        antecede pertenece a la/el Sr./Sra. <strong>${prog}</strong> DNI N° ${progDni} la cual
+        fue estampada en mi presencia.
+      </p>
+      <div class="cert-firmas-una">
+        <div class="cert-firma"><div class="cert-firma-espacio"></div><div>Firma del Progenitor Autorizante</div></div>
+      </div>
+    </div>`;
+}
+
+function generarConstanciaExtravio(r, comisaria) {
+  const f = obtenerFechaActual();
+  const sol = (r.nombre || '—').toUpperCase();
+  const solDni = formatearDni(r.dni);
+  const edad = calcularEdad(r.fechaNacimiento);
+  const dom = r.domicilio || '—';
+  const loc = r.localidad || '—';
+  const tipoDoc = (r.tipoDocumento || 'documento').toLowerCase();
+  const numDoc = r.numeroDocumento ? ` Nº ${r.numeroDocumento}` : '';
+  const fechaExt = formatearFechaCorta(r.fechaExtravio);
+  const circ = (r.circunstancia || 'extravió').toLowerCase();
+  const lugar = r.lugarExtravio || '—';
+  const detalle = r.detalleExtravio || '';
+  let parrafo = `en la fecha ${fechaExt}, ${circ} en ${lugar}`;
+  if (detalle) parrafo += `, ${detalle}`;
+  parrafo += `, su <strong>${tipoDoc.toUpperCase()}${numDoc}</strong> a nombre de la misma`;
+  return `
+    <div class="certificado-oficial">
+      ${certHeader('CONSTANCIA DE EXTRAVÍO')}
+      <p class="cert-texto">
+        <strong>____:</strong> En la Ciudad de ${loc} de la Provincia del mismo nombre a los
+        ${f.dia} días del mes de ${f.mes} de ${f.anio}, siendo hs. ${f.hora} se labra la presente
+        a fin de dejar constancia que la persona de <strong>${sol}</strong> (${edad}) DNI Nº
+        ${solDni}, con domicilio en ${dom} de esta Ciudad, se hace presente por ante esta
+        preventora a fin de dejar constancia que ${parrafo}, motivo por lo que solicita la
+        presente a los fines de ser presentado por ante ${r.motivo || '—'}.-
+      </p>
+      <div class="cert-firmas-una">
+        <div class="cert-firma"><div class="cert-firma-espacio"></div><div>Firma del Solicitante</div></div>
+      </div>
+      <div class="cert-lugar-fecha" style="margin-top:50px;">
+        ${comisaria} – Salta, ${f.mes} ${f.dia} de ${f.anio}.-
+      </div>
+      <p class="cert-texto">
+        El Funcionario Policial que suscribe CERTIFICA que la firma que antecede, pertenece al/la
+        Sr./Sra. <strong>${sol}</strong> DNI Nº ${solDni} por haber sido puesta ante mi presencia.
+      </p>
+    </div>`;
+}
+
+function generarCertificadoSupervivencia(r, comisaria) {
+  const f = obtenerFechaActual();
+  const t1 = (r.testigo1Nombre || '—').toUpperCase();
+  const t2 = (r.testigo2Nombre || '—').toUpperCase();
+  const sol = (r.nombre || '—').toUpperCase();
+  const solDni = formatearDni(r.dni);
+  const dom = r.domicilio || '—';
+  const loc = r.localidad || '—';
+  const motivo = (r.motivo || r.tipoBeneficio || '—');
+  return `
+    <div class="certificado-oficial">
+      ${certHeader('CERTIFICADO DE SUPERVIVENCIA')}
+      <p class="cert-texto">
+        <strong>___:</strong> El Funcionario Policial que suscribe CERTIFICA que de acuerdo a los
+        testimonios brindados por los testigos Sres. <strong>${t1}</strong>, DNI Nº
+        ${formatearDni(r.testigo1Dni)}, Dlio. ${dom} y <strong>${t2}</strong> DNI Nº
+        ${formatearDni(r.testigo2Dni)}, Dlio. en ${dom} de esta Ciudad. Establecen que la persona
+        de <strong>${sol}</strong>, DNI Nº ${solDni}, <strong>VIVE Y RESIDE</strong> en ${dom}
+        ${loc} de esta Ciudad. Se extiende el presente certificado a solicitud de la parte
+        interesada y al solo efecto de ser presentado por ante ${motivo}.
+      </p>
+      <p class="cert-texto" style="text-align:right;margin-top:20px;">
+        ${loc}, ${f.mes} ${f.dia} de ${f.anio}.-
+      </p>
+      <div class="cert-firmas-tres">
+        <div class="cert-firma"><div class="cert-firma-espacio"></div><div>Firma del Solicitante</div></div>
+        <div class="cert-firma"><div class="cert-firma-espacio"></div><div>Testigo Nº 1</div></div>
+        <div class="cert-firma"><div class="cert-firma-espacio"></div><div>Testigo Nº 2</div></div>
+      </div>
+    </div>`;
+}
+
+function generarCertificadoOficial(tramite, datos, comisaria) {
+  switch (tramite) {
+    case 'residencia':    return generarCertificadoResidencia(datos, comisaria);
+    case 'convivencia':   return generarCertificadoConvivencia(datos, comisaria);
+    case 'carencia':      return generarCertificadoCarencia(datos, comisaria);
+    case 'autorizacion':  return generarConstanciaAutorizacion(datos, comisaria);
+    case 'extravio':      return generarConstanciaExtravio(datos, comisaria);
+    case 'supervivencia': return generarCertificadoSupervivencia(datos, comisaria);
+    default: return null;
+  }
+}
+
+/* ============================================================
+   ENVÍO DEL TRÁMITE A SUPABASE
+   ============================================================ */
 Object.entries(forms).forEach(([tramite, form]) => {
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const tramitesConTestigos = ['residencia', 'convivencia', 'carencia'];
+
+    const tramitesConTestigos = ['residencia', 'convivencia', 'carencia', 'supervivencia'];
     if (tramitesConTestigos.includes(tramite)) {
       for (const n of [1, 2]) {
         const foto = form.querySelector(`input[name="foto_testigo${n}"]`);
@@ -2062,6 +2524,7 @@ Object.entries(forms).forEach(([tramite, form]) => {
         }
       }
     }
+
     const btnEnviar = form.querySelector('button[type=submit]');
     const textoOriginal = btnEnviar.textContent;
     btnEnviar.disabled = true;
@@ -2070,6 +2533,7 @@ Object.entries(forms).forEach(([tramite, form]) => {
     const registro = {};
     const contenido = document.getElementById('doc-contenido');
     contenido.innerHTML = '';
+
     try {
       const fotos = {};
       for (const [campo, valor] of datos.entries()) {
@@ -2081,6 +2545,7 @@ Object.entries(forms).forEach(([tramite, form]) => {
           registro[campo] = valor;
         }
       }
+
       btnEnviar.textContent = 'Subiendo fotos...';
       const entradasFotos = Object.entries(fotos);
       for (let i = 0; i < entradasFotos.length; i++) {
@@ -2089,14 +2554,16 @@ Object.entries(forms).forEach(([tramite, form]) => {
         const ruta = await subirFotoAStorage(base64, tramite, campo);
         registro[campo] = ruta;
       }
+
       btnEnviar.textContent = 'Ubicando domicilio...';
       const campoDomicilio = CAMPO_DOMICILIO[tramite];
       const asignacion = await asignarComisariaPorJurisdiccion(registro[campoDomicilio], registro.localidad);
+
       let comisariaAsignada;
       if (asignacion && asignacion.opciones && asignacion.opciones.length > 0) {
         comisariaAsignada = form.dataset.comisariaAsignada;
         if (!comisariaAsignada) {
-          alert('Por favor, elegí tu comisaría del desplegable antes de enviar.');
+          alert('Por favor, elegí tu comisaría en el mapa antes de enviar.');
           btnEnviar.disabled = false;
           btnEnviar.textContent = textoOriginal;
           return;
@@ -2106,6 +2573,7 @@ Object.entries(forms).forEach(([tramite, form]) => {
       } else {
         comisariaAsignada = form.dataset.comisariaAsignada || 'No se pudo determinar automáticamente (a asignar por el personal)';
       }
+
       btnEnviar.textContent = 'Guardando trámite...';
       const { error } = await supabaseClient.from('solicitudes').insert([{
         tramite: tramite,
@@ -2115,41 +2583,52 @@ Object.entries(forms).forEach(([tramite, form]) => {
         datos: registro,
       }]);
       if (error) throw error;
-      for (const [campo, valor] of Object.entries(registro)) {
-        const dt = document.createElement('dt');
-        dt.textContent = etiquetas[campo] || campo;
-        const dd = document.createElement('dd');
-        if (campo.startsWith('foto_')) {
-          const { data: signedData, error: signedError } = await supabaseClient
-            .storage
-            .from(BUCKET_FOTOS)
-            .createSignedUrl(valor, 600);
-          if (!signedError && signedData && signedData.signedUrl) {
-            const img = document.createElement('img');
-            img.src = signedData.signedUrl;
-            dd.appendChild(img);
+
+      // === VISTA PREVIA DEL CERTIFICADO ===
+      const tramitesOficiales = ['residencia','convivencia','carencia','autorizacion','extravio','supervivencia'];
+      if (tramitesOficiales.includes(tramite)) {
+        document.querySelector('#documento > h2').style.display = 'none';
+        document.querySelectorAll('#documento > .subt').forEach(el => el.style.display = 'none');
+        document.querySelector('#documento > .firma').style.display = 'none';
+        contenido.innerHTML = generarCertificadoOficial(tramite, registro, comisariaAsignada);
+      } else {
+        for (const [campo, valor] of Object.entries(registro)) {
+          const dt = document.createElement('dt');
+          dt.textContent = etiquetas[campo] || campo;
+          const dd = document.createElement('dd');
+          if (campo.startsWith('foto_')) {
+            const { data: signedData, error: signedError } = await supabaseClient
+              .storage.from(BUCKET_FOTOS).createSignedUrl(valor, 600);
+            if (!signedError && signedData && signedData.signedUrl) {
+              const img = document.createElement('img');
+              img.src = signedData.signedUrl;
+              dd.appendChild(img);
+            } else {
+              dd.textContent = 'Foto guardada (no se pudo previsualizar)';
+            }
           } else {
-            dd.textContent = 'Foto guardada (no se pudo previsualizar)';
+            dd.textContent = valor;
           }
-        } else {
-          dd.textContent = valor;
+          contenido.appendChild(dt);
+          contenido.appendChild(dd);
         }
-        contenido.appendChild(dt);
-        contenido.appendChild(dd);
+        const dtCom = document.createElement('dt');
+        dtCom.textContent = 'Comisaría asignada';
+        const ddCom = document.createElement('dd');
+        ddCom.textContent = comisariaAsignada;
+        contenido.appendChild(dtCom);
+        contenido.appendChild(ddCom);
       }
-      const dtCom = document.createElement('dt');
-      dtCom.textContent = 'Comisaría asignada';
-      const ddCom = document.createElement('dd');
-      ddCom.textContent = comisariaAsignada;
-      contenido.appendChild(dtCom);
-      contenido.appendChild(ddCom);
+
       document.getElementById('doc-titulo').textContent = titulos[tramite];
       form.classList.remove('activo');
       documento.classList.add('activo');
+
       form.reset();
       form.querySelectorAll('.captura-foto').forEach(c => resetCaptura(c));
       limpiarTodasLasFotosDeStorage();
       avisoBorrador.classList.remove('activo');
+
     } catch (err) {
       console.error(err);
       alert('No se pudo enviar el trámite: ' + err.message);
