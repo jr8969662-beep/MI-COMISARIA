@@ -129,9 +129,6 @@
     flex:1;
   }
 
-  /* ============================================================
-     LOGIN MEJORADO
-     ============================================================ */
   #vista-login{
     max-width:420px;
     margin:50px auto 0;
@@ -338,10 +335,8 @@
   }
   #caps-warning.activo{display:block;}
 
-  /* Panel */
   #vista-panel{display:none;}
 
-  /* Tarjetas de resumen */
   .resumen{
     display:grid;
     grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));
@@ -395,7 +390,6 @@
     font-weight:600;
   }
 
-  /* Filtros */
   .filtros{
     display:flex;
     gap:10px;
@@ -459,7 +453,6 @@
     background:var(--dorado-claro);
   }
 
-  /* Tabla TRANSPARENTE */
   .tabla-wrapper{
     background:transparent;
     border-radius:10px;
@@ -505,7 +498,6 @@
   .etiqueta.procesado{background:rgba(21,128,61,0.3); color:#86efac; border:1px solid rgba(134,239,172,0.5);}
   .etiqueta.denegado{background:rgba(185,28,28,0.3); color:#fca5a5; border:1px solid rgba(252,165,165,0.5);}
 
-  /* Detalle TRANSPARENTE */
   #detalle{
     display:none;
     background:rgba(13,42,77,0.75);
@@ -786,6 +778,7 @@
         <option value="residencia">Residencia</option>
         <option value="convivencia">Convivencia</option>
         <option value="carencia">Carencia de recursos</option>
+        <option value="autorizacion">Autorización de Menor</option>
       </select>
       <button id="btn-actualizar" class="btn-filtro" type="button">🔄 Actualizar</button>
       <button id="btn-exportar" class="btn-filtro" type="button">📥 Exportar</button>
@@ -996,6 +989,25 @@ const etiquetasDetalle = {
   foto_solicitante: 'Foto del DNI - Solicitante',
   foto_testigo1: 'Foto del DNI - Testigo 1',
   foto_testigo2: 'Foto del DNI - Testigo 2',
+  // Autorización de Menor
+  nombreMenor: 'Nombre del menor', dniMenor: 'DNI del menor',
+  fechaNacimientoMenor: 'Fecha de nacimiento del menor',
+  nacionalidadMenor: 'Nacionalidad del menor',
+  nombreProgenitor: 'Nombre del progenitor que autoriza',
+  dniProgenitor: 'DNI del progenitor que autoriza',
+  vinculoProgenitor: 'Vínculo con el menor',
+  destino: 'Destino del viaje', motivoViaje: 'Motivo del viaje',
+  fechaSalida: 'Fecha de salida', fechaRegreso: 'Fecha de regreso',
+  empresaTransporte: 'Empresa de transporte',
+  empresaOtra: 'Empresa de transporte (otra)',
+  tipoViaje: 'Tipo de viaje',
+  nombreAcompanante: 'Nombre del acompañante',
+  dniAcompanante: 'DNI del acompañante',
+  vinculoAcompanante: 'Vínculo del acompañante',
+  nombreOtroProgenitor: 'Nombre del otro progenitor',
+  dniOtroProgenitor: 'DNI del otro progenitor',
+  foto_menor: 'Foto del DNI - Menor',
+  foto_progenitor: 'Foto del DNI - Progenitor autorizante',
 };
 
 let solicitudesCache = [];
@@ -1036,12 +1048,12 @@ function normalizarTexto(t) {
 
 function obtenerDniSolicitud(s) {
   const d = s.datos || {};
-  return d.dni || d.dniSolicitante || d.testigo1Dni || '';
+  return d.dni || d.dniSolicitante || d.dniMenor || d.testigo1Dni || '';
 }
 
 function obtenerNombreSolicitud(s) {
   const d = s.datos || {};
-  return d.nombre || d.nombreSolicitante || d.nombreConviviente || '';
+  return d.nombre || d.nombreSolicitante || d.nombreConviviente || d.nombreMenor || '';
 }
 
 function renderTabla() {
@@ -1117,14 +1129,12 @@ async function crearSeccion(titulo, campos) {
       const img = document.createElement('img');
       img.alt = label;
 
-      // ✅ Si es URL vieja (http), usarla directo
-      // Si es ruta nueva, generar URL firmada
       let urlFinal = valor;
       if (!valor.startsWith('http')) {
         const { data: signedData, error: signedError } = await supabaseClient
           .storage
           .from(BUCKET_FOTOS)
-          .createSignedUrl(valor, 3600); // 1 hora
+          .createSignedUrl(valor, 3600);
 
         if (!signedError && signedData && signedData.signedUrl) {
           urlFinal = signedData.signedUrl;
@@ -1192,29 +1202,59 @@ async function mostrarDetalle(s) {
   const camposSol = [];
   camposSol.push(['Comisaría asignada', s.comisaria_asignada || '-']);
 
-  const nombreSol = d.nombre || d.nombreSolicitante || '';
-  const dniSol = d.dni || d.dniSolicitante || '';
-  if (nombreSol) camposSol.push([et.nombre, nombreSol]);
-  if (dniSol) camposSol.push([et.dni, dniSol]);
-  if (d.fechaNacimiento) camposSol.push([et.fechaNacimiento, d.fechaNacimiento]);
-  if (d.email) camposSol.push([et.email, d.email]);
-  if (d.telefono) camposSol.push([et.telefono, d.telefono]);
+  // Si es autorización de menor, armar los campos específicos
+  if (s.tramite === 'autorizacion') {
+    if (d.nombreMenor) camposSol.push([et.nombreMenor, d.nombreMenor]);
+    if (d.dniMenor) camposSol.push([et.dniMenor, d.dniMenor]);
+    if (d.fechaNacimientoMenor) camposSol.push([et.fechaNacimientoMenor, d.fechaNacimientoMenor]);
+    if (d.nacionalidadMenor) camposSol.push([et.nacionalidadMenor, d.nacionalidadMenor]);
+    if (d.nombreProgenitor) camposSol.push([et.nombreProgenitor, d.nombreProgenitor]);
+    if (d.dniProgenitor) camposSol.push([et.dniProgenitor, d.dniProgenitor]);
+    if (d.vinculoProgenitor) camposSol.push([et.vinculoProgenitor, d.vinculoProgenitor]);
+    if (d.email) camposSol.push([et.email, d.email]);
+    if (d.telefono) camposSol.push([et.telefono, d.telefono]);
+    if (d.destino) camposSol.push([et.destino, d.destino]);
+    if (d.motivoViaje) camposSol.push([et.motivoViaje, d.motivoViaje]);
+    if (d.fechaSalida) camposSol.push([et.fechaSalida, d.fechaSalida]);
+    if (d.fechaRegreso) camposSol.push([et.fechaRegreso, d.fechaRegreso]);
+    if (d.empresaTransporte) camposSol.push([et.empresaTransporte, d.empresaTransporte]);
+    if (d.empresaOtra) camposSol.push([et.empresaOtra, d.empresaOtra]);
+    if (d.tipoViaje) camposSol.push([et.tipoViaje, d.tipoViaje === 'solo' ? 'Viaja SOLO' : 'Viaja ACOMPAÑADO']);
+    if (d.nombreAcompanante) camposSol.push([et.nombreAcompanante, d.nombreAcompanante]);
+    if (d.dniAcompanante) camposSol.push([et.dniAcompanante, d.dniAcompanante]);
+    if (d.vinculoAcompanante) camposSol.push([et.vinculoAcompanante, d.vinculoAcompanante]);
+    if (d.nombreOtroProgenitor) camposSol.push([et.nombreOtroProgenitor, d.nombreOtroProgenitor]);
+    if (d.dniOtroProgenitor) camposSol.push([et.dniOtroProgenitor, d.dniOtroProgenitor]);
+    if (d.domicilio) camposSol.push([et.domicilio, d.domicilio]);
+    if (d.localidad) camposSol.push([et.localidad, d.localidad]);
+    if (d.foto_menor) camposSol.push([et.foto_menor, d.foto_menor, true]);
+    if (d.foto_progenitor) camposSol.push([et.foto_progenitor, d.foto_progenitor, true]);
+  } else {
+    // Formularios viejos (residencia, convivencia, carencia)
+    const nombreSol = d.nombre || d.nombreSolicitante || '';
+    const dniSol = d.dni || d.dniSolicitante || '';
+    if (nombreSol) camposSol.push([et.nombre, nombreSol]);
+    if (dniSol) camposSol.push([et.dni, dniSol]);
+    if (d.fechaNacimiento) camposSol.push([et.fechaNacimiento, d.fechaNacimiento]);
+    if (d.email) camposSol.push([et.email, d.email]);
+    if (d.telefono) camposSol.push([et.telefono, d.telefono]);
 
-  if (d.nombreConviviente) camposSol.push([et.nombreConviviente, d.nombreConviviente]);
-  if (d.dniConviviente) camposSol.push([et.dniConviviente, d.dniConviviente]);
-  if (d.parentesco) camposSol.push([et.parentesco, d.parentesco]);
+    if (d.nombreConviviente) camposSol.push([et.nombreConviviente, d.nombreConviviente]);
+    if (d.dniConviviente) camposSol.push([et.dniConviviente, d.dniConviviente]);
+    if (d.parentesco) camposSol.push([et.parentesco, d.parentesco]);
 
-  if (d.domicilio) camposSol.push([et.domicilio, d.domicilio]);
-  if (d.domicilioComun) camposSol.push([et.domicilioComun, d.domicilioComun]);
-  if (d.localidad) camposSol.push([et.localidad, d.localidad]);
-  if (d.tiempoResidencia) camposSol.push([et.tiempoResidencia, d.tiempoResidencia]);
-  if (d.estadoCivil) camposSol.push([et.estadoCivil, d.estadoCivil]);
-  if (d.situacionLaboral) camposSol.push([et.situacionLaboral, d.situacionLaboral]);
-  if (d.personasACargo) camposSol.push([et.personasACargo, d.personasACargo]);
-  if (d.motivo) camposSol.push([et.motivo, d.motivo]);
+    if (d.domicilio) camposSol.push([et.domicilio, d.domicilio]);
+    if (d.domicilioComun) camposSol.push([et.domicilioComun, d.domicilioComun]);
+    if (d.localidad) camposSol.push([et.localidad, d.localidad]);
+    if (d.tiempoResidencia) camposSol.push([et.tiempoResidencia, d.tiempoResidencia]);
+    if (d.estadoCivil) camposSol.push([et.estadoCivil, d.estadoCivil]);
+    if (d.situacionLaboral) camposSol.push([et.situacionLaboral, d.situacionLaboral]);
+    if (d.personasACargo) camposSol.push([et.personasACargo, d.personasACargo]);
+    if (d.motivo) camposSol.push([et.motivo, d.motivo]);
 
-  const fotoSol = d.foto_solicitante || d.fotoSolicitante;
-  if (fotoSol) camposSol.push([et.foto_solicitante, fotoSol, true]);
+    const fotoSol = d.foto_solicitante || d.fotoSolicitante;
+    if (fotoSol) camposSol.push([et.foto_solicitante, fotoSol, true]);
+  }
 
   const seccionSol = await crearSeccion('👤 Solicitante', camposSol);
   const listaSol = seccionSol.querySelector('.detalle-lista');
@@ -1223,9 +1263,11 @@ async function mostrarDetalle(s) {
   cont.appendChild(seccionSol);
 
   const camposT1 = [];
-  if (d.testigo1Nombre) camposT1.push([et.testigo1Nombre, d.testigo1Nombre]);
-  if (d.testigo1Dni) camposT1.push([et.testigo1Dni, d.testigo1Dni]);
-  if (d.foto_testigo1) camposT1.push([et.foto_testigo1, d.foto_testigo1, true]);
+  if (s.tramite !== 'autorizacion') {
+    if (d.testigo1Nombre) camposT1.push([et.testigo1Nombre, d.testigo1Nombre]);
+    if (d.testigo1Dni) camposT1.push([et.testigo1Dni, d.testigo1Dni]);
+    if (d.foto_testigo1) camposT1.push([et.foto_testigo1, d.foto_testigo1, true]);
+  }
 
   if (camposT1.length) {
     cont.appendChild(crearSeparador());
@@ -1233,9 +1275,11 @@ async function mostrarDetalle(s) {
   }
 
   const camposT2 = [];
-  if (d.testigo2Nombre) camposT2.push([et.testigo2Nombre, d.testigo2Nombre]);
-  if (d.testigo2Dni) camposT2.push([et.testigo2Dni, d.testigo2Dni]);
-  if (d.foto_testigo2) camposT2.push([et.foto_testigo2, d.foto_testigo2, true]);
+  if (s.tramite !== 'autorizacion') {
+    if (d.testigo2Nombre) camposT2.push([et.testigo2Nombre, d.testigo2Nombre]);
+    if (d.testigo2Dni) camposT2.push([et.testigo2Dni, d.testigo2Dni]);
+    if (d.foto_testigo2) camposT2.push([et.foto_testigo2, d.foto_testigo2, true]);
+  }
 
   if (camposT2.length) {
     cont.appendChild(crearSeparador());
@@ -1315,7 +1359,6 @@ document.getElementById('btn-imprimir').addEventListener('click', async () => {
     if (!valor) continue;
     const label = etiquetasDetalle[campo] || campo;
     if (campo.startsWith('foto_')) {
-      // ✅ Generar URL firmada para el print
       let urlPrint = valor;
       if (!valor.startsWith('http')) {
         const { data: signedData } = await supabaseClient
