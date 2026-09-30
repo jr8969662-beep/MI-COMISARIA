@@ -1,689 +1,1820 @@
-/*
-  Configuración de comisarías de Salta
-  - CORRECCIONES_BARRIO: barrio → comisaría(s)
-    - STRING: una sola comisaría → asignación automática
-    - ARRAY: múltiples comisarías → el ciudadano elige
-  - DEPENDENCIAS_POLICIALES: fallback por coordenadas
-  - LOCALIDADES_SALTA: municipios para el desplegable
-*/
-
-const CORRECCIONES_BARRIO = {
-  // ============================================================
-  // BARRIOS CON ASIGNACIÓN ÚNICA (automático) — Todos DDP 1
-  // ============================================================
-
-  // COMISARÍA N° 1 - Micro y Macrocentro
-  "microcentro": "Comisaría N°1 - Centro (DDP 1)",
-  "macrocentro": "Comisaría N°1 - Centro (DDP 1)",
-  "cuadrante comercial": "Comisaría N°1 - Centro (DDP 1)",
-
-  // COMISARÍA N° 2 - Zona Sur-Este
-  "santa cecilia": "Comisaría N°2 - Santa Cecilia (DDP 1)",
-  "villa san antonio": "Comisaría N°2 - Santa Cecilia (DDP 1)",
-  "hernando de lerma": "Comisaría N°2 - Santa Cecilia (DDP 1)",
-
-  // COMISARÍA N° 3 - Zona Norte
-  "tres cerritos": "Comisaría N°3 - Tres Cerritos (DDP 1)",
-  "jose vicente sola": "Comisaría N°3 - Tres Cerritos (DDP 1)",
-
-  // COMISARÍA N° 4 - Zona Oeste Baja
-  "pompilio guzman": "Comisaría N°4 - Villa Mitre (DDP 1)",
-  "plaza las industrias": "Comisaría N°4 - Villa Mitre (DDP 1)",
-
-  // COMISARÍA N° 5 - Zona Sur-Este Alta
-  "solidaridad": "Comisaría N°5 - Solidaridad (DDP 1)",
-  "juan calchaqui": "Comisaría N°5 - Solidaridad (DDP 1)",
-  "provipo": "Comisaría N°5 - Solidaridad (DDP 1)",
-  "campo caseros": "Comisaría N°5 - Solidaridad (DDP 1)",
-  "el carmen": "Comisaría N°5 - Solidaridad (DDP 1)",
-
-  // COMISARÍA N° 6 - Zona Norte Alta
-  "ciudad del milagro": "Comisaría N°6 - Ciudad del Milagro (DDP 1)",
-  "1 de mayo": "Comisaría N°6 - Ciudad del Milagro (DDP 1)",
-  "primero de mayo": "Comisaría N°6 - Ciudad del Milagro (DDP 1)",
-
-  // COMISARÍA N° 7 - Zona Centro-Oeste / Alta
-  "20 de febrero": "Comisaría N°7 - El Tribuno (DDP 1)",
-  "veinte de febrero": "Comisaría N°7 - El Tribuno (DDP 1)",
-  "villa belgrano": "Comisaría N°7 - El Tribuno (DDP 1)",
-  "barrio pilar": "Comisaría N°7 - El Tribuno (DDP 1)",
-  "villa lujan": "Comisaría N°7 - El Tribuno (DDP 1)",
-
-  // COMISARÍA N° 8 - Zona Sur-Oeste
-  "santa ana": "Comisaría N°8 - Santa Ana (DDP 1)",
-  "santa ana i": "Comisaría N°8 - Santa Ana (DDP 1)",
-  "santa ana ii": "Comisaría N°8 - Santa Ana (DDP 1)",
-  "santa ana iii": "Comisaría N°8 - Santa Ana (DDP 1)",
-  "santa ana iv": "Destacamento Santa Ana IV (DDP 1)",
-  "santa ana 4": "Destacamento Santa Ana IV (DDP 1)",
-  "aerolineas": "Comisaría N°8 - Santa Ana (DDP 1)",
-
-  // COMISARÍA N° 9 - Zona Sudeste Baja
-  "san jose": "Comisaría N°9 - Portezuelo Sur (DDP 1)",
-  "villa san lorenzo": "Comisaría N°9 - Portezuelo Sur (DDP 1)",
-  "portezuelo sur": "Comisaría N°9 - Portezuelo Sur (DDP 1)",
-  "la trinidad": "Comisaría N°9 - Portezuelo Sur (DDP 1)",
-
-  // COMISARÍA N° 10 - Zona Norte / San Lorenzo
-  "villa veraniega": "Comisaría N°10 - Santa Cecilia (DDP 1)",
-
-  // COMISARÍA N° 11 - Zona Norte Periférica
-  "juan pablo ii": "Comisaría N°11 - 17 de Octubre (DDP 1)",
-  "juan pablo 2": "Comisaría N°11 - 17 de Octubre (DDP 1)",
-  "17 de octubre": "Comisaría N°11 - 17 de Octubre (DDP 1)",
-  "juan manuel de rosas": "Comisaría N°11 - 17 de Octubre (DDP 1)",
-  "balneario": "Comisaría N°11 - 17 de Octubre (DDP 1)",
-  "la tradicion": "Comisaría N°11 - 17 de Octubre (DDP 1)",
-
-  // COMISARÍA N° 13 - Zona Sur (Ruta 26)
-  "san remo": "Comisaría N°13 - Cerrillos (DDP 1)",
-  "scalabrini ortiz": "Comisaría N°13 - Cerrillos (DDP 1)",
-  "villa palacios": "Comisaría N°13 - Cerrillos (DDP 1)",
-
-  // COMISARÍA N° 14 - Zona Norte
-  "castanares": "Comisaría N°14 - Campo Santo (DDP 1)",
-  "parque belgrano": "Comisaría N°14 - Campo Santo (DDP 1)",
-
-  // COMISARÍA N° 15 - Zona Suroeste
-  "valle hermoso": "Comisaría N°15 - San Remo (DDP 1)",
-
-  // COMISARÍA N° 17 - Zona Sudeste (Bajo)
-  "boulogne sur mer": "Comisaría N°17 - Solidaridad (DDP 1)",
-
-  // COMISARÍA N° 18 - Zona Sudeste Periférica
-  "san justo": "Comisaría N°18 - Chicoana (DDP 1)",
-  "loteo esmeralda": "Comisaría N°18 - Chicoana (DDP 1)",
-  "vertedero san javier": "Comisaría N°18 - Chicoana (DDP 1)",
-
-  // COMISARÍA N° 19 - Zona Norte / Frontera
-  "15 de febrero": "Comisaría N°19 - El Carril (DDP 1)",
-  "quince de febrero": "Comisaría N°19 - El Carril (DDP 1)",
-
-  // COMISARÍA N° 20 - Zona Oeste / Enlace
-  "la ribera": "Comisaría N°20 - La Ribera (DDP 1)",
-  "costas del rio arenas": "Comisaría N°20 - La Ribera (DDP 1)",
-  "rio arenas": "Comisaría N°20 - La Ribera (DDP 1)",
-
-  // COMISARÍA N° 24 - Zona Centro-Norte
-  "lujan este": "Comisaría N°24 - Centro Norte (DDP 1)",
-  "vias del ferrocarril": "Comisaría N°24 - Centro Norte (DDP 1)",
-
-  // COMISARÍA N° 25 - Zona Oeste / San Lorenzo
-  "circunvalacion oeste": "Comisaría N°25 - San Lorenzo Chico (DDP 1)",
-
-  // COMISARÍA N° 101 - Zona Sur / Cerrillos
-  "ruta 21": "Comisaría N°101 - Santa Rita (DDP 1)",
-
-  // COMISARÍA N° 102 - Zona Sur-Este Extrema
-  "la paz": "Comisaría N°102 - Atocha II (DDP 1)",
-  "ampliacion solidaridad": "Comisaría N°102 - Atocha II (DDP 1)",
-
-  // COMISARÍA N° 103 - Zona Oeste / San Lorenzo
-  "nueva esperanza": "Comisaría N°103 - 17 de Octubre (DDP 1)",
-  "pie del cerro": "Comisaría N°103 - 17 de Octubre (DDP 1)",
-
-  // COMISARÍA N° 104 - Zona Oeste Alta
-  "palermo i": "Comisaría N°104 - Palermo (DDP 1)",
-  "palermo ii": "Comisaría N°104 - Palermo (DDP 1)",
-  "palermo iii": "Comisaría N°104 - Palermo (DDP 1)",
-  "palermo 1": "Comisaría N°104 - Palermo (DDP 1)",
-  "palermo 2": "Comisaría N°104 - Palermo (DDP 1)",
-  "palermo 3": "Comisaría N°104 - Palermo (DDP 1)",
-  "roberto romero": "Comisaría N°104 - Palermo (DDP 1)",
-  "divino nino": "Comisaría N°104 - Palermo (DDP 1)",
-  "el progreso": "Comisaría N°104 - Palermo (DDP 1)",
-
-  // COMISARÍA N° 105 - Zona Sudeste
-  "siglo xxi": "Comisaría N°105 - La Merced (DDP 1)",
-  "siglo 21": "Comisaría N°105 - La Merced (DDP 1)",
-  "santa anita": "Comisaría N°105 - La Merced (DDP 1)",
-
-  // COMISARÍA N° 106 - Zona Sur Plena
-  "san francisco": "Comisaría N°106 - Limache (DDP 1)",
-  "ciudad valdivia": "Comisaría N°106 - Limache (DDP 1)",
-  "limache": "Comisaría N°106 - Limache (DDP 1)",
-
-  // COMISARÍA N° 107 - Zona Sur / San Carlos
-  "loteo san benito": "Comisaría N°107 - San Carlos (DDP 1)",
-  "ex combatientes de malvinas": "Comisaría N°107 - San Carlos (DDP 1)",
-
-  // COMISARÍA N° 108 - Zona Suroeste Extrema
-  "santa clara de asis": "Comisaría N°108 - Campo Quijano (DDP 1)",
-  "av kennedy": "Comisaría N°108 - Campo Quijano (DDP 1)",
-  "avenida kennedy": "Comisaría N°108 - Campo Quijano (DDP 1)",
-
-  // COMISARÍA N° 110 - Zona Norte / Huaico II
-  "el huaico iv": "Comisaría N°110 - Huaico II (DDP 1)",
-  "el huaico v": "Comisaría N°110 - Huaico II (DDP 1)",
-  "huaico iv": "Comisaría N°110 - Huaico II (DDP 1)",
-  "huaico v": "Comisaría N°110 - Huaico II (DDP 1)",
-  "valle de lerma": "Comisaría N°110 - Huaico II (DDP 1)",
-
-  // COMISARÍA N° 111 - Zona Sur / Limache Nuevo
-  "loteo san gabriel": "Comisaría N°111 - Limache Nuevo (DDP 1)",
-  "centro de convenciones": "Comisaría N°111 - Limache Nuevo (DDP 1)",
-  "valdivia": "Comisaría N°111 - Limache Nuevo (DDP 1)",
-
-  // COMISARÍA N° 112 - Zona Oeste de Enlace
-  "la silleta norte": "Comisaría N°112 - La Silleta (DDP 1)",
-  "la silleta": "Comisaría N°112 - La Silleta (DDP 1)",
-  "las lenas": "Comisaría N°112 - La Silleta (DDP 1)",
-
-  // COMISARÍA N° 115 - Zona Sudeste Extrema
-  "el circulo": "Comisaría N°115 - El Círculo (DDP 1)",
-  "solares de san jose": "Comisaría N°115 - El Círculo (DDP 1)",
-
-  // COMISARÍA N° 118 - Zona Sudeste Nueva
-  "cerveceros": "Comisaría N°118 - Cerveceros (DDP 1)",
-  "las tunas norte": "Comisaría N°118 - Cerveceros (DDP 1)",
-  "cooperativas ruta 26": "Comisaría N°118 - Cerveceros (DDP 1)",
-
-  // SUBCOMISARÍA VILLA LAVALLE
-  "villa lavalle": "Subcomisaría Villa Lavalle (DDP 1)",
-  "papa francisco": "Subcomisaría Villa Lavalle (DDP 1)",
-  "convivencia": "Subcomisaría Villa Lavalle (DDP 1)",
-
-  // SUBCOMISARÍA BARRIO DOCENTE
-  "barrio docente": "Subcomisaría Barrio Docente (DDP 1)",
-  "docente": "Subcomisaría Barrio Docente (DDP 1)",
-  "intersindical": "Subcomisaría Barrio Docente (DDP 1)",
-  "periodista": "Subcomisaría Barrio Docente (DDP 1)",
-
-  // SUBCOMISARÍA VILLA ASUNCIÓN
-  "villa asuncion": "Subcomisaría Villa Asunción (DDP 1)",
-  "villa costanera": "Subcomisaría Villa Asunción (DDP 1)",
-  "solis pizarro": "Subcomisaría Villa Asunción (DDP 1)",
-
-  // SUBCOMISARÍA GRAND BOURG
-  "los perales": "Subcomisaría Grand Bourg Este (DDP 1)",
-  "altos de grand bourg": "Subcomisaría Grand Bourg Este (DDP 1)",
-  "centro administrativo": "Subcomisaría Grand Bourg (DDP 1)",
-
-  // SUBCOMISARÍA BARRIO POLICIAL
-  "barrio policial": "Subcomisaría Barrio Policial (DDP 1)",
-  "villa cristina": "Subcomisaría Barrio Policial (DDP 1)",
-  "velez sarsfield": "Subcomisaría Barrio Policial (DDP 1)",
-
-  // SUBCOMISARÍA EL AYBAL
-  "el aybal": "Subcomisaría El Aybal (DDP 1)",
-  "ampliacion el aybal": "Subcomisaría El Aybal (DDP 1)",
-  "sociedad rural": "Subcomisaría El Aybal (DDP 1)",
-  "predio rural": "Subcomisaría El Aybal (DDP 1)",
-  "acceso aeropuerto": "Subcomisaría El Aybal (DDP 1)",
-
-  // SUBCOMISARÍA DE EL HUAICO
-  "escuela de cadetes": "Subcomisaría de El Huaico (DDP 1)",
-
-  // SUBCOMISARÍA DE ATOCHA
-  "atocha i": "Subcomisaría de Atocha (DDP 1)",
-  "atocha ii": "Subcomisaría de Atocha (DDP 1)",
-  "atocha iii": "Subcomisaría de Atocha (DDP 1)",
-  "la cienaga": "Subcomisaría de Atocha (DDP 1)",
-
-  // DESTACAMENTO EL TRIÁNGULO
-  "el triangulo": "Destacamento El Triángulo (DDP 1)",
-
-  // DESTACAMENTO LAS COSTAS
-  "finca las costas": "Destacamento Las Costas (DDP 1)",
-  "la quebrada": "Destacamento Las Costas (DDP 1)",
-  "cordon occidental": "Destacamento Las Costas (DDP 1)",
-
-  // DESTACAMENTO PARQUE INDUSTRIAL
-  "parque industrial": "Destacamento Parque Industrial (DDP 1)",
-  "barrio constitucion": "Destacamento Parque Industrial (DDP 1)",
-  "constitucion": "Destacamento Parque Industrial (DDP 1)",
-
-  // DESTACAMENTO LIMACHE
-  "ipv limache": "Destacamento Limache (DDP 1)",
-  "limache industrial": "Destacamento Limache (DDP 1)",
-  "rotonda sur": "Destacamento Limache (DDP 1)",
-
-  // DESTACAMENTO SAN RAFAEL
-  "san rafael": "Destacamento San Rafael (DDP 1)",
-
-  // DESTACAMENTO MERCADO COFRUTHOS
-  "mercado cofruthos": "Destacamento Mercado Cofruthos (DDP 1)",
-  "av paraguay": "Destacamento Mercado Cofruthos (DDP 1)",
-  "avenida paraguay": "Destacamento Mercado Cofruthos (DDP 1)",
-
-  // DESTACAMENTO VILLA LAS ROSAS
-  "villa las rosas": "Destacamento Villa Las Rosas (DDP 1)",
-  "ampliacion las rosas": "Destacamento Villa Las Rosas (DDP 1)",
-  "complejo penitenciario": "Destacamento Villa Las Rosas (DDP 1)",
-  "penal de salta": "Destacamento Villa Las Rosas (DDP 1)",
-
-  // DESTACAMENTO SAN IGNACIO
-  "san ignacio": "Destacamento San Ignacio (DDP 1)",
-  "fraternidad": "Destacamento San Ignacio (DDP 1)",
-  "girasoles": "Destacamento San Ignacio (DDP 1)",
-
-  // BASE OPERATIVA SAN AGUSTÍN
-  "san agustin": "Base Operativa San Agustín (DDP 1)",
-  "loteos industriales": "Base Operativa San Agustín (DDP 1)",
-
-  // PUESTO POLICIAL SAN LUIS CENTRO
-  "villa san luis": "Puesto Policial San Luis Centro (DDP 1)",
-  "finca valdivia": "Puesto Policial San Luis Centro (DDP 1)",
-  "caballerizas": "Puesto Policial San Luis Centro (DDP 1)",
-
-  // DESTACAMENTO SAN CAYETANO
-  "san cayetano": "Destacamento San Cayetano (DDP 1)",
-  "faldeos cerro 20 de febrero": "Destacamento San Cayetano (DDP 1)",
-  "cuarteles": "Destacamento San Cayetano (DDP 1)",
-
-  // SIN CONFLICTO
-  "san benito": "Comisaría N°105 - La Merced (DDP 1)",
-
-  // ============================================================
-  // BARRIOS CON MÚLTIPLES OPCIONES (el ciudadano elige) — DDP 1
-  // ============================================================
-
-  "grand bourg": [
-    "Comisaría N°10 - Santa Cecilia (DDP 1)",
-    "Comisaría N°16 - El Centro (DDP 1)",
-    "Subcomisaría Grand Bourg (DDP 1)",
-    "Subcomisaría Grand Bourg Este (DDP 1)",
-  ],
-
-  "la almudena": [
-    "Comisaría N°10 - Santa Cecilia (DDP 1)",
-    "Comisaría N°16 - El Centro (DDP 1)",
-    "Comisaría N°19 - El Carril (DDP 1)",
-  ],
-  "almudena": [
-    "Comisaría N°10 - Santa Cecilia (DDP 1)",
-    "Comisaría N°16 - El Centro (DDP 1)",
-    "Comisaría N°19 - El Carril (DDP 1)",
-  ],
-
-  "general mosconi": [
-    "Comisaría N°14 - Campo Santo (DDP 1)",
-    "Comisaría N°24 - Centro Norte (DDP 1)",
-  ],
-
-  "villa mitre": [
-    "Comisaría N°4 - Villa Mitre (DDP 1)",
-    "Comisaría N°12 - Santa Ana I (DDP 1)",
-    "Subcomisaría Villa Mitre (DDP 1)",
-  ],
-
-  "el sol": [
-    "Comisaría N°12 - Santa Ana I (DDP 1)",
-    "Comisaría N°17 - Solidaridad (DDP 1)",
-    "Subcomisaría El Sol (DDP 1)",
-  ],
-  "barrio el sol": [
-    "Comisaría N°12 - Santa Ana I (DDP 1)",
-    "Comisaría N°17 - Solidaridad (DDP 1)",
-    "Subcomisaría El Sol (DDP 1)",
-  ],
-
-  "juanita": [
-    "Comisaría N°17 - Solidaridad (DDP 1)",
-    "Subcomisaría El Sol (DDP 1)",
-  ],
-  "villa juanita": [
-    "Comisaría N°17 - Solidaridad (DDP 1)",
-    "Subcomisaría El Sol (DDP 1)",
-  ],
-
-  "santa lucia": [
-    "Comisaría N°20 - La Ribera (DDP 1)",
-    "Subcomisaría Villa Asunción (DDP 1)",
-  ],
-
-  "san carlos": [
-    "Comisaría N°107 - San Carlos (DDP 1)",
-    "Subcomisaría Barrio Docente (DDP 1)",
-  ],
-
-  "palermo": [
-    "Comisaría N°104 - Palermo (DDP 1)",
-    "Subcomisaría Grand Bourg Este (DDP 1)",
-  ],
-
-  "universitario": [
-    "Comisaría N°3 - Tres Cerritos (DDP 1)",
-    "Comisaría N°14 - Campo Santo (DDP 1)",
-  ],
-  "barrio universitario": [
-    "Comisaría N°3 - Tres Cerritos (DDP 1)",
-    "Comisaría N°14 - Campo Santo (DDP 1)",
-  ],
-
-  "las tunas": [
-    "Comisaría N°101 - Santa Rita (DDP 1)",
-    "Comisaría N°118 - Cerveceros (DDP 1)",
-  ],
-
-  "atocha": [
-    "Comisaría N°102 - Atocha II (DDP 1)",
-    "Subcomisaría de Atocha (DDP 1)",
-  ],
-
-  "villa esmeralda": [
-    "Comisaría N°9 - Portezuelo Sur (DDP 1)",
-    "Comisaría N°15 - San Remo (DDP 1)",
-    "Destacamento Villa Rebeca (DDP 1)",
-  ],
-
-  "villa rebeca": [
-    "Comisaría N°9 - Portezuelo Sur (DDP 1)",
-    "Destacamento Villa Rebeca (DDP 1)",
-  ],
-
-  "el huaico": [
-    "Comisaría N°6 - Ciudad del Milagro (DDP 1)",
-    "Comisaría N°110 - Huaico II (DDP 1)",
-    "Subcomisaría de El Huaico (DDP 1)",
-  ],
-
-  "mirasoles": [
-    "Comisaría N°6 - Ciudad del Milagro (DDP 1)",
-    "Comisaría N°110 - Huaico II (DDP 1)",
-    "Subcomisaría de El Huaico (DDP 1)",
-  ],
-
-  "san luis": [
-    "Comisaría N°15 - San Remo (DDP 1)",
-    "Subcomisaría San Luis (DDP 1)",
-    "Puesto Policial San Luis Centro (DDP 1)",
-  ],
-
-  "casa del sol": [
-    "Comisaría N°15 - San Remo (DDP 1)",
-    "Subcomisaría San Luis (DDP 1)",
-  ],
-
-  "portezuelo": [
-    "Comisaría N°12 - Santa Ana I (DDP 1)",
-    "Destacamento Autódromo (DDP 1)",
-  ],
-
-  "el tribuno": [
-    "Comisaría N°7 - El Tribuno (DDP 1)",
-    "Comisaría N°13 - Cerrillos (DDP 1)",
-    "Subcomisaría Barrio Docente (DDP 1)",
-  ],
-
-  "las costas": [
-    "Comisaría N°16 - El Centro (DDP 1)",
-    "Destacamento Las Costas (DDP 1)",
-  ],
-
-  "la loma": [
-    "Comisaría N°16 - El Centro (DDP 1)",
-    "Subcomisaría Grand Bourg (DDP 1)",
-  ],
-
-  "el tipal": [
-    "Comisaría N°16 - El Centro (DDP 1)",
-    "Subcomisaría Grand Bourg (DDP 1)",
-  ],
-
-  "san lorenzo chico": [
-    "Comisaría N°9 - Portezuelo Sur (DDP 1)",
-    "Comisaría N°25 - San Lorenzo Chico (DDP 1)",
-  ],
-
-  "autodromo": [
-    "Comisaría N°12 - Santa Ana I (DDP 1)",
-    "Destacamento Autódromo (DDP 1)",
-  ],
-
-  "ceferino": [
-    "Comisaría N°2 - Santa Cecilia (DDP 1)",
-    "Destacamento Ceferino (DDP 1)",
-  ],
-
-  "chachapoyas": [
-    "Comisaría N°3 - Tres Cerritos (DDP 1)",
-    "Destacamento Chachapoyas (DDP 1)",
-  ],
-
-  "casino": [
-    "Destacamento Mercado Cofruthos (DDP 1)",
-    "Destacamento Barrio Casino (DDP 1)",
-  ],
-
-  "villa chartas": [
-    "Comisaría N°4 - Villa Mitre (DDP 1)",
-    "Subcomisaría Barrio Policial (DDP 1)",
-  ],
-
-  "costanera": [
-    "Subcomisaría Barrio Policial (DDP 1)",
-    "Subcomisaría Villa Asunción (DDP 1)",
-  ],
-
-  "san martin": [
-    "Comisaría N°4 - Villa Mitre (DDP 1)",
-    "Comisaría N°5 - Solidaridad (DDP 1)",
-  ],
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Trámites Policiales Salta</title>
+<style>
+  :root{
+    --azul-fondo:#0a1e3d;
+    --azul-oscuro:#0d2a4d;
+    --azul:#1a3a6b;
+    --azul-claro:#2c5aa0;
+    --dorado:#c9a961;
+    --dorado-claro:#e6c988;
+    --dorado-brilloso:#f0d78c;
+    --verde:#15803d;
+    --rojo:#b91c1c;
+    --amarillo:#ca8a04;
+    --sombra-suave:0 2px 8px rgba(13,42,77,0.08);
+    --sombra-media:0 4px 16px rgba(13,42,77,0.12);
+    --sombra-fuerte:0 8px 32px rgba(13,42,77,0.16);
+  }
+  *{box-sizing:border-box;}
+  html{background:var(--azul-fondo); min-height:100%;}
+  body{
+    font-family:'Segoe UI', -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+    background:var(--azul-fondo);
+    margin:0;
+    color:#fff;
+    position:relative;
+    overflow-x:hidden;
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+  }
+  body::before{
+    content:'';
+    position:fixed;
+    top:50%; left:50%;
+    transform:translate(-50%,-50%);
+    width:100vmin;
+    height:100vmin;
+    background-image:url('logo-policia.png.jpeg');
+    background-size:contain;
+    background-repeat:no-repeat;
+    background-position:center;
+    opacity:0.55;
+    pointer-events:none;
+    z-index:0;
+  }
+  body > *{position:relative; z-index:1;}
+
+  header{
+    background:linear-gradient(135deg, var(--azul-oscuro) 0%, var(--azul) 100%);
+    color:#fff;
+    padding:28px 24px 26px;
+    position:relative;
+    overflow:hidden;
+    border-bottom:3px solid var(--dorado);
+    box-shadow:var(--sombra-media);
+    text-align:center;
+  }
+  header::after{
+    content:'';
+    position:absolute;
+    top:-50%; right:-10%;
+    width:400px; height:400px;
+    background:radial-gradient(circle, rgba(201,169,97,0.15) 0%, transparent 70%);
+    border-radius:50%;
+    pointer-events:none;
+  }
+  header .header-inner{
+    max-width:760px;
+    margin:0 auto;
+    position:relative;
+    z-index:2;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:18px;
+    flex-wrap:wrap;
+  }
+  header .header-logo{
+    width:64px;
+    height:64px;
+    background-image:url('logo-policia.png.jpeg');
+    background-size:contain;
+    background-repeat:no-repeat;
+    background-position:center;
+    filter:drop-shadow(0 2px 8px rgba(0,0,0,0.4));
+    flex-shrink:0;
+  }
+  header .header-texto{text-align:left;}
+  header h1{
+    margin:0;
+    font-size:1.6rem;
+    font-weight:700;
+    letter-spacing:-0.02em;
+    color:#fff;
+    text-shadow:0 2px 4px rgba(0,0,0,0.3);
+  }
+  header h1::after{
+    content:'';
+    display:block;
+    width:60px;
+    height:3px;
+    background:linear-gradient(90deg, var(--dorado), var(--dorado-claro));
+    margin:8px 0 0;
+    border-radius:2px;
+  }
+  header p{
+    margin:8px 0 0;
+    font-size:0.92rem;
+    color:var(--dorado-claro);
+    font-weight:500;
+    letter-spacing:0.02em;
+  }
+  header .sub{
+    margin:4px 0 0;
+    font-size:0.78rem;
+    opacity:0.85;
+    color:#e0e7f1;
+  }
+
+  main{
+    max-width:760px;
+    margin:36px auto;
+    padding:0 16px 40px;
+    width:100%;
+    flex:1;
+  }
+
+  .tarjetas{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(210px, 1fr));
+    gap:18px;
+    margin-bottom:32px;
+  }
+  .tarjeta{
+    background:rgba(13,42,77,0.6);
+    backdrop-filter:blur(8px);
+    border:1px solid rgba(201,169,97,0.4);
+    border-top:3px solid var(--dorado);
+    border-radius:12px;
+    padding:24px 20px 20px;
+    cursor:pointer;
+    text-align:left;
+    font-size:0.95rem;
+    font-family:inherit;
+    color:#fff;
+    transition:all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow:var(--sombra-suave);
+    position:relative;
+    overflow:hidden;
+    display:flex;
+    flex-direction:column;
+    min-height:200px;
+  }
+  .tarjeta::before{
+    content:'';
+    position:absolute;
+    top:0; left:0; right:0;
+    height:3px;
+    background:linear-gradient(90deg, var(--dorado), var(--dorado-claro));
+    opacity:0;
+    transition:opacity 0.25s;
+  }
+  .tarjeta:hover{
+    border-color:var(--dorado);
+    box-shadow:0 8px 32px rgba(201,169,97,0.3);
+    transform:translateY(-4px);
+    background:rgba(13,42,77,0.75);
+  }
+  .tarjeta:hover::before{opacity:1;}
+  .tarjeta.activa{
+    border-color:var(--dorado);
+    background:rgba(26,58,107,0.85);
+    box-shadow:var(--sombra-media);
+  }
+  .tarjeta .tarjeta-icono{
+    font-size:2rem;
+    margin-bottom:12px;
+    display:block;
+    line-height:1;
+  }
+  .tarjeta b{
+    display:block;
+    margin-bottom:10px;
+    color:var(--dorado-claro);
+    font-size:1.02rem;
+    font-weight:700;
+    line-height:1.3;
+    text-shadow:0 2px 4px rgba(0,0,0,0.3);
+  }
+  .tarjeta .tarjeta-desc{
+    color:rgba(255,255,255,0.85);
+    font-size:0.86rem;
+    line-height:1.5;
+    flex:1;
+  }
+  .tarjeta .tarjeta-cta{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    margin-top:14px;
+    color:var(--dorado);
+    font-weight:600;
+    font-size:0.85rem;
+    transition:gap 0.2s;
+  }
+  .tarjeta:hover .tarjeta-cta{gap:10px;color:var(--dorado-brilloso);}
+
+  form{
+    background:rgba(13,42,77,0.6);
+    backdrop-filter:blur(8px);
+    border:1px solid rgba(201,169,97,0.35);
+    border-top:3px solid var(--dorado);
+    border-radius:10px;
+    padding:22px;
+    display:none;
+    box-shadow:var(--sombra-suave);
+  }
+  form.activo{display:block;}
+  form h2{margin-top:0;color:var(--dorado-claro);font-size:1.1rem;text-shadow:0 2px 4px rgba(0,0,0,0.3);}
+  form h3.seccion{
+    font-size:0.85rem;color:var(--dorado);text-transform:uppercase;letter-spacing:.05em;
+    margin:24px 0 4px;border-top:1px solid rgba(201,169,97,0.3);padding-top:16px;font-weight:700;
+  }
+  label{display:block;margin:14px 0 6px;font-size:0.88rem;font-weight:600;color:var(--dorado-claro);}
+  input, select, textarea{
+    width:100%;padding:10px 12px;border:1px solid rgba(201,169,97,0.35);border-radius:6px;
+    font-size:0.9rem;font-family:inherit;background:rgba(0,0,0,0.35);color:#fff;transition:all 0.2s;
+  }
+  input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.4);}
+  input:focus,select:focus,textarea:focus{
+    outline:none;border-color:var(--dorado);box-shadow:0 0 0 3px rgba(201,169,97,0.2);background:rgba(0,0,0,0.5);
+  }
+  select option{background:var(--azul-oscuro);color:#fff;}
+  textarea{resize:vertical;min-height:70px;}
+  .fila{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  .btns{margin-top:20px;display:flex;gap:10px;flex-wrap:wrap;}
+  button{padding:11px 20px;border:none;border-radius:6px;font-size:0.9rem;font-family:inherit;cursor:pointer;font-weight:600;transition:all 0.2s;}
+  .btn-primario{background:linear-gradient(135deg, var(--azul) 0%, var(--azul-claro) 100%);color:#fff;border:1px solid rgba(201,169,97,0.3);}
+  .btn-primario:hover{background:linear-gradient(135deg, var(--azul-claro) 0%, var(--azul) 100%);transform:translateY(-1px);box-shadow:0 4px 12px rgba(201,169,97,0.3);}
+  .btn-secundario{background:rgba(255,255,255,0.1);color:#fff;border:1px solid rgba(255,255,255,0.2);}
+  .btn-secundario:hover{background:rgba(255,255,255,0.2);border-color:var(--dorado);}
+  .nota{font-size:0.78rem;color:rgba(255,255,255,0.6);margin-top:10px;line-height:1.5;}
+
+  .captura-foto{border:1px dashed rgba(201,169,97,0.4);border-radius:8px;padding:14px;margin-top:8px;background:rgba(0,0,0,0.2);}
+  .captura-visor{position:relative;width:100%;max-width:340px;margin:0 auto;}
+  .captura-visor video,.captura-visor img{width:100%;border-radius:6px;background:#000;display:block;}
+  .captura-visor video[hidden],.captura-visor img[hidden]{display:none;}
+
+  .marco-dni{
+    position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:92%;
+    aspect-ratio: 1.586 / 1;border:2px dashed rgba(255,255,255,0.85);border-radius:8px;
+    box-shadow:0 0 0 9999px rgba(0,0,0,0.35);pointer-events:none;display:none;
+  }
+  .marco-dni.activo{display:block;}
+  .marco-dni::before,.marco-dni::after{content:'';position:absolute;width:24px;height:24px;border:3px solid #4ade80;}
+  .marco-dni::before{top:-3px;left:-3px;border-right:none;border-bottom:none;border-top-left-radius:8px;}
+  .marco-dni::after{bottom:-3px;right:-3px;border-left:none;border-top:none;border-bottom-right-radius:8px;}
+  .marco-dni-texto{position:absolute;top:-32px;left:0;right:0;text-align:center;color:#fff;font-size:0.78rem;font-weight:600;text-shadow:0 1px 3px rgba(0,0,0,0.8);}
+
+  .scan-indicador{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.75);color:#fff;padding:6px 14px;border-radius:20px;font-size:0.78rem;display:none;align-items:center;gap:6px;}
+  .scan-indicador.activo{display:flex;}
+  .scan-dot{width:6px;height:6px;background:#4ade80;border-radius:50%;animation:scanPulse 1.2s infinite;}
+  .scan-dot:nth-child(2){animation-delay:0.2s;}
+  .scan-dot:nth-child(3){animation-delay:0.4s;}
+  @keyframes scanPulse{0%,60%,100%{opacity:0.3;transform:scale(1);}30%{opacity:1;transform:scale(1.3);}}
+
+  .btn-flash{position:absolute;top:8px;right:8px;background:rgba(0,0,0,0.55);color:#fff;border:1px solid rgba(255,255,255,0.4);border-radius:50%;width:40px;height:40px;font-size:1.1rem;cursor:pointer;display:none;align-items:center;justify-content:center;padding:0;}
+  .btn-flash.activo{display:flex;}
+  .btn-flash.encendido{background:rgba(250,204,21,0.9);color:#1f2937;}
+
+  .aviso-foto{background:rgba(138,100,0,0.3);border:1px solid rgba(255,224,130,0.5);color:#ffd54f;padding:10px 14px;border-radius:8px;font-size:0.85rem;margin-top:10px;display:none;}
+  .aviso-foto.activo{display:block;}
+  .aviso-foto .acciones{margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;}
+  .aviso-foto .acciones button{padding:6px 12px;font-size:0.8rem;border-radius:6px;border:none;cursor:pointer;}
+  .aviso-foto .btn-repetir-aviso{background:#8a6400;color:#fff;}
+  .aviso-foto .btn-usar-igual{background:rgba(255,255,255,0.2);color:#fff;}
+
+  .captura-botones{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;justify-content:center;}
+  .captura-botones button{padding:7px 12px;font-size:0.82rem;}
+  .captura-estado{font-size:0.78rem;color:rgba(255,255,255,0.7);margin-top:6px;text-align:center;}
+  .captura-estado.ok{color:#86efac;font-weight:600;}
+  .captura-estado.error{color:#fca5a5;font-weight:600;}
+  .escaneo-estado{font-size:0.78rem;color:var(--dorado-claro);margin-top:4px;font-weight:600;text-align:center;}
+
+  .aviso-borrador{background:rgba(138,100,0,0.3);border:1px solid rgba(255,224,130,0.5);color:#ffd54f;padding:10px 14px;border-radius:8px;font-size:0.85rem;margin-bottom:16px;display:none;}
+  .aviso-borrador.activo{display:block;}
+  .aviso-borrador button{background:transparent;color:#ffd54f;text-decoration:underline;padding:0;font-size:0.85rem;margin-left:6px;border:none;cursor:pointer;}
+
+  .comisaria-asignada{
+    margin-top:16px;padding:14px 18px;background:rgba(21,128,61,0.25);
+    border:1px solid rgba(134,239,172,0.5);border-left:4px solid #86efac;
+    border-radius:8px;color:#fff;font-size:0.92rem;line-height:1.5;
+    display:none;animation:fadeInComisaria 0.4s ease-out;
+  }
+  .comisaria-asignada.activo{display:block;}
+  .comisaria-asignada.cargando{background:rgba(44,90,160,0.25);border-color:rgba(201,169,97,0.5);border-left-color:var(--dorado);}
+  .comisaria-asignada.error{background:rgba(185,28,28,0.25);border-color:rgba(252,165,165,0.5);border-left-color:#fca5a5;}
+  .comisaria-asignada strong{color:#86efac;font-weight:700;display:block;margin-top:4px;font-size:1rem;}
+  .comisaria-asignada.cargando strong{color:var(--dorado-claro);}
+  .comisaria-asignada.error strong{color:#fca5a5;}
+  @keyframes fadeInComisaria{from{opacity:0;transform:translateY(-6px);}to{opacity:1;transform:translateY(0);}}
+
+  #documento{display:none;background:rgba(13,42,77,0.75);backdrop-filter:blur(10px);border:1px solid rgba(201,169,97,0.4);border-top:3px solid var(--dorado);border-radius:10px;padding:30px;}
+  #documento.activo{display:block;}
+  #documento h2{text-align:center;color:var(--dorado-claro);font-size:1.05rem;margin-bottom:4px;}
+  #documento .subt{text-align:center;font-size:0.8rem;color:rgba(255,255,255,0.7);margin-bottom:24px;}
+  #documento dl{margin:0;}
+  #documento dt{font-size:0.78rem;color:var(--dorado-claro);margin-top:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.03em;}
+  #documento dd{margin:2px 0 0;font-size:0.95rem;color:#fff;}
+  #documento dd img{max-width:220px;border:1px solid rgba(255,255,255,0.3);border-radius:6px;display:block;margin-top:4px;}
+  #documento .firma{margin-top:50px;display:flex;justify-content:space-between;font-size:0.8rem;flex-wrap:wrap;gap:16px;}
+  #documento .firma div{border-top:1px solid rgba(255,255,255,0.4);padding-top:6px;width:30%;text-align:center;min-width:150px;color:rgba(255,255,255,0.8);}
+
+  footer.site-footer{background:transparent;color:var(--dorado-claro);padding:28px 20px;margin-top:auto;border-top:1px solid rgba(201,169,97,0.3);text-align:center;font-size:1rem;line-height:1.7;position:relative;z-index:2;}
+  footer.site-footer .footer-inner{max-width:760px;margin:0 auto;}
+  footer.site-footer p{margin:4px 0;color:var(--dorado-brilloso);font-weight:500;text-shadow:0 0 10px rgba(240,215,140,0.4), 0 1px 2px rgba(0,0,0,0.5);}
+  footer.site-footer strong{color:var(--dorado-brilloso);font-weight:700;text-shadow:0 0 10px rgba(240,215,140,0.5), 0 1px 2px rgba(0,0,0,0.5);}
+
+  @media print{
+    header,.tarjetas,form,.no-print,footer.site-footer{display:none !important;}
+    #documento{display:block !important;border:none;box-shadow:none;background:#fff;}
+    #documento h2,#documento dt{color:#0d2a4d;}
+    #documento dd,#documento .subt{color:#1f2937;}
+    body{background:#fff;}
+    body::before{display:none !important;}
+  }
+
+  @media (max-width: 600px){
+    header .header-inner{flex-direction:column;text-align:center;}
+    header .header-texto{text-align:center;}
+    header h1::after{margin:8px auto 0;}
+    header h1{font-size:1.3rem;}
+    header .header-logo{width:56px;height:56px;}
+    header{padding:22px 18px 20px;}
+    main{margin:24px auto;}
+    .tarjeta{padding:20px 16px;min-height:auto;}
+    body::before{width:110vmin;height:110vmin;opacity:0.45;}
+    .fila{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="header-logo"></div>
+    <div class="header-texto">
+      <h1>Trámites Policiales Salta</h1>
+      <p>Trámites policiales en línea</p>
+      <p class="sub">Policía de Salta · DMI (JP)</p>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="aviso-borrador" id="aviso-borrador">
+    📌 Recuperamos las fotos que habías sacado antes.
+    <button type="button" id="btn-descartar-borrador">Descartar todo y empezar de nuevo</button>
+  </div>
+
+  <div class="tarjetas" id="tarjetas">
+    <button class="tarjeta" data-tramite="residencia">
+      <span class="tarjeta-icono">🏠</span>
+      <b>Certificado de Residencia</b>
+      <span class="tarjeta-desc">Acredita el domicilio donde vive la persona solicitante.</span>
+      <span class="tarjeta-cta">Iniciar trámite →</span>
+    </button>
+    <button class="tarjeta" data-tramite="convivencia">
+      <span class="tarjeta-icono">🤝</span>
+      <b>Certificado de Convivencia</b>
+      <span class="tarjeta-desc">Acredita que dos o más personas conviven en un mismo domicilio.</span>
+      <span class="tarjeta-cta">Iniciar trámite →</span>
+    </button>
+    <button class="tarjeta" data-tramite="carencia">
+      <span class="tarjeta-icono">📋</span>
+      <b>Certificado de Carencia de Recursos</b>
+      <span class="tarjeta-desc">Acredita la situación de falta de recursos económicos.</span>
+      <span class="tarjeta-cta">Iniciar trámite →</span>
+    </button>
+  </div>
+
+  <!-- Formulario: Residencia -->
+  <form id="form-residencia">
+    <h2>Certificado de Residencia</h2>
+    <label>Nombre completo</label>
+    <input type="text" name="nombre" required>
+    <div class="fila">
+      <div>
+        <label>DNI</label>
+        <input type="text" name="dni" pattern="[0-9]{7,8}" required>
+      </div>
+      <div>
+        <label>Fecha de nacimiento</label>
+        <input type="date" name="fechaNacimiento" required>
+      </div>
+    </div>
+    <div class="fila">
+      <div>
+        <label>Email (para avisarte cuando esté listo)</label>
+        <input type="email" name="email" placeholder="tucorreo@ejemplo.com" required>
+      </div>
+      <div>
+        <label>Teléfono / WhatsApp</label>
+        <input type="tel" name="telefono" placeholder="Ej: 3874123456" required>
+      </div>
+    </div>
+    <label>Domicilio actual (calle, número, barrio)</label>
+    <input type="text" name="domicilio" required>
+    <label>Localidad</label>
+    <select name="localidad" class="select-localidad" required>
+      <option value="">Seleccionar</option>
+    </select>
+    <div class="comisaria-asignada" data-comisaria-aviso>
+      <span class="texto">📍 Calculando comisaría...</span>
+      <strong class="nombre"></strong>
+    </div>
+    <label>Motivo del trámite</label>
+    <textarea name="motivo" required></textarea>
+
+    <label>Foto del DNI (solicitante)</label>
+    <div class="captura-foto" data-target="res-solicitante">
+      <div class="captura-visor">
+        <video autoplay playsinline muted></video>
+        <div class="marco-dni"><div class="marco-dni-texto">Encuadrá el DNI dentro del marco</div></div>
+        <div class="scan-indicador"><span>Buscando código</span><span class="scan-dot"></span><span class="scan-dot"></span><span class="scan-dot"></span></div>
+        <button type="button" class="btn-flash" title="Activar/desactivar flash">🔦</button>
+        <img hidden alt="Foto del DNI capturada">
+      </div>
+      <canvas hidden></canvas>
+      <input type="hidden" name="foto_solicitante" value="">
+      <div class="aviso-foto">
+        ⚠️ <span class="motivo-texto">No pudimos leer el código del DNI.</span>
+        <div class="acciones">
+          <button type="button" class="btn-repetir-aviso">Reintentar</button>
+          <button type="button" class="btn-usar-igual">Tomar foto igual</button>
+        </div>
+      </div>
+      <div class="captura-botones">
+        <button type="button" class="btn-secundario btn-camara">Activar cámara</button>
+        <button type="button" class="btn-secundario btn-cancelar" hidden>Cancelar</button>
+      </div>
+      <p class="captura-estado">Sin foto capturada</p>
+      <p class="escaneo-estado"></p>
+    </div>
+
+    <h3 class="seccion">Testigos (obligatorios: 2)</h3>
+    <div class="bloque-testigo" data-testigo="1" data-activo="true">
+      <div class="fila campos-testigo">
+        <div><label>Nombre del testigo 1</label><input type="text" name="testigo1Nombre" required></div>
+        <div><label>DNI del testigo 1</label><input type="text" name="testigo1Dni" pattern="[0-9]{7,8}" required></div>
+      </div>
+      <label class="campos-testigo">Foto del DNI (testigo 1)</label>
+      <div class="captura-foto campos-testigo" data-target="res-testigo1">
+        <div class="captura-visor">
+          <video autoplay playsinline muted></video>
+          <div class="marco-dni"><div class="marco-dni-texto">Encuadrá el DNI dentro del marco</div></div>
+          <div class="scan-indicador"><span>Buscando código</span><span class="scan-dot"></span><span class="scan-dot"></span><span class="scan-dot"></span></div>
+          <button type="button" class="btn-flash" title="Activar/desactivar flash">🔦</button>
+          <img hidden alt="Foto del DNI capturada">
+        </div>
+        <canvas hidden></canvas>
+        <input type="hidden" name="foto_testigo1" value="">
+        <div class="aviso-foto">
+          ⚠️ <span class="motivo-texto">No pudimos leer el código del DNI.</span>
+          <div class="acciones">
+            <button type="button" class="btn-repetir-aviso">Reintentar</button>
+            <button type="button" class="btn-usar-igual">Tomar foto igual</button>
+          </div>
+        </div>
+        <div class="captura-botones">
+          <button type="button" class="btn-secundario btn-camara">Activar cámara</button>
+          <button type="button" class="btn-secundario btn-cancelar" hidden>Cancelar</button>
+        </div>
+        <p class="captura-estado">Sin foto capturada</p>
+        <p class="escaneo-estado"></p>
+      </div>
+    </div>
+
+    <div class="bloque-testigo" data-testigo="2" data-activo="true">
+      <div class="fila campos-testigo">
+        <div><label>Nombre del testigo 2</label><input type="text" name="testigo2Nombre" required></div>
+        <div><label>DNI del testigo 2</label><input type="text" name="testigo2Dni" pattern="[0-9]{7,8}" required></div>
+      </div>
+      <label class="campos-testigo">Foto del DNI (testigo 2)</label>
+      <div class="captura-foto campos-testigo" data-target="res-testigo2">
+        <div class="captura-visor">
+          <video autoplay playsinline muted></video>
+          <div class="marco-dni"><div class="marco-dni-texto">Encuadrá el DNI dentro del marco</div></div>
+          <div class="scan-indicador"><span>Buscando código</span><span class="scan-dot"></span><span class="scan-dot"></span><span class="scan-dot"></span></div>
+          <button type="button" class="btn-flash" title="Activar/desactivar flash">🔦</button>
+          <img hidden alt="Foto del DNI capturada">
+        </div>
+        <canvas hidden></canvas>
+        <input type="hidden" name="foto_testigo2" value="">
+        <div class="aviso-foto">
+          ⚠️ <span class="motivo-texto">No pudimos leer el código del DNI.</span>
+          <div class="acciones">
+            <button type="button" class="btn-repetir-aviso">Reintentar</button>
+            <button type="button" class="btn-usar-igual">Tomar foto igual</button>
+          </div>
+        </div>
+        <div class="captura-botones">
+          <button type="button" class="btn-secundario btn-camara">Activar cámara</button>
+          <button type="button" class="btn-secundario btn-cancelar" hidden>Cancelar</button>
+        </div>
+        <p class="captura-estado">Sin foto capturada</p>
+        <p class="escaneo-estado"></p>
+      </div>
+    </div>
+
+    <div class="btns">
+      <button type="submit" class="btn-primario">Generar certificado</button>
+      <button type="button" class="btn-secundario volver">Volver</button>
+    </div>
+    <p class="nota">Las fotos se envían a la comisaría correspondiente a través de un servidor seguro (Supabase) y se usan solo para generar este documento.</p>
+  </form>
+
+  <!-- Formulario: Convivencia -->
+  <form id="form-convivencia">
+    <h2>Certificado de Convivencia</h2>
+    <h3 class="seccion" style="border-top:none;margin-top:0;padding-top:0;">Solicitante</h3>
+    <div class="fila">
+      <div><label>Nombre completo</label><input type="text" name="nombreSolicitante" required></div>
+      <div><label>DNI</label><input type="text" name="dniSolicitante" pattern="[0-9]{7,8}" required></div>
+    </div>
+    <div class="fila">
+      <div>
+        <label>Email (para avisarte cuando esté listo)</label>
+        <input type="email" name="email" placeholder="tucorreo@ejemplo.com" required>
+      </div>
+      <div>
+        <label>Teléfono / WhatsApp</label>
+        <input type="tel" name="telefono" placeholder="Ej: 3874123456" required>
+      </div>
+    </div>
+    <label>Foto del DNI (solicitante)</label>
+    <div class="captura-foto" data-target="con-solicitante">
+      <div class="captura-visor">
+        <video autoplay playsinline muted></video>
+        <div class="marco-dni"><div class="marco-dni-texto">Encuadrá el DNI dentro del marco</div></div>
+        <div class="scan-indicador"><span>Buscando código</span><span class="scan-dot"></span><span class="scan-dot"></span><span class="scan-dot"></span></div>
+        <button type="button" class="btn-flash" title="Activar/desactivar flash">🔦</button>
+        <img hidden alt="Foto del DNI capturada">
+      </div>
+      <canvas hidden></canvas>
+      <input type="hidden" name="foto_solicitante" value="">
+      <div class="aviso-foto">
+        ⚠️ <span class="motivo-texto">No pudimos leer el código del DNI.</span>
+        <div class="acciones">
+          <button type="button" class="btn-repetir-aviso">Reintentar</button>
+          <button type="button" class="btn-usar-igual">Tomar foto igual</button>
+        </div>
+      </div>
+      <div class="captura-botones">
+        <button type="button" class="btn-secundario btn-camara">Activar cámara</button>
+        <button type="button" class="btn-secundario btn-cancelar" hidden>Cancelar</button>
+      </div>
+      <p class="captura-estado">Sin foto capturada</p>
+      <p class="escaneo-estado"></p>
+    </div>
+
+    <h3 class="seccion">Conviviente</h3>
+    <div class="fila">
+      <div><label>Nombre completo</label><input type="text" name="nombreConviviente" required></div>
+      <div><label>DNI</label><input type="text" name="dniConviviente" pattern="[0-9]{7,8}" required></div>
+    </div>
+    <label>Parentesco con el conviviente</label>
+    <select name="parentesco" required>
+      <option value="">Seleccionar</option>
+      <option>Cónyuge</option>
+      <option>Concubino/a</option>
+      <option>Pareja</option>
+      <option>Hijo/a</option>
+      <option>Padre</option>
+      <option>Madre</option>
+      <option>Hermano/a</option>
+      <option>Abuelo/a</option>
+      <option>Nieto/a</option>
+      <option>Tío/a</option>
+      <option>Sobrino/a</option>
+      <option>Primo/a</option>
+      <option>Suegro/a</option>
+      <option>Cuñado/a</option>
+      <option>Yerno</option>
+      <option>Nuera</option>
+      <option>Padrastro</option>
+      <option>Madrastra</option>
+      <option>Hijastro/a</option>
+      <option>Otro</option>
+    </select>
+    <label>Domicilio en común (calle, número, barrio)</label>
+    <input type="text" name="domicilioComun" required>
+    <label>Localidad</label>
+    <select name="localidad" class="select-localidad" required>
+      <option value="">Seleccionar</option>
+    </select>
+    <div class="comisaria-asignada" data-comisaria-aviso>
+      <span class="texto">📍 Calculando comisaría...</span>
+      <strong class="nombre"></strong>
+    </div>
+    <label>Motivo del trámite</label>
+    <textarea name="motivo" required></textarea>
+
+    <h3 class="seccion">Testigos (obligatorios: 2)</h3>
+    <div class="bloque-testigo" data-testigo="1" data-activo="true">
+      <div class="fila campos-testigo">
+        <div><label>Nombre del testigo 1</label><input type="text" name="testigo1Nombre" required></div>
+        <div><label>DNI del testigo 1</label><input type="text" name="testigo1Dni" pattern="[0-9]{7,8}" required></div>
+      </div>
+      <label class="campos-testigo">Foto del DNI (testigo 1)</label>
+      <div class="captura-foto campos-testigo" data-target="con-testigo1">
+        <div class="captura-visor">
+          <video autoplay playsinline muted></video>
+          <div class="marco-dni"><div class="marco-dni-texto">Encuadrá el DNI dentro del marco</div></div>
+          <div class="scan-indicador"><span>Buscando código</span><span class="scan-dot"></span><span class="scan-dot"></span><span class="scan-dot"></span></div>
+          <button type="button" class="btn-flash" title="Activar/desactivar flash">🔦</button>
+          <img hidden alt="Foto del DNI capturada">
+        </div>
+        <canvas hidden></canvas>
+        <input type="hidden" name="foto_testigo1" value="">
+        <div class="aviso-foto">
+          ⚠️ <span class="motivo-texto">No pudimos leer el código del DNI.</span>
+          <div class="acciones">
+            <button type="button" class="btn-repetir-aviso">Reintentar</button>
+            <button type="button" class="btn-usar-igual">Tomar foto igual</button>
+          </div>
+        </div>
+        <div class="captura-botones">
+          <button type="button" class="btn-secundario btn-camara">Activar cámara</button>
+          <button type="button" class="btn-secundario btn-cancelar" hidden>Cancelar</button>
+        </div>
+        <p class="captura-estado">Sin foto capturada</p>
+        <p class="escaneo-estado"></p>
+      </div>
+    </div>
+
+    <div class="bloque-testigo" data-testigo="2" data-activo="true">
+      <div class="fila campos-testigo">
+        <div><label>Nombre del testigo 2</label><input type="text" name="testigo2Nombre" required></div>
+        <div><label>DNI del testigo 2</label><input type="text" name="testigo2Dni" pattern="[0-9]{7,8}" required></div>
+      </div>
+      <label class="campos-testigo">Foto del DNI (testigo 2)</label>
+      <div class="captura-foto campos-testigo" data-target="con-testigo2">
+        <div class="captura-visor">
+          <video autoplay playsinline muted></video>
+          <div class="marco-dni"><div class="marco-dni-texto">Encuadrá el DNI dentro del marco</div></div>
+          <div class="scan-indicador"><span>Buscando código</span><span class="scan-dot"></span><span class="scan-dot"></span><span class="scan-dot"></span></div>
+          <button type="button" class="btn-flash" title="Activar/desactivar flash">🔦</button>
+          <img hidden alt="Foto del DNI capturada">
+        </div>
+        <canvas hidden></canvas>
+        <input type="hidden" name="foto_testigo2" value="">
+        <div class="aviso-foto">
+          ⚠️ <span class="motivo-texto">No pudimos leer el código del DNI.</span>
+          <div class="acciones">
+            <button type="button" class="btn-repetir-aviso">Reintentar</button>
+            <button type="button" class="btn-usar-igual">Tomar foto igual</button>
+          </div>
+        </div>
+        <div class="captura-botones">
+          <button type="button" class="btn-secundario btn-camara">Activar cámara</button>
+          <button type="button" class="btn-secundario btn-cancelar" hidden>Cancelar</button>
+        </div>
+        <p class="captura-estado">Sin foto capturada</p>
+        <p class="escaneo-estado"></p>
+      </div>
+    </div>
+
+    <div class="btns">
+      <button type="submit" class="btn-primario">Generar certificado</button>
+      <button type="button" class="btn-secundario volver">Volver</button>
+    </div>
+    <p class="nota">Las fotos se envían a la comisaría correspondiente a través de un servidor seguro (Supabase) y se usan solo para generar este documento.</p>
+  </form>
+
+  <!-- Formulario: Carencia de recursos -->
+  <form id="form-carencia">
+    <h2>Certificado de Carencia de Recursos</h2>
+    <label>Nombre completo</label>
+    <input type="text" name="nombre" required>
+    <div class="fila">
+      <div><label>DNI</label><input type="text" name="dni" pattern="[0-9]{7,8}" required></div>
+      <div>
+        <label>Estado civil</label>
+        <select name="estadoCivil" required>
+          <option value="">Seleccionar</option>
+          <option>Soltero/a</option>
+          <option>Casado/a</option>
+          <option>Divorciado/a</option>
+          <option>Viudo/a</option>
+          <option>Unión convivencial</option>
+        </select>
+      </div>
+    </div>
+    <div class="fila">
+      <div>
+        <label>Email (para avisarte cuando esté listo)</label>
+        <input type="email" name="email" placeholder="tucorreo@ejemplo.com" required>
+      </div>
+      <div>
+        <label>Teléfono / WhatsApp</label>
+        <input type="tel" name="telefono" placeholder="Ej: 3874123456" required>
+      </div>
+    </div>
+    <label>Domicilio (calle, número, barrio)</label>
+    <input type="text" name="domicilio" required>
+    <label>Localidad</label>
+    <select name="localidad" class="select-localidad" required>
+      <option value="">Seleccionar</option>
+    </select>
+    <div class="comisaria-asignada" data-comisaria-aviso>
+      <span class="texto">📍 Calculando comisaría...</span>
+      <strong class="nombre"></strong>
+    </div>
+    <div class="fila">
+      <div>
+        <label>Situación laboral actual</label>
+        <select name="situacionLaboral" required>
+          <option value="">Seleccionar</option>
+          <option>Desempleado/a</option>
+          <option>Changas / trabajo informal</option>
+          <option>Empleado/a</option>
+          <option>Jubilado/a - pensionado/a</option>
+        </select>
+      </div>
+      <div><label>Personas a cargo</label><input type="number" name="personasACargo" min="0" value="0" required></div>
+    </div>
+    <label>Motivo del trámite</label>
+    <textarea name="motivo" required></textarea>
+
+    <label>Foto del DNI (solicitante)</label>
+    <div class="captura-foto" data-target="car-solicitante">
+      <div class="captura-visor">
+        <video autoplay playsinline muted></video>
+        <div class="marco-dni"><div class="marco-dni-texto">Encuadrá el DNI dentro del marco</div></div>
+        <div class="scan-indicador"><span>Buscando código</span><span class="scan-dot"></span><span class="scan-dot"></span><span class="scan-dot"></span></div>
+        <button type="button" class="btn-flash" title="Activar/desactivar flash">🔦</button>
+        <img hidden alt="Foto del DNI capturada">
+      </div>
+      <canvas hidden></canvas>
+      <input type="hidden" name="foto_solicitante" value="">
+      <div class="aviso-foto">
+        ⚠️ <span class="motivo-texto">No pudimos leer el código del DNI.</span>
+        <div class="acciones">
+          <button type="button" class="btn-repetir-aviso">Reintentar</button>
+          <button type="button" class="btn-usar-igual">Tomar foto igual</button>
+        </div>
+      </div>
+      <div class="captura-botones">
+        <button type="button" class="btn-secundario btn-camara">Activar cámara</button>
+        <button type="button" class="btn-secundario btn-cancelar" hidden>Cancelar</button>
+      </div>
+      <p class="captura-estado">Sin foto capturada</p>
+      <p class="escaneo-estado"></p>
+    </div>
+
+    <h3 class="seccion">Testigos (obligatorios: 2)</h3>
+    <div class="bloque-testigo" data-testigo="1" data-activo="true">
+      <div class="fila campos-testigo">
+        <div><label>Nombre del testigo 1</label><input type="text" name="testigo1Nombre" required></div>
+        <div><label>DNI del testigo 1</label><input type="text" name="testigo1Dni" pattern="[0-9]{7,8}" required></div>
+      </div>
+      <label class="campos-testigo">Foto del DNI (testigo 1)</label>
+      <div class="captura-foto campos-testigo" data-target="car-testigo1">
+        <div class="captura-visor">
+          <video autoplay playsinline muted></video>
+          <div class="marco-dni"><div class="marco-dni-texto">Encuadrá el DNI dentro del marco</div></div>
+          <div class="scan-indicador"><span>Buscando código</span><span class="scan-dot"></span><span class="scan-dot"></span><span class="scan-dot"></span></div>
+          <button type="button" class="btn-flash" title="Activar/desactivar flash">🔦</button>
+          <img hidden alt="Foto del DNI capturada">
+        </div>
+        <canvas hidden></canvas>
+        <input type="hidden" name="foto_testigo1" value="">
+        <div class="aviso-foto">
+          ⚠️ <span class="motivo-texto">No pudimos leer el código del DNI.</span>
+          <div class="acciones">
+            <button type="button" class="btn-repetir-aviso">Reintentar</button>
+            <button type="button" class="btn-usar-igual">Tomar foto igual</button>
+          </div>
+        </div>
+        <div class="captura-botones">
+          <button type="button" class="btn-secundario btn-camara">Activar cámara</button>
+          <button type="button" class="btn-secundario btn-cancelar" hidden>Cancelar</button>
+        </div>
+        <p class="captura-estado">Sin foto capturada</p>
+        <p class="escaneo-estado"></p>
+      </div>
+    </div>
+
+    <div class="bloque-testigo" data-testigo="2" data-activo="true">
+      <div class="fila campos-testigo">
+        <div><label>Nombre del testigo 2</label><input type="text" name="testigo2Nombre" required></div>
+        <div><label>DNI del testigo 2</label><input type="text" name="testigo2Dni" pattern="[0-9]{7,8}" required></div>
+      </div>
+      <label class="campos-testigo">Foto del DNI (testigo 2)</label>
+      <div class="captura-foto campos-testigo" data-target="car-testigo2">
+        <div class="captura-visor">
+          <video autoplay playsinline muted></video>
+          <div class="marco-dni"><div class="marco-dni-texto">Encuadrá el DNI dentro del marco</div></div>
+          <div class="scan-indicador"><span>Buscando código</span><span class="scan-dot"></span><span class="scan-dot"></span><span class="scan-dot"></span></div>
+          <button type="button" class="btn-flash" title="Activar/desactivar flash">🔦</button>
+          <img hidden alt="Foto del DNI capturada">
+        </div>
+        <canvas hidden></canvas>
+        <input type="hidden" name="foto_testigo2" value="">
+        <div class="aviso-foto">
+          ⚠️ <span class="motivo-texto">No pudimos leer el código del DNI.</span>
+          <div class="acciones">
+            <button type="button" class="btn-repetir-aviso">Reintentar</button>
+            <button type="button" class="btn-usar-igual">Tomar foto igual</button>
+          </div>
+        </div>
+        <div class="captura-botones">
+          <button type="button" class="btn-secundario btn-camara">Activar cámara</button>
+          <button type="button" class="btn-secundario btn-cancelar" hidden>Cancelar</button>
+        </div>
+        <p class="captura-estado">Sin foto capturada</p>
+        <p class="escaneo-estado"></p>
+      </div>
+    </div>
+
+    <div class="btns">
+      <button type="submit" class="btn-primario">Generar certificado</button>
+      <button type="button" class="btn-secundario volver">Volver</button>
+    </div>
+    <p class="nota">Las fotos se envían a la comisaría correspondiente a través de un servidor seguro (Supabase) y se usan solo para generar este documento.</p>
+  </form>
+
+  <div id="documento">
+    <h2 id="doc-titulo">Certificado</h2>
+    <p class="subt">Policía de Salta</p>
+    <p class="subt" style="margin-top:-16px;">Tu trámite ya fue enviado a la comisaría correspondiente.</p>
+    <dl id="doc-contenido"></dl>
+    <div class="firma">
+      <div>Firma del solicitante</div>
+      <div>Firma testigos</div>
+      <div>Firma y sello - Autoridad policial</div>
+    </div>
+    <div class="btns no-print" style="margin-top:30px;">
+      <button class="btn-primario" onclick="window.print()">Imprimir / Guardar como PDF</button>
+      <button class="btn-secundario" id="doc-volver">Volver al inicio</button>
+    </div>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <p><strong>© 2026 Policía de Salta</strong> · Dirección de Modernización e Innovación Tecnológica (JP)</p>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-config.js"></script>
+<script src="comisarias-config.js"></script>
+<script>
+const tarjetas = document.querySelectorAll('.tarjeta');
+const forms = {
+  residencia: document.getElementById('form-residencia'),
+  convivencia: document.getElementById('form-convivencia'),
+  carencia: document.getElementById('form-carencia'),
+};
+const tarjetasEl = document.getElementById('tarjetas');
+const documento = document.getElementById('documento');
+const avisoBorrador = document.getElementById('aviso-borrador');
+
+const etiquetas = {
+  nombre: 'Nombre completo', dni: 'DNI', fechaNacimiento: 'Fecha de nacimiento',
+  email: 'Email de contacto', telefono: 'Teléfono / WhatsApp',
+  domicilio: 'Domicilio', localidad: 'Localidad',
+  motivo: 'Motivo del trámite', nombreSolicitante: 'Nombre del solicitante',
+  dniSolicitante: 'DNI del solicitante', nombreConviviente: 'Nombre del conviviente',
+  dniConviviente: 'DNI del conviviente', parentesco: 'Parentesco con el conviviente',
+  domicilioComun: 'Domicilio en común',
+  estadoCivil: 'Estado civil',
+  situacionLaboral: 'Situación laboral', personasACargo: 'Personas a cargo',
+  testigo1Nombre: 'Nombre del testigo 1', testigo1Dni: 'DNI del testigo 1',
+  testigo2Nombre: 'Nombre del testigo 2', testigo2Dni: 'DNI del testigo 2',
+  foto_solicitante: 'Foto del DNI - Solicitante',
+  foto_testigo1: 'Foto del DNI - Testigo 1',
+  foto_testigo2: 'Foto del DNI - Testigo 2',
 };
 
+const CAMPO_DOMICILIO = {
+  residencia: 'domicilio',
+  convivencia: 'domicilioComun',
+  carencia: 'domicilio',
+};
 
-// ============================================================
-// DEPENDENCIAS POLICIALES (con coordenadas)
-// Fallback si no hay corrección de barrio
-// ============================================================
-const DEPENDENCIAS_POLICIALES = [
-  // ==================== DDP 1 - SALTA CAPITAL ====================
-  { nombre: "Comisaría N°1 - Centro (DDP 1)", lat: -24.786744, lon: -65.408122 },
-  { nombre: "Comisaría N°2 - Santa Cecilia (DDP 1)", lat: -24.799021, lon: -65.416157 },
-  { nombre: "Comisaría N°3 - Tres Cerritos (DDP 1)", lat: -24.764263, lon: -65.399474 },
-  { nombre: "Comisaría N°4 - Villa Mitre (DDP 1)", lat: -24.816072, lon: -65.378484 },
-  { nombre: "Comisaría N°5 - Solidaridad (DDP 1)", lat: -24.7807724, lon: -65.4274511 },
-  { nombre: "Comisaría N°6 - Ciudad del Milagro (DDP 1)", lat: -24.723614, lon: -65.408431 },
-  { nombre: "Comisaría N°7 - El Tribuno (DDP 1)", lat: -24.846625, lon: -65.441169 },
-  { nombre: "Comisaría N°8 - Santa Ana (DDP 1)", lat: -24.807981, lon: -65.439922 },
-  { nombre: "Comisaría N°9 - Portezuelo Sur (DDP 1)", lat: -24.796094, lon: -65.394222 },
-  { nombre: "Comisaría N°10 - Santa Cecilia (DDP 1)", lat: -24.829139, lon: -65.397831 },
-  { nombre: "Comisaría N°11 - 17 de Octubre (DDP 1)", lat: -24.71865, lon: -65.398062 },
-  { nombre: "Comisaría N°12 - Santa Ana I (DDP 1)", lat: -24.857336, lon: -65.470575 },
-  { nombre: "Comisaría N°13 - Cerrillos (DDP 1)", lat: -24.903533, lon: -65.487753 },
-  { nombre: "Comisaría N°14 - Campo Santo (DDP 1)", lat: -24.681389, lon: -65.1032 },
-  { nombre: "Comisaría N°15 - San Remo (DDP 1)", lat: -24.829231, lon: -65.423578 },
-  { nombre: "Comisaría N°16 - El Centro (DDP 1)" },
-  { nombre: "Comisaría N°17 - Solidaridad (DDP 1)", lat: -24.843314, lon: -65.396283 },
-  { nombre: "Comisaría N°18 - Chicoana (DDP 1)" },
-  { nombre: "Comisaría N°19 - El Carril (DDP 1)" },
-  { nombre: "Comisaría N°20 - La Ribera (DDP 1)" },
-  { nombre: "Comisaría N°24 - Centro Norte (DDP 1)" },
-  { nombre: "Comisaría N°25 - San Lorenzo Chico (DDP 1)" },
-  { nombre: "Comisaría N°100 - San Lorenzo (DDP 1)", lat: -24.73125, lon: -65.490778 },
-  { nombre: "Comisaría N°101 - Santa Rita (DDP 1)", lat: -24.663811, lon: -65.038328 },
-  { nombre: "Comisaría N°102 - Atocha II (DDP 1)", lat: -24.811761, lon: -65.459939 },
-  { nombre: "Comisaría N°103 - 17 de Octubre (DDP 1)" },
-  { nombre: "Comisaría N°104 - Palermo (DDP 1)", lat: -24.787304, lon: -65.459397 },
-  { nombre: "Comisaría N°105 - La Merced (DDP 1)", lat: -24.970175, lon: -65.489828 },
-  { nombre: "Comisaría N°106 - Limache (DDP 1)", lat: -24.852619, lon: -65.431589 },
-  { nombre: "Comisaría N°107 - San Carlos (DDP 1)" },
-  { nombre: "Comisaría N°108 - Campo Quijano (DDP 1)", lat: -24.9079653, lon: -65.6423614 },
-  { nombre: "Comisaría N°110 - Huaico II (DDP 1)" },
-  { nombre: "Comisaría N°111 - Limache Nuevo (DDP 1)" },
-  { nombre: "Comisaría N°112 - La Silleta (DDP 1)" },
-  { nombre: "Comisaría N°115 - El Círculo (DDP 1)" },
-  { nombre: "Comisaría N°118 - Cerveceros (DDP 1)" },
-  { nombre: "Subcomisaría Villa Lavalle (DDP 1)" },
-  { nombre: "Subcomisaría Barrio Docente (DDP 1)" },
-  { nombre: "Subcomisaría Villa Asunción (DDP 1)" },
-  { nombre: "Subcomisaría Grand Bourg (DDP 1)" },
-  { nombre: "Subcomisaría Grand Bourg Este (DDP 1)" },
-  { nombre: "Subcomisaría Barrio Policial (DDP 1)" },
-  { nombre: "Subcomisaría El Aybal (DDP 1)" },
-  { nombre: "Subcomisaría de El Huaico (DDP 1)" },
-  { nombre: "Subcomisaría de Atocha (DDP 1)" },
-  { nombre: "Destacamento El Triángulo (DDP 1)" },
-  { nombre: "Destacamento Las Costas (DDP 1)" },
-  { nombre: "Destacamento Parque Industrial (DDP 1)" },
-  { nombre: "Destacamento Limache (DDP 1)" },
-  { nombre: "Destacamento San Rafael (DDP 1)" },
-  { nombre: "Destacamento Mercado Cofruthos (DDP 1)" },
-  { nombre: "Destacamento Villa Las Rosas (DDP 1)" },
-  { nombre: "Destacamento San Ignacio (DDP 1)" },
-  { nombre: "Destacamento San Cayetano (DDP 1)" },
-  { nombre: "Base Operativa San Agustín (DDP 1)" },
-  { nombre: "Puesto Policial San Luis Centro (DDP 1)" },
+document.querySelectorAll('.select-localidad').forEach(select => {
+  LOCALIDADES_SALTA.forEach(nombre => {
+    const opt = document.createElement('option');
+    opt.value = nombre;
+    opt.textContent = nombre;
+    select.appendChild(opt);
+  });
+});
 
-  // ==================== DDP 2 - ORÁN ====================
-  { nombre: "Comisaría 1 - Orán (DDP 2)" },
-  { nombre: "Puerto Policial Estación (DDP 2)" },
-  { nombre: "Comisaría 2 - Hipólito Yrigoyen (DDP 2)" },
-  { nombre: "Destacamento Tabacal (DDP 2)" },
-  { nombre: "Comisaría 3 - Docente (DDP 2)" },
-  { nombre: "Destacamento Balut (DDP 2)" },
-  { nombre: "Comisaría 4 - Aeroparque (DDP 2)" },
-  { nombre: "Subcomisaría 9 de Julio (DDP 2)" },
-  { nombre: "Comisaría 5 - Aguas Blancas (DDP 2)" },
-  { nombre: "Subcomisaría Los Toldos (DDP 2)" },
-  { nombre: "Destacamento Isla de Cañas (DDP 2)" },
-  { nombre: "Destacamento Los Naranjos (DDP 2)" },
+const titulos = {
+  residencia: 'Certificado de Residencia',
+  convivencia: 'Certificado de Convivencia',
+  carencia: 'Certificado de Carencia de Recursos',
+};
 
-  // ==================== DDP 3 - METÁN ====================
-  { nombre: "Comisaría 1 - Metán (DDP 3)" },
-  { nombre: "Comisaría 2 - El Galpón (DDP 3)" },
-  { nombre: "Destacamento Lumbreras (DDP 3)" },
-  { nombre: "Destacamento Río Piedras (DDP 3)" },
-  { nombre: "Puerto Policial El Tunal (DDP 3)" },
-  { nombre: "Destacamento El Naranjo (DDP 3)" },
-  { nombre: "Destacamento San Felipe (DDP 3)" },
+/* ============================================================
+   LOCALSTORAGE
+   ============================================================ */
+function guardarFotoEnStorage(clave, dataUrl) {
+  try { localStorage.setItem('foto_' + clave, dataUrl); } catch (e) {}
+}
+function borrarFotoDeStorage(clave) {
+  try { localStorage.removeItem('foto_' + clave); } catch (e) {}
+}
+function limpiarTodasLasFotosDeStorage() {
+  document.querySelectorAll('.captura-foto').forEach(c => borrarFotoDeStorage(c.dataset.target));
+  try { localStorage.removeItem('tramite_activo'); } catch(e){}
+}
+function hayFotosGuardadas() {
+  return Array.from(document.querySelectorAll('.captura-foto')).some(c => localStorage.getItem('foto_' + c.dataset.target));
+}
+function mostrarAvisoBorrador() {
+  if (hayFotosGuardadas()) avisoBorrador.classList.add('activo');
+}
 
-  // ==================== DDP 4 - TARTAGAL ====================
-  { nombre: "Comisaría 1 - Salvador Mazza (DDP 4)" },
-  { nombre: "Comisaría 5 - Aguaray (DDP 4)" },
-  { nombre: "Destacamento Acambuco (DDP 4)" },
-  { nombre: "Destacamento Alto Verde (DDP 4)" },
-  { nombre: "Comisaría 2 - Mosconi (DDP 4)" },
-  { nombre: "Destacamento Coronel Cornejo (DDP 4)" },
-  { nombre: "Puerto Policial Aeroparque Mosconi (DDP 4)" },
-  { nombre: "Subcomisaría Vespucio (DDP 4)" },
-  { nombre: "Comisaría 3 - Tartagal Centro (DDP 4)" },
-  { nombre: "Comisaría 4 - El Portico (DDP 4)" },
-  { nombre: "Destacamento Villa Güemes (DDP 4)" },
-  { nombre: "Destacamento Alto La Sierra (DDP 4)" },
-  { nombre: "Subcomisaría Santa Victoria Este (DDP 4)" },
+window.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.captura-foto').forEach(captura => {
+    const clave = captura.dataset.target;
+    const guardada = localStorage.getItem('foto_' + clave);
+    if (!guardada) return;
+    const img = captura.querySelector('img');
+    const estado = captura.querySelector('.captura-estado');
+    const hiddenInput = captura.querySelector('input[type=hidden]');
+    const btnCamara = captura.querySelector('.btn-camara');
+    img.src = guardada;
+    img.hidden = false;
+    hiddenInput.value = guardada;
+    estado.textContent = 'Foto recuperada (se había guardado antes).';
+    estado.classList.add('ok');
+    btnCamara.hidden = true;
+  });
+  const tramiteGuardado = localStorage.getItem('tramite_activo');
+  if (tramiteGuardado && forms[tramiteGuardado]) {
+    tarjetas.forEach(x => x.classList.remove('activa'));
+    const tarjetaActiva = document.querySelector(`.tarjeta[data-tramite="${tramiteGuardado}"]`);
+    if (tarjetaActiva) tarjetaActiva.classList.add('activa');
+    Object.values(forms).forEach(f => f.classList.remove('activo'));
+    forms[tramiteGuardado].classList.add('activo');
+    tarjetasEl.style.display = 'none';
+  }
+  mostrarAvisoBorrador();
+});
 
-  // ==================== DDP 5 - J. V. GONZÁLEZ ====================
-  { nombre: "Comisaría 1 - Joaquín V. González (DDP 5)" },
-  { nombre: "Destacamento 25 de Junio (DDP 5)" },
-  { nombre: "Destacamento Gaona (DDP 5)" },
-  { nombre: "Destacamento Los Rosales (DDP 5)" },
-  { nombre: "Destacamento San José de Orquera (DDP 5)" },
-  { nombre: "Destacamento Talavera (DDP 5)" },
-  { nombre: "Subcomisaría El Quebrachal (DDP 5)" },
-  { nombre: "Destacamento Tolloiche (DDP 5)" },
+document.getElementById('btn-descartar-borrador').addEventListener('click', () => {
+  if (!confirm('¿Seguro que querés borrar las fotos guardadas y empezar de nuevo?')) return;
+  limpiarTodasLasFotosDeStorage();
+  document.querySelectorAll('.captura-foto').forEach(c => resetCaptura(c));
+  avisoBorrador.classList.remove('activo');
+  Object.values(forms).forEach(f => f.classList.remove('activo'));
+  tarjetasEl.style.display = 'grid';
+});
 
-  // ==================== DDP 6 - CAFAYATE ====================
-  { nombre: "Comisaría 60 - Cafayate (DDP 6)" },
-  { nombre: "Destacamento Angastaco (DDP 6)" },
-  { nombre: "Destacamento Animana (DDP 6)" },
-  { nombre: "Subcomisaría San Carlos (DDP 6)" },
+tarjetas.forEach(t => {
+  t.addEventListener('click', () => {
+    const tramite = t.dataset.tramite;
+    tarjetas.forEach(x => x.classList.remove('activa'));
+    t.classList.add('activa');
+    Object.values(forms).forEach(f => f.classList.remove('activo'));
+    forms[tramite].classList.add('activo');
+    tarjetasEl.style.display = 'none';
+    try { localStorage.setItem('tramite_activo', tramite); } catch(e){}
+  });
+});
 
-  // ==================== DDP 7 - GÜEMES ====================
-  { nombre: "Comisaría 1 - Gral. Güemes (DDP 7)" },
-  { nombre: "Comisaría 3 - La Banda (DDP 7)" },
-  { nombre: "Puerto Policial Parque Industrial (DDP 7)" },
-  { nombre: "Comisaría 2 - Campo Santo (DDP 7)" },
-  { nombre: "Destacamento Betania (DDP 7)" },
-  { nombre: "Destacamento Cobos (DDP 7)" },
-  { nombre: "Subcomisaría El Bordo (DDP 7)" },
+document.querySelectorAll('.volver').forEach(btn => {
+  btn.addEventListener('click', () => {
+    Object.values(forms).forEach(f => f.classList.remove('activo'));
+    tarjetasEl.style.display = 'grid';
+    try { localStorage.removeItem('tramite_activo'); } catch(e){}
+  });
+});
 
-  // ==================== DDP 8 - PICHANAL ====================
-  { nombre: "Comisaría 1 - Pichanal (DDP 8)" },
-  { nombre: "Comisaría 2 - Colonia Santa Rosa (DDP 8)" },
-  { nombre: "Destacamento Urundel (DDP 8)" },
-  { nombre: "Subcomisaría Las Palmeras (DDP 8)" },
-  { nombre: "Destacamento La Unión (DDP 8)" },
-  { nombre: "Destacamento Rivadavia Banda Sur (DDP 8)" },
+document.getElementById('doc-volver').addEventListener('click', () => {
+  documento.classList.remove('activo');
+  tarjetasEl.style.display = 'grid';
+  try { localStorage.removeItem('tramite_activo'); } catch(e){}
+});
 
-  // ==================== DDP 9 - LAS LAJITAS ====================
-  { nombre: "Comisaría 1 - Las Lajitas (DDP 9)" },
-  { nombre: "Destacamento Piquete Cabado (DDP 9)" },
-  { nombre: "Destacamento Río del Valle (DDP 9)" },
-  { nombre: "Destacamento Gral. Pizarro (DDP 9)" },
-  { nombre: "Destacamento Luis Burela (DDP 9)" },
-  { nombre: "Destacamento Mollinedo (DDP 9)" },
-  { nombre: "Subcomisaría El Dorado (DDP 9)" },
+/* ============================================================
+   PARSEO DEL CÓDIGO DEL DNI
+   ============================================================ */
+function parsearCodigoDNI(texto) {
+  const contenido = String(texto || "").replace(/[\r\n]+/g, "@");
+  const partes = contenido.split("@").map(p => p.trim()).filter(Boolean);
+  const dniMatch = contenido.match(/\b\d{7,8}\b/);
+  const dni = dniMatch ? dniMatch[0] : "";
+  let sexo = "";
+  const sexoParte = partes.map(p => p.toUpperCase()).find(p =>
+    p === "M" || p === "F" || p === "X" || p === "MASCULINO" || p === "FEMENINO"
+  );
+  if (sexoParte === "M" || sexoParte === "MASCULINO") sexo = "Masculino";
+  else if (sexoParte === "F" || sexoParte === "FEMENINO") sexo = "Femenino";
+  else if (sexoParte === "X") sexo = "Otro / Prefiero no especificar";
+  const candidatosNombre = partes
+    .filter(p => /^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ ]{3,}$/.test(p))
+    .filter(p => !/^(ARG|ARGENTINA|IDARG|DNI|EJEMPLAR|NACIONALIDAD|APELLIDO|NOMBRE|MERCOSUR)$/i.test(p));
+  const nombre = candidatosNombre.slice(0, 2).join(" ").trim();
+  let fechaISO = "";
+  const fechaParte = partes.find(p => {
+    if (/^\d{2}[/-]\d{2}[/-]\d{4}$/.test(p)) return true;
+    return /^\d{8}$/.test(p) && (/^(19|20)\d{2}/.test(p) || /(19|20)\d{2}$/.test(p));
+  });
+  if (fechaParte) {
+    const nums = fechaParte.replace(/\D/g, "");
+    if (nums.length === 8) {
+      const empiezaAnio = /^(19|20)\d{2}/.test(nums);
+      const anio = empiezaAnio ? nums.slice(0, 4) : nums.slice(4, 8);
+      const mes = empiezaAnio ? nums.slice(4, 6) : nums.slice(2, 4);
+      const dia = empiezaAnio ? nums.slice(6, 8) : nums.slice(0, 2);
+      fechaISO = `${anio}-${mes}-${dia}`;
+    }
+  }
+  if (!dni && !nombre) return null;
+  return { nombreCompleto: nombre, dni: dni, sexo: sexo, fechaNacimientoISO: fechaISO };
+}
 
-  // ==================== DDP 10 - ROSARIO DE LERMA ====================
-  { nombre: "Comisaría 4 (DDP 10)" },
-  { nombre: "Comisaría 6 (DDP 10)" },
-  { nombre: "Destacamento Palacios (DDP 10)" },
-  { nombre: "Comisaría 1 (DDP 10)" },
-  { nombre: "Comisaría 3 (DDP 10)" },
-  { nombre: "Destacamento Docente (DDP 10)" },
-  { nombre: "Destacamento San Carlos (DDP 10)" },
-  { nombre: "Comisaría 2 (DDP 10)" },
-  { nombre: "Destacamento San Ignacio (DDP 10)" },
-  { nombre: "Subcomisaría Lavalle (DDP 10)" },
-  { nombre: "Comisaría 5 (DDP 10)" },
-  { nombre: "Comisaría 7 (DDP 10)" },
-  { nombre: "Comisaría 9 (DDP 10)" },
-  { nombre: "Destacamento La Silleta (DDP 10)" },
-  { nombre: "Subcomisaría San Antonio (DDP 10)" },
+function camposParaTarget(target) {
+  const [prefijo, persona] = target.split('-');
+  if (persona === 'testigo1' || persona === 'testigo2') {
+    return { nombre: `${persona}Nombre`, dni: `${persona}Dni`, fechaNacimiento: null };
+  }
+  if (prefijo === 'res') return { nombre: 'nombre', dni: 'dni', fechaNacimiento: 'fechaNacimiento' };
+  if (prefijo === 'con') return { nombre: 'nombreSolicitante', dni: 'dniSolicitante', fechaNacimiento: null };
+  if (prefijo === 'car') return { nombre: 'nombre', dni: 'dni', fechaNacimiento: null };
+  return null;
+}
 
-  // ==================== DDP 11 - ROSARIO DE LA FRONTERA ====================
-  { nombre: "Comisaría 1 - Cerillos (DDP 11)" },
-  { nombre: "Comisaría 5 - La Merced (DDP 11)" },
-  { nombre: "Comisaría 7 - Pinares (DDP 11)" },
-  { nombre: "Destacamento La Isla (DDP 11)" },
-  { nombre: "Destacamento San Agustín (DDP 11)" },
-  { nombre: "Subcomisaría Los Alamos (DDP 11)" },
-  { nombre: "Comisaría 2 - Rosario de la Frontera (DDP 11)" },
-  { nombre: "Comisaría 3 - Chicoana (DDP 11)" },
-  { nombre: "Comisaría 4 - El Carril (DDP 11)" },
-  { nombre: "Comisaría 6 - Moldes (DDP 11)" },
-  { nombre: "Subcomisaría Guachipas (DDP 11)" },
-  { nombre: "Subcomisaría La Viña (DDP 11)" },
-  { nombre: "Subcomisaría San Jorge (DDP 11)" },
+/* ============================================================
+   ANÁLISIS DE FOTO (oscuridad + nitidez)
+   ============================================================ */
+function analizarFoto(canvas) {
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width;
+  const h = canvas.height;
+  const imageData = ctx.getImageData(0, 0, w, h);
+  const data = imageData.data;
+  let suma = 0;
+  for (let i = 0; i < data.length; i += 4) {
+    suma += 0.299 * data[i] + 0.587 * data[i+1] + 0.114 * data[i+2];
+  }
+  const luminosidad = suma / (data.length / 4);
+  const gris = new Uint8ClampedArray(w * h);
+  for (let i = 0, j = 0; i < data.length; i += 4, j++) {
+    gris[j] = 0.299 * data[i] + 0.587 * data[i+1] + 0.114 * data[i+2];
+  }
+  let sumaLap = 0, sumaLap2 = 0, count = 0;
+  for (let y = 1; y < h - 1; y++) {
+    for (let x = 1; x < w - 1; x++) {
+      const i = y * w + x;
+      const lap = 4 * gris[i] - gris[i-1] - gris[i+1] - gris[i-w] - gris[i+w];
+      sumaLap += lap;
+      sumaLap2 += lap * lap;
+      count++;
+    }
+  }
+  const media = sumaLap / count;
+  const varianza = (sumaLap2 / count) - (media * media);
+  if (luminosidad < 60) return { ok: false, motivo: 'muy oscura (probá con más luz)' };
+  if (varianza < 50) return { ok: false, motivo: 'borrosa o desenfocada' };
+  return { ok: true };
+}
 
-  // ==================== DDP 12 - CACHI ====================
-  { nombre: "Comisaría 1 - Cachi (DDP 12)" },
-  { nombre: "Destacamento La Poma (DDP 12)" },
-  { nombre: "Destacamento Palermo Oeste (DDP 12)" },
-  { nombre: "Destacamento Payogasta (DDP 12)" },
-  { nombre: "Comisaría 2 - Molinos (DDP 12)" },
-  { nombre: "Destacamento Luracatao (DDP 12)" },
-  { nombre: "Destacamento Seclantas (DDP 12)" },
+/* ============================================================
+   RESET DE CAPTURA
+   ============================================================ */
+function resetCaptura(captura){
+  const video = captura.querySelector('video');
+  const img = captura.querySelector('img');
+  const estado = captura.querySelector('.captura-estado');
+  const hiddenInput = captura.querySelector('input[type=hidden]');
+  const btnCamara = captura.querySelector('.btn-camara');
+  const btnCancelar = captura.querySelector('.btn-cancelar');
+  const btnRepetir = captura.querySelector('.btn-repetir');
+  const marcoDni = captura.querySelector('.marco-dni');
+  const avisoFoto = captura.querySelector('.aviso-foto');
+  const btnFlash = captura.querySelector('.btn-flash');
+  const scanIndicador = captura.querySelector('.scan-indicador');
 
-  // ==================== DDP 13 - ROSARIO DE LA FRONTERA ====================
-  { nombre: "Comisaría 1 - Rosario de la Frontera (DDP 13)" },
-  { nombre: "Destacamento Antillas (DDP 13)" },
-  { nombre: "Destacamento Potreros (DDP 13)" },
-  { nombre: "Subcomisaría El Mirador (DDP 13)" },
-  { nombre: "Destacamento El Jardín (DDP 13)" },
-  { nombre: "Destacamento La Candelaria (DDP 13)" },
-  { nombre: "Subcomisaría El Tala (DDP 13)" },
+  if (captura._scanInterval) {
+    clearInterval(captura._scanInterval);
+    captura._scanInterval = null;
+  }
+  if (video.srcObject) {
+    video.srcObject.getTracks().forEach(t => t.stop());
+    video.srcObject = null;
+  }
+  video.hidden = true;
+  img.hidden = true;
+  img.src = '';
+  hiddenInput.value = '';
+  estado.textContent = 'Sin foto capturada';
+  estado.classList.remove('ok');
+  estado.classList.remove('error');
+  if (btnCamara) btnCamara.hidden = false;
+  if (btnCancelar) btnCancelar.hidden = true;
+  if (btnRepetir) btnRepetir.hidden = true;
+  if (marcoDni) marcoDni.classList.remove('activo');
+  if (avisoFoto) avisoFoto.classList.remove('activo');
+  if (scanIndicador) scanIndicador.classList.remove('activo');
+  if (btnFlash) {
+    btnFlash.classList.remove('activo');
+    btnFlash.classList.remove('encendido');
+  }
+  borrarFotoDeStorage(captura.dataset.target);
+}
 
-  // ==================== DDP 14 - EMBARCACIÓN ====================
-  { nombre: "Comisaría 1 - Embarcación (DDP 14)" },
-  { nombre: "Destacamento Padre Lozano (DDP 14)" },
-  { nombre: "Destacamento Gral. Ballivian (DDP 14)" },
-  { nombre: "Comisaría 2 - Coronel Juan Solá (DDP 14)" },
-  { nombre: "Destacamento Dragones (DDP 14)" },
-  { nombre: "Destacamento Hickman (DDP 14)" },
-  { nombre: "Destacamento Los Blancos (DDP 14)" },
-  { nombre: "Puesto La Pluma de Pato (DDP 14)" },
-];
+/* ============================================================
+   CÁMARA + ESCANEO AUTOMÁTICO
+   ============================================================ */
+document.querySelectorAll('.captura-foto').forEach(captura => {
+  const video = captura.querySelector('video');
+  const canvas = captura.querySelector('canvas');
+  const img = captura.querySelector('img');
+  const estado = captura.querySelector('.captura-estado');
+  const escaneoEstado = captura.querySelector('.escaneo-estado');
+  const hiddenInput = captura.querySelector('input[type=hidden]');
+  const btnCamara = captura.querySelector('.btn-camara');
+  const btnCancelar = captura.querySelector('.btn-cancelar');
+  const marcoDni = captura.querySelector('.marco-dni');
+  const avisoFoto = captura.querySelector('.aviso-foto');
+  const motivoTexto = captura.querySelector('.motivo-texto');
+  const btnRepetirAviso = captura.querySelector('.btn-repetir-aviso');
+  const btnUsarIgual = captura.querySelector('.btn-usar-igual');
+  const btnFlash = captura.querySelector('.btn-flash');
+  const scanIndicador = captura.querySelector('.scan-indicador');
+  const form = captura.closest('form');
+  const campos = camposParaTarget(captura.dataset.target);
 
+  let trackActual = null;
+  let flashEncendido = false;
+  let flashSoportado = false;
+  let scannerActivo = false;
+  let intentosSinDeteccion = 0;
+  let detector = null;
 
-// ============================================================
-// LOCALIDADES DE SALTA (para el desplegable)
-// ============================================================
-const LOCALIDADES_SALTA = [
-  "Salta (Capital)",
-  "Aguaray", "Aguas Blancas", "Angastaco", "Animaná", "Apolinario Saravia",
-  "Cachi", "Cafayate", "Campo Quijano", "Campo Santo", "Cerrillos",
-  "Chicoana", "Colonia Santa Rosa", "Coronel Moldes", "El Bordo", "El Carril",
-  "El Galpón", "El Jardín", "El Potrero", "El Quebrachal", "El Tala",
-  "Embarcación", "General Ballivián", "General Güemes", "General Mosconi",
-  "General Pizarro", "Guachipas", "Hipólito Yrigoyen", "Iruya", "Isla de Cañas",
-  "Joaquín V. González", "La Caldera", "La Candelaria", "La Merced", "La Poma",
-  "La Viña", "Las Lajitas", "Los Toldos", "Molinos", "Nazareno", "Payogasta",
-  "Pichanal", "Profesor Salvador Mazza", "Río Piedras", "Rivadavia Banda Norte",
-  "Rivadavia Banda Sur", "Rosario de la Frontera", "Rosario de Lerma",
-  "San Antonio de los Cobres", "San Carlos", "San José de Metán", "San Lorenzo",
-  "San Ramón de la Nueva Orán", "Santa Victoria Este", "Santa Victoria Oeste",
-  "Seclantás", "Tartagal", "Tolar Grande", "Urundel", "Vaqueros",
-];
+  const barcodeDisponible = !!window.BarcodeDetector;
+
+  if (!barcodeDisponible) {
+    escaneoEstado.textContent = 'Escaneo automático no disponible. Se sacará la foto igual.';
+  }
+
+  btnCamara.addEventListener('click', async () => {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      estado.textContent = 'Este navegador no permite acceder a la cámara.';
+      estado.classList.add('error');
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } }
+      });
+      video.srcObject = stream;
+      video.hidden = false;
+      img.hidden = true;
+      btnCamara.hidden = true;
+      if (btnCancelar) btnCancelar.hidden = false;
+      if (marcoDni) marcoDni.classList.add('activo');
+      if (avisoFoto) avisoFoto.classList.remove('activo');
+      if (scanIndicador) scanIndicador.classList.add('activo');
+      estado.textContent = 'Apuntá al código de barras del DNI. Se escaneará automáticamente.';
+      estado.classList.remove('ok');
+      estado.classList.remove('error');
+
+      trackActual = stream.getVideoTracks()[0];
+      const capacidades = trackActual.getCapabilities ? trackActual.getCapabilities() : {};
+      flashSoportado = !!capacidades.torch;
+      if (btnFlash && flashSoportado) {
+        btnFlash.classList.add('activo');
+      }
+
+      iniciarEscaneo();
+    } catch (err) {
+      estado.textContent = 'No se pudo acceder a la cámara (revisá los permisos).';
+      estado.classList.add('error');
+    }
+  });
+
+  if (btnCancelar) {
+    btnCancelar.addEventListener('click', () => {
+      resetCaptura(captura);
+    });
+  }
+
+  if (btnFlash) {
+    btnFlash.addEventListener('click', async () => {
+      if (!trackActual || !flashSoportado) return;
+      try {
+        flashEncendido = !flashEncendido;
+        await trackActual.applyConstraints({ advanced: [{ torch: flashEncendido }] });
+        btnFlash.classList.toggle('encendido', flashEncendido);
+      } catch (err) {}
+    });
+  }
+
+  function iniciarEscaneo() {
+    if (scannerActivo) return;
+    scannerActivo = true;
+    intentosSinDeteccion = 0;
+
+    if (barcodeDisponible && !detector) {
+      try {
+        detector = new BarcodeDetector({ formats: ['pdf417'] });
+      } catch (e) {
+        detector = null;
+      }
+    }
+
+    captura._scanInterval = setInterval(escanearFrame, 1000);
+    setTimeout(escanearFrame, 500);
+  }
+
+  async function escanearFrame() {
+    if (!scannerActivo) return;
+    if (!video.srcObject || video.readyState < 2 || !video.videoWidth) return;
+
+    try {
+      const anchoMax = 1600;
+      const escala = Math.min(1, anchoMax / video.videoWidth);
+      canvas.width = Math.round(video.videoWidth * escala);
+      canvas.height = Math.round(video.videoHeight * escala);
+      canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      if (detector) {
+        const codigos = await detector.detect(canvas);
+        if (codigos && codigos.length) {
+          const datos = parsearCodigoDNI(codigos[0].rawValue);
+          if (datos && (datos.dni || datos.nombreCompleto)) {
+            exitoEscaneo(datos, canvas);
+            return;
+          }
+        }
+      }
+
+      intentosSinDeteccion++;
+      if (intentosSinDeteccion === 20) {
+        mostrarTimeout();
+      }
+    } catch (err) {
+      console.warn('Error escaneando frame:', err);
+    }
+  }
+
+  function exitoEscaneo(datos, canvasFoto) {
+    scannerActivo = false;
+    if (captura._scanInterval) {
+      clearInterval(captura._scanInterval);
+      captura._scanInterval = null;
+    }
+
+    const dataUrl = canvasFoto.toDataURL('image/jpeg', 0.7);
+    hiddenInput.value = dataUrl;
+    guardarFotoEnStorage(captura.dataset.target, dataUrl);
+    img.src = dataUrl;
+    img.hidden = false;
+    video.hidden = true;
+    if (marcoDni) marcoDni.classList.remove('activo');
+    if (scanIndicador) scanIndicador.classList.remove('activo');
+    if (btnFlash) btnFlash.classList.remove('activo');
+    if (btnCancelar) btnCancelar.hidden = true;
+
+    if (flashEncendido && trackActual) {
+      trackActual.applyConstraints({ advanced: [{ torch: false }] }).catch(()=>{});
+      flashEncendido = false;
+    }
+    if (video.srcObject) {
+      video.srcObject.getTracks().forEach(t => t.stop());
+      video.srcObject = null;
+    }
+    trackActual = null;
+
+    if (campos) {
+      if (datos.nombreCompleto && form.querySelector(`[name="${campos.nombre}"]`)) {
+        form.querySelector(`[name="${campos.nombre}"]`).value = datos.nombreCompleto;
+      }
+      if (datos.dni && form.querySelector(`[name="${campos.dni}"]`)) {
+        form.querySelector(`[name="${campos.dni}"]`).value = datos.dni;
+      }
+      if (campos.fechaNacimiento && datos.fechaNacimientoISO) {
+        const inputFecha = form.querySelector(`[name="${campos.fechaNacimiento}"]`);
+        if (inputFecha) inputFecha.value = datos.fechaNacimientoISO;
+      }
+    }
+
+    estado.textContent = `✓ DNI escaneado: ${datos.nombreCompleto || ''} (${datos.dni || ''})`;
+    estado.classList.add('ok');
+    estado.classList.remove('error');
+    escaneoEstado.textContent = 'Datos autocompletados.';
+  }
+
+  function mostrarTimeout() {
+    scannerActivo = false;
+    if (captura._scanInterval) {
+      clearInterval(captura._scanInterval);
+      captura._scanInterval = null;
+    }
+    if (scanIndicador) scanIndicador.classList.remove('activo');
+    if (motivoTexto) motivoTexto.textContent = 'No pudimos leer el código del DNI.';
+    if (avisoFoto) avisoFoto.classList.add('activo');
+    estado.textContent = 'No se detectó el código. Podés reintentar o sacar la foto igual.';
+    estado.classList.add('error');
+  }
+
+  if (btnRepetirAviso) {
+    btnRepetirAviso.addEventListener('click', () => {
+      resetCaptura(captura);
+    });
+  }
+
+  if (btnUsarIgual) {
+    btnUsarIgual.addEventListener('click', () => {
+      if (video.srcObject && video.videoWidth) {
+        const anchoMax = 1600;
+        const escala = Math.min(1, anchoMax / video.videoWidth);
+        canvas.width = Math.round(video.videoWidth * escala);
+        canvas.height = Math.round(video.videoHeight * escala);
+        canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+      }
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+      hiddenInput.value = dataUrl;
+      guardarFotoEnStorage(captura.dataset.target, dataUrl);
+      img.src = dataUrl;
+      img.hidden = false;
+      video.hidden = true;
+      if (marcoDni) marcoDni.classList.remove('activo');
+      if (scanIndicador) scanIndicador.classList.remove('activo');
+      if (avisoFoto) avisoFoto.classList.remove('activo');
+      if (btnCancelar) btnCancelar.hidden = true;
+
+      if (flashEncendido && trackActual) {
+        trackActual.applyConstraints({ advanced: [{ torch: false }] }).catch(()=>{});
+        flashEncendido = false;
+      }
+      if (video.srcObject) {
+        video.srcObject.getTracks().forEach(t => t.stop());
+        video.srcObject = null;
+      }
+      trackActual = null;
+
+      estado.textContent = 'Foto guardada sin datos escaneados. Completá los datos a mano.';
+      estado.classList.add('ok');
+      estado.classList.remove('error');
+      escaneoEstado.textContent = 'Foto guardada. Completá los datos manualmente.';
+    });
+  }
+});
+
+/* ============================================================
+   ASIGNACIÓN AUTOMÁTICA POR POLÍGONOS (JURISDICCIÓN REAL)
+   ============================================================ */
+
+const POLIGONOS_DDP = {};
+let poligonosCargados = false;
+let cargandoPoligonos = false;
+
+async function cargarTodosLosPoligonos() {
+  if (poligonosCargados || cargandoPoligonos) return;
+  cargandoPoligonos = true;
+
+  const promesas = [];
+  for (let i = 1; i <= 14; i++) {
+    promesas.push(
+      fetch(`DDP-${i}.json`)
+        .then(r => r.json())
+        .then(data => {
+          POLIGONOS_DDP[i] = data.poligonos || [];
+        })
+        .catch(err => {
+          console.warn(`No se pudo cargar DDP-${i}.json:`, err);
+          POLIGONOS_DDP[i] = [];
+        })
+    );
+  }
+
+  try {
+    await Promise.all(promesas);
+    poligonosCargados = true;
+    const total = Object.values(POLIGONOS_DDP).reduce((sum, p) => sum + p.length, 0);
+    console.log('✅ Polígonos cargados:', total, 'polígonos');
+  } catch (e) {
+    console.warn('Error cargando polígonos:', e);
+  } finally {
+    cargandoPoligonos = false;
+  }
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  cargarTodosLosPoligonos();
+});
+
+function puntoEnPoligono(lat, lon, coordenadas) {
+  let dentro = false;
+  const n = coordenadas.length;
+
+  for (let i = 0, j = n - 1; i < n; j = i++) {
+    const [xi, yi] = coordenadas[i];
+    const [xj, yj] = coordenadas[j];
+
+    const intersecta = ((yi > lat) !== (yj > lat)) &&
+      (lon < (xj - xi) * (lat - yi) / (yj - yi) + xi);
+
+    if (intersecta) dentro = !dentro;
+  }
+
+  return dentro;
+}
+
+function buscarComisariaPorCoordenadas(lat, lon) {
+  for (const [numDDP, poligonos] of Object.entries(POLIGONOS_DDP)) {
+    for (const poligono of poligonos) {
+      if (puntoEnPoligono(lat, lon, poligono.c)) {
+        return {
+          ddp: parseInt(numDDP),
+          nombre: poligono.n,
+          lat: lat,
+          lon: lon
+        };
+      }
+    }
+  }
+  return null;
+}
+
+/* ------------------------------------------------------------
+   HELPERS DE GEOCODING
+   ------------------------------------------------------------ */
+async function consultarNominatim(consulta) {
+  const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=ar&q=${encodeURIComponent(consulta)}`;
+  try {
+    const resp = await fetch(url, {
+      headers: { 'Accept-Language': 'es' }
+    });
+    const data = await resp.json();
+    if (data && data.length > 0) {
+      return {
+        lat: parseFloat(data[0].lat),
+        lon: parseFloat(data[0].lon),
+        direccionEncontrada: data[0].display_name
+      };
+    }
+    return null;
+  } catch (err) {
+    console.error('Error consultando Nominatim:', err);
+    return null;
+  }
+}
+
+function convertirRomanoAArabigo(texto) {
+  const romanos = {
+    'VIII': '8', 'VII': '7', 'VI': '6', 'IV': '4', 'IX': '9', 'III': '3',
+    'II': '2', 'V': '5', 'X': '10', 'I': '1'
+  };
+  let resultado = texto;
+  for (const [romano, arabigo] of Object.entries(romanos)) {
+    const regex = new RegExp(`\\b${romano}\\b`, 'gi');
+    resultado = resultado.replace(regex, arabigo);
+  }
+  return resultado;
+}
+
+function convertirArabigoARomano(texto) {
+  const arabigos = {
+    '10': 'X', '9': 'IX', '8': 'VIII', '7': 'VII', '6': 'VI',
+    '5': 'V', '4': 'IV', '3': 'III', '2': 'II', '1': 'I'
+  };
+  let resultado = texto;
+  for (const [arabigo, romano] of Object.entries(arabigos)) {
+    const regex = new RegExp(`\\b${arabigo}\\b`, 'g');
+    resultado = resultado.replace(regex, romano);
+  }
+  return resultado;
+}
+
+async function geocodificarConNominatim(domicilio, localidad) {
+  const localidadLimpia = (localidad || '').replace(/\s*\(.*?\)\s*/g, ' ').trim();
+  const domicilioRomano = convertirRomanoAArabigo(domicilio);
+  const domicilioArabigo = convertirArabigoARomano(domicilio);
+
+  const intentos = [
+    { desc: 'tal cual', texto: `${domicilio}, ${localidadLimpia}, Salta, Argentina` },
+    { desc: 'romano→arábigo', texto: domicilioRomano !== domicilio
+        ? `${domicilioRomano}, ${localidadLimpia}, Salta, Argentina` : null },
+    { desc: 'arábigo→romano', texto: domicilioArabigo !== domicilio
+        ? `${domicilioArabigo}, ${localidadLimpia}, Salta, Argentina` : null },
+  ].filter(i => i.texto);
+
+  for (const intento of intentos) {
+    console.log(`🔍 Intento (${intento.desc}):`, intento.texto);
+    const resultado = await consultarNominatim(intento.texto);
+    if (resultado) {
+      console.log('✅ Encontrado:', intento.desc);
+      return resultado;
+    }
+  }
+
+  const domiciliosVariantes = [domicilio, domicilioRomano, domicilioArabigo];
+  const barriosProbados = new Set();
+
+  for (const dom of domiciliosVariantes) {
+    const matchBarrio = dom.match(/\b(?:barrio|b°|bº|b\.)\s*([a-záéíóúñ\s]+\s*\d*)/i);
+    if (matchBarrio) {
+      const nombreBarrio = matchBarrio[1].trim();
+      if (barriosProbados.has(nombreBarrio)) continue;
+      barriosProbados.add(nombreBarrio);
+
+      const intentoBarrio = `Barrio ${nombreBarrio}, ${localidadLimpia}, Salta, Argentina`;
+      console.log('🔍 Intento barrio:', intentoBarrio);
+      let resultado = await consultarNominatim(intentoBarrio);
+      if (resultado) return resultado;
+
+      const intentoSinBarrio = `${nombreBarrio}, ${localidadLimpia}, Salta, Argentina`;
+      console.log('🔍 Intento sin "Barrio":', intentoSinBarrio);
+      resultado = await consultarNominatim(intentoSinBarrio);
+      if (resultado) return resultado;
+    }
+  }
+
+  console.log('🔍 Intento final (solo localidad):', localidadLimpia);
+  const resultadoFinal = await consultarNominatim(`${localidadLimpia}, Salta, Argentina`);
+  if (resultadoFinal) return resultadoFinal;
+
+  console.log('❌ No se pudo geocodificar');
+  return null;
+}
+
+/* ------------------------------------------------------------
+   ASIGNACIÓN CON CORRECCIONES DE BARRIO + POLÍGONOS
+   ------------------------------------------------------------ */
+async function asignarComisariaPorJurisdiccion(domicilio, localidad) {
+  if (!domicilio || !localidad) {
+    return { error: 'Falta domicilio o localidad' };
+  }
+
+  // 🎯 PASO 1: Buscar en las correcciones de barrio
+  if (typeof CORRECCIONES_BARRIO !== 'undefined' && CORRECCIONES_BARRIO) {
+    const domicilioNormalizado = domicilio.toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+    const barriosOrdenados = Object.keys(CORRECCIONES_BARRIO)
+      .sort((a, b) => b.length - a.length);
+
+    for (const barrio of barriosOrdenados) {
+      const barrioNormalizado = barrio.toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+      if (domicilioNormalizado.includes(barrioNormalizado)) {
+        const valor = CORRECCIONES_BARRIO[barrio];
+
+        if (Array.isArray(valor)) {
+          console.log('🎯 Múltiples opciones para', barrio, ':', valor);
+          return {
+            opciones: valor,
+            origen: 'correccion_barrio_multiple',
+            barrio: barrio
+          };
+        }
+
+        console.log('✅ Corrección de barrio aplicada:', barrio, '→', valor);
+        return {
+          comisaria: valor,
+          origen: 'correccion_barrio',
+          barrio: barrio
+        };
+      }
+    }
+  }
+
+  // 🎯 PASO 2: Si no hay corrección, usar polígonos
+  console.log('🔍 No hay corrección de barrio, usando polígonos...');
+
+  if (!poligonosCargados) {
+    await cargarTodosLosPoligonos();
+  }
+
+  const ubicacion = await geocodificarConNominatim(domicilio, localidad);
+  if (!ubicacion) {
+    return { error: 'No se pudo ubicar el domicilio' };
+  }
+
+  const comisaria = buscarComisariaPorCoordenadas(ubicacion.lat, ubicacion.lon);
+  if (!comisaria) {
+    return {
+      error: 'El domicilio no está dentro de ninguna jurisdicción conocida',
+      lat: ubicacion.lat,
+      lon: ubicacion.lon
+    };
+  }
+
+  return {
+    comisaria: comisaria.nombre,
+    ddp: comisaria.ddp,
+    lat: ubicacion.lat,
+    lon: ubicacion.lon,
+    origen: 'poligono'
+  };
+}
+
+/* ------------------------------------------------------------
+   MOSTRAR AVISO EN EL FORMULARIO
+   ------------------------------------------------------------ */
+function mostrarAvisoComisaria(form, estado, dato) {
+  const aviso = form.querySelector('[data-comisaria-aviso]');
+  if (!aviso) return;
+
+  aviso.classList.remove('activo', 'cargando', 'error');
+  const texto = aviso.querySelector('.texto');
+  const nombreEl = aviso.querySelector('.nombre');
+  const selectViejo = aviso.querySelector('.seleccion-comisaria');
+
+  if (selectViejo) selectViejo.remove();
+  nombreEl.style.display = '';
+
+  if (estado === 'cargando') {
+    aviso.classList.add('activo', 'cargando');
+    texto.textContent = '⏳ Calculando comisaría...';
+    nombreEl.textContent = '';
+  } else if (estado === 'ok') {
+    aviso.classList.add('activo');
+    texto.textContent = '📍 Comisaría asignada:';
+    nombreEl.textContent = dato;
+    form.dataset.comisariaAsignada = dato;
+  } else if (estado === 'multiple') {
+    aviso.classList.add('activo', 'cargando');
+    texto.textContent = '📍 Este barrio puede pertenecer a varias comisarías. Elegí la tuya:';
+    nombreEl.textContent = '';
+
+    const select = document.createElement('select');
+    select.className = 'seleccion-comisaria';
+    select.style.cssText = 'margin-top:10px;width:100%;padding:10px;border-radius:6px;background:rgba(0,0,0,0.5);color:#fff;border:1px solid rgba(201,169,97,0.5);font-size:0.9rem;font-family:inherit;cursor:pointer;';
+
+    const optDefault = document.createElement('option');
+    optDefault.value = '';
+    optDefault.textContent = '— Seleccionar comisaría —';
+    select.appendChild(optDefault);
+
+    dato.forEach(comisaria => {
+      const opt = document.createElement('option');
+      opt.value = comisaria;
+      opt.textContent = comisaria;
+      select.appendChild(opt);
+    });
+
+    select.addEventListener('change', () => {
+      if (select.value) {
+        form.dataset.comisariaAsignada = select.value;
+        aviso.classList.remove('cargando');
+        texto.textContent = '📍 Comisaría asignada:';
+        nombreEl.textContent = select.value;
+        nombreEl.style.display = '';
+        select.remove();
+      }
+    });
+
+    aviso.appendChild(select);
+    form.dataset.comisariaAsignada = '';
+  } else if (estado === 'error') {
+    aviso.classList.add('activo', 'error');
+    texto.textContent = '⚠️ No se pudo determinar la comisaría';
+    nombreEl.textContent = 'Se asignará manualmente';
+    form.dataset.comisariaAsignada = '';
+  } else {
+    aviso.classList.remove('activo');
+    form.dataset.comisariaAsignada = '';
+  }
+}
+
+Object.entries(forms).forEach(([tramite, form]) => {
+  const campoDomicilio = CAMPO_DOMICILIO[tramite];
+  const inputDomicilio = form.querySelector(`[name="${campoDomicilio}"]`);
+  const selectLocalidad = form.querySelector('[name="localidad"]');
+
+  if (!inputDomicilio || !selectLocalidad) return;
+
+  let timeoutId = null;
+  let ultimaConsulta = '';
+
+  async function calcularComisaria() {
+    const domicilio = inputDomicilio.value.trim();
+    const localidad = selectLocalidad.value;
+
+    if (!domicilio || !localidad || domicilio.length < 5) {
+      mostrarAvisoComisaria(form, 'oculto');
+      return;
+    }
+
+    const consulta = `${domicilio}|${localidad}`;
+    if (consulta === ultimaConsulta) return;
+    ultimaConsulta = consulta;
+
+    mostrarAvisoComisaria(form, 'cargando');
+
+    try {
+      const resultado = await asignarComisariaPorJurisdiccion(domicilio, localidad);
+
+      if (resultado.opciones && resultado.opciones.length > 0) {
+        mostrarAvisoComisaria(form, 'multiple', resultado.opciones);
+      } else if (resultado.comisaria) {
+        mostrarAvisoComisaria(form, 'ok', resultado.comisaria);
+      } else {
+        mostrarAvisoComisaria(form, 'error');
+      }
+    } catch (err) {
+      console.error(err);
+      mostrarAvisoComisaria(form, 'error');
+    }
+  }
+
+  function debounceCalcular() {
+    if (timeoutId) clearTimeout(timeoutId);
+    timeoutId = setTimeout(calcularComisaria, 1200);
+  }
+
+  inputDomicilio.addEventListener('input', debounceCalcular);
+  selectLocalidad.addEventListener('change', calcularComisaria);
+});
+
+/* ============================================================
+   ENVÍO DEL TRÁMITE A SUPABASE
+   ============================================================ */
+Object.entries(forms).forEach(([tramite, form]) => {
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    for (const n of [1, 2]) {
+      const foto = form.querySelector(`input[name="foto_testigo${n}"]`);
+      if (!foto || !foto.value) {
+        alert(`Falta la foto del DNI del testigo ${n}. Tocá "Activar cámara" y sacala.`);
+        return;
+      }
+    }
+    const btnEnviar = form.querySelector('button[type=submit]');
+    const textoOriginal = btnEnviar.textContent;
+    btnEnviar.disabled = true;
+    btnEnviar.textContent = 'Enviando...';
+    const datos = new FormData(form);
+    const registro = {};
+    const contenido = document.getElementById('doc-contenido');
+    contenido.innerHTML = '';
+    try {
+      for (const [campo, valor] of datos.entries()) {
+        if (!valor) continue;
+        registro[campo] = valor;
+        const dt = document.createElement('dt');
+        dt.textContent = etiquetas[campo] || campo;
+        const dd = document.createElement('dd');
+        if (campo.startsWith('foto_')) {
+          const img = document.createElement('img');
+          img.src = valor;
+          dd.appendChild(img);
+        } else {
+          dd.textContent = valor;
+        }
+        contenido.appendChild(dt);
+        contenido.appendChild(dd);
+      }
+      btnEnviar.textContent = 'Ubicando domicilio...';
+      const campoDomicilio = CAMPO_DOMICILIO[tramite];
+      const asignacion = await asignarComisariaPorJurisdiccion(registro[campoDomicilio], registro.localidad);
+      btnEnviar.textContent = 'Enviando...';
+
+      let comisariaAsignada;
+      if (asignacion && asignacion.opciones && asignacion.opciones.length > 0) {
+        comisariaAsignada = form.dataset.comisariaAsignada;
+        if (!comisariaAsignada) {
+          alert('Por favor, elegí tu comisaría del desplegable antes de enviar.');
+          btnEnviar.disabled = false;
+          btnEnviar.textContent = textoOriginal;
+          return;
+        }
+      } else if (asignacion && asignacion.comisaria) {
+        comisariaAsignada = asignacion.comisaria;
+      } else {
+        comisariaAsignada = form.dataset.comisariaAsignada || 'No se pudo determinar automáticamente (a asignar por el personal)';
+      }
+
+      const { error } = await supabaseClient.from('solicitudes').insert([{
+        tramite: tramite,
+        tramite_titulo: titulos[tramite],
+        comisaria_asignada: comisariaAsignada,
+        estado: 'pendiente',
+        datos: registro,
+      }]);
+      if (error) throw error;
+      const dt = document.createElement('dt');
+      dt.textContent = 'Comisaría asignada';
+      const dd = document.createElement('dd');
+      dd.textContent = comisariaAsignada;
+      contenido.appendChild(dt);
+      contenido.appendChild(dd);
+      document.getElementById('doc-titulo').textContent = titulos[tramite];
+      form.classList.remove('activo');
+      documento.classList.add('activo');
+      form.reset();
+      form.querySelectorAll('.captura-foto').forEach(c => resetCaptura(c));
+      limpiarTodasLasFotosDeStorage();
+      avisoBorrador.classList.remove('activo');
+    } catch (err) {
+      console.error(err);
+      alert('No se pudo enviar el trámite. Revisá tu conexión e intentá de nuevo.');
+    } finally {
+      btnEnviar.disabled = false;
+      btnEnviar.textContent = textoOriginal;
+    }
+  });
+});
+</script>
+
+</body>
+</html>
