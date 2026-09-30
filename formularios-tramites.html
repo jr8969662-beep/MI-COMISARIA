@@ -399,6 +399,16 @@
         <input type="date" name="fechaNacimiento" required>
       </div>
     </div>
+    <div class="fila">
+      <div>
+        <label>Email (para avisarte cuando esté listo)</label>
+        <input type="email" name="email" placeholder="tucorreo@ejemplo.com" required>
+      </div>
+      <div>
+        <label>Teléfono / WhatsApp</label>
+        <input type="tel" name="telefono" placeholder="Ej: 3874123456" required>
+      </div>
+    </div>
     <label>Domicilio actual (calle, número, barrio)</label>
     <input type="text" name="domicilio" required>
     <label>Localidad</label>
@@ -517,6 +527,16 @@
     <div class="fila">
       <div><label>Nombre completo</label><input type="text" name="nombreSolicitante" required></div>
       <div><label>DNI</label><input type="text" name="dniSolicitante" pattern="[0-9]{7,8}" required></div>
+    </div>
+    <div class="fila">
+      <div>
+        <label>Email (para avisarte cuando esté listo)</label>
+        <input type="email" name="email" placeholder="tucorreo@ejemplo.com" required>
+      </div>
+      <div>
+        <label>Teléfono / WhatsApp</label>
+        <input type="tel" name="telefono" placeholder="Ej: 3874123456" required>
+      </div>
     </div>
     <label>Foto del DNI (solicitante)</label>
     <div class="captura-foto" data-target="con-solicitante">
@@ -675,6 +695,16 @@
           <option>Viudo/a</option>
           <option>Unión convivencial</option>
         </select>
+      </div>
+    </div>
+    <div class="fila">
+      <div>
+        <label>Email (para avisarte cuando esté listo)</label>
+        <input type="email" name="email" placeholder="tucorreo@ejemplo.com" required>
+      </div>
+      <div>
+        <label>Teléfono / WhatsApp</label>
+        <input type="tel" name="telefono" placeholder="Ej: 3874123456" required>
       </div>
     </div>
     <label>Domicilio (calle, número, barrio)</label>
@@ -838,8 +868,14 @@ const tarjetasEl = document.getElementById('tarjetas');
 const documento = document.getElementById('documento');
 const avisoBorrador = document.getElementById('aviso-borrador');
 
+// ============================================================
+// CONFIGURACIÓN DE STORAGE
+// ============================================================
+const BUCKET_FOTOS = 'fotos-tramites';
+
 const etiquetas = {
   nombre: 'Nombre completo', dni: 'DNI', fechaNacimiento: 'Fecha de nacimiento',
+  email: 'Email de contacto', telefono: 'Teléfono / WhatsApp',
   domicilio: 'Domicilio', localidad: 'Localidad',
   motivo: 'Motivo del trámite', nombreSolicitante: 'Nombre del solicitante',
   dniSolicitante: 'DNI del solicitante', nombreConviviente: 'Nombre del conviviente',
@@ -1506,19 +1542,16 @@ async function geocodificarConNominatim(domicilio, localidad) {
 
 /* ------------------------------------------------------------
    ASIGNACIÓN CON CORRECCIONES DE BARRIO + POLÍGONOS
-   Soporta barrios con 1 comisaría (string) o varias (array)
    ------------------------------------------------------------ */
 async function asignarComisariaPorJurisdiccion(domicilio, localidad) {
   if (!domicilio || !localidad) {
     return { error: 'Falta domicilio o localidad' };
   }
 
-  // 🎯 PASO 1: Buscar en las correcciones de barrio
   if (typeof CORRECCIONES_BARRIO !== 'undefined' && CORRECCIONES_BARRIO) {
     const domicilioNormalizado = domicilio.toLowerCase()
       .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
-    // Ordenar por longitud descendente (barrios más específicos primero)
     const barriosOrdenados = Object.keys(CORRECCIONES_BARRIO)
       .sort((a, b) => b.length - a.length);
 
@@ -1529,7 +1562,6 @@ async function asignarComisariaPorJurisdiccion(domicilio, localidad) {
       if (domicilioNormalizado.includes(barrioNormalizado)) {
         const valor = CORRECCIONES_BARRIO[barrio];
 
-        // Si es ARRAY → múltiples opciones → el ciudadano elige
         if (Array.isArray(valor)) {
           console.log('🎯 Múltiples opciones para', barrio, ':', valor);
           return {
@@ -1539,7 +1571,6 @@ async function asignarComisariaPorJurisdiccion(domicilio, localidad) {
           };
         }
 
-        // Si es STRING → asignación única
         console.log('✅ Corrección de barrio aplicada:', barrio, '→', valor);
         return {
           comisaria: valor,
@@ -1550,7 +1581,6 @@ async function asignarComisariaPorJurisdiccion(domicilio, localidad) {
     }
   }
 
-  // 🎯 PASO 2: Si no hay corrección, usar polígonos
   console.log('🔍 No hay corrección de barrio, usando polígonos...');
 
   if (!poligonosCargados) {
@@ -1582,7 +1612,6 @@ async function asignarComisariaPorJurisdiccion(domicilio, localidad) {
 
 /* ------------------------------------------------------------
    MOSTRAR AVISO EN EL FORMULARIO
-   Soporta: cargando, ok, multiple (con desplegable), error
    ------------------------------------------------------------ */
 function mostrarAvisoComisaria(form, estado, dato) {
   const aviso = form.querySelector('[data-comisaria-aviso]');
@@ -1701,11 +1730,42 @@ Object.entries(forms).forEach(([tramite, form]) => {
 });
 
 /* ============================================================
+   SUBIR FOTO A SUPABASE STORAGE
+   ============================================================ */
+async function subirFotoAStorage(dataUrl, tramite, nombreArchivo) {
+  if (!dataUrl || !dataUrl.startsWith('data:image')) return null;
+
+  const respuesta = await fetch(dataUrl);
+  const blob = await respuesta.blob();
+
+  const timestamp = Date.now();
+  const random = Math.random().toString(36).substring(2, 8);
+  const ruta = `${tramite}/${timestamp}-${random}-${nombreArchivo}.jpg`;
+
+  const { error: errorSubida } = await supabaseClient
+    .storage
+    .from(BUCKET_FOTOS)
+    .upload(ruta, blob, {
+      contentType: 'image/jpeg',
+      upsert: false
+    });
+
+  if (errorSubida) {
+    console.error('❌ Error subiendo foto:', nombreArchivo, errorSubida);
+    throw new Error(`No se pudo subir la foto ${nombreArchivo}: ${errorSubida.message}`);
+  }
+
+  // ✅ Devolvemos SOLO la ruta (no URL pública, porque el bucket es privado)
+  return ruta;
+}
+
+/* ============================================================
    ENVÍO DEL TRÁMITE A SUPABASE
    ============================================================ */
 Object.entries(forms).forEach(([tramite, form]) => {
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
+
     for (const n of [1, 2]) {
       const foto = form.querySelector(`input[name="foto_testigo${n}"]`);
       if (!foto || !foto.value) {
@@ -1713,37 +1773,47 @@ Object.entries(forms).forEach(([tramite, form]) => {
         return;
       }
     }
+
     const btnEnviar = form.querySelector('button[type=submit]');
     const textoOriginal = btnEnviar.textContent;
     btnEnviar.disabled = true;
     btnEnviar.textContent = 'Enviando...';
+
     const datos = new FormData(form);
     const registro = {};
     const contenido = document.getElementById('doc-contenido');
     contenido.innerHTML = '';
+
     try {
+      // Separar fotos de datos de texto
+      const fotos = {};
       for (const [campo, valor] of datos.entries()) {
         if (!valor) continue;
-        registro[campo] = valor;
-        const dt = document.createElement('dt');
-        dt.textContent = etiquetas[campo] || campo;
-        const dd = document.createElement('dd');
-        if (campo.startsWith('foto_')) {
-          const img = document.createElement('img');
-          img.src = valor;
-          dd.appendChild(img);
+
+        if (campo.startsWith('foto_') && valor.startsWith('data:image')) {
+          fotos[campo] = valor;
+          registro[campo] = valor;
         } else {
-          dd.textContent = valor;
+          registro[campo] = valor;
         }
-        contenido.appendChild(dt);
-        contenido.appendChild(dd);
       }
+
+      // === SUBIR FOTOS A STORAGE ===
+      btnEnviar.textContent = 'Subiendo fotos...';
+      const entradasFotos = Object.entries(fotos);
+
+      for (let i = 0; i < entradasFotos.length; i++) {
+        const [campo, base64] = entradasFotos[i];
+        btnEnviar.textContent = `Subiendo foto ${i + 1}/${entradasFotos.length}...`;
+        const ruta = await subirFotoAStorage(base64, tramite, campo);
+        registro[campo] = ruta; // ✅ Guardamos la RUTA, no la URL pública
+      }
+
+      // === CALCULAR COMISARÍA ===
       btnEnviar.textContent = 'Ubicando domicilio...';
       const campoDomicilio = CAMPO_DOMICILIO[tramite];
       const asignacion = await asignarComisariaPorJurisdiccion(registro[campoDomicilio], registro.localidad);
-      btnEnviar.textContent = 'Enviando...';
 
-      // Verificar que el ciudadano haya elegido comisaría si había conflicto
       let comisariaAsignada;
       if (asignacion && asignacion.opciones && asignacion.opciones.length > 0) {
         comisariaAsignada = form.dataset.comisariaAsignada;
@@ -1759,6 +1829,8 @@ Object.entries(forms).forEach(([tramite, form]) => {
         comisariaAsignada = form.dataset.comisariaAsignada || 'No se pudo determinar automáticamente (a asignar por el personal)';
       }
 
+      // === INSERTAR EN LA TABLA ===
+      btnEnviar.textContent = 'Guardando trámite...';
       const { error } = await supabaseClient.from('solicitudes').insert([{
         tramite: tramite,
         tramite_titulo: titulos[tramite],
@@ -1766,23 +1838,56 @@ Object.entries(forms).forEach(([tramite, form]) => {
         estado: 'pendiente',
         datos: registro,
       }]);
+
       if (error) throw error;
-      const dt = document.createElement('dt');
-      dt.textContent = 'Comisaría asignada';
-      const dd = document.createElement('dd');
-      dd.textContent = comisariaAsignada;
-      contenido.appendChild(dt);
-      contenido.appendChild(dd);
+
+      // === ARMAR EL COMPROBANTE EN PANTALLA ===
+      for (const [campo, valor] of Object.entries(registro)) {
+        const dt = document.createElement('dt');
+        dt.textContent = etiquetas[campo] || campo;
+        const dd = document.createElement('dd');
+
+        if (campo.startsWith('foto_')) {
+          // ✅ Generar URL firmada temporal para mostrar en el comprobante
+          const { data: signedData, error: signedError } = await supabaseClient
+            .storage
+            .from(BUCKET_FOTOS)
+            .createSignedUrl(valor, 600); // 10 minutos
+
+          if (!signedError && signedData && signedData.signedUrl) {
+            const img = document.createElement('img');
+            img.src = signedData.signedUrl;
+            dd.appendChild(img);
+          } else {
+            dd.textContent = 'Foto guardada (no se pudo previsualizar)';
+          }
+        } else {
+          dd.textContent = valor;
+        }
+        contenido.appendChild(dt);
+        contenido.appendChild(dd);
+      }
+
+      const dtCom = document.createElement('dt');
+      dtCom.textContent = 'Comisaría asignada';
+      const ddCom = document.createElement('dd');
+      ddCom.textContent = comisariaAsignada;
+      contenido.appendChild(dtCom);
+      contenido.appendChild(ddCom);
+
       document.getElementById('doc-titulo').textContent = titulos[tramite];
       form.classList.remove('activo');
       documento.classList.add('activo');
+
+      // === LIMPIAR ===
       form.reset();
       form.querySelectorAll('.captura-foto').forEach(c => resetCaptura(c));
       limpiarTodasLasFotosDeStorage();
       avisoBorrador.classList.remove('activo');
+
     } catch (err) {
       console.error(err);
-      alert('No se pudo enviar el trámite. Revisá tu conexión e intentá de nuevo.');
+      alert('No se pudo enviar el trámite: ' + err.message);
     } finally {
       btnEnviar.disabled = false;
       btnEnviar.textContent = textoOriginal;
