@@ -308,7 +308,6 @@
   .comisaria-asignada.error strong{color:#fca5a5;}
   @keyframes fadeInComisaria{from{opacity:0;transform:translateY(-6px);}to{opacity:1;transform:translateY(0);}}
 
-  /* MAPA DE CONFIRMACIÓN DE DOMICILIO */
   .mapa-confirmacion{margin-top:14px;padding:12px;background:rgba(0,0,0,0.35);border:1px solid rgba(201,169,97,0.5);border-radius:8px;}
   .mapa-confirmacion .titulo{font-size:0.85rem;color:var(--dorado-claro);font-weight:600;margin-bottom:10px;display:flex;align-items:center;gap:6px;}
   .mapa-confirmacion #mapa-leaflet{width:100%;height:260px;border-radius:6px;border:1px solid rgba(201,169,97,0.4);z-index:1;}
@@ -331,7 +330,6 @@
   #documento .firma{margin-top:50px;display:flex;justify-content:space-between;font-size:0.8rem;flex-wrap:wrap;gap:16px;}
   #documento .firma div{border-top:1px solid rgba(255,255,255,0.4);padding-top:6px;width:30%;text-align:center;min-width:150px;color:rgba(255,255,255,0.8);}
 
-  /* CERTIFICADO OFICIAL */
   .certificado-oficial{background:#fff;color:#1f2937;padding:40px 50px;
     font-family:'Times New Roman', Georgia, serif;line-height:1.8;
     text-align:justify;max-width:850px;margin:0 auto;
@@ -370,13 +368,7 @@
     #documento dd,#documento .subt{color:#1f2937;}
     body{background:#fff;color:#000;}
     body::before{display:none !important;}
-    .certificado-oficial{
-      background:#fff;
-      border:none !important;
-      padding:15px 25px;
-      max-width:100%;
-      box-shadow:none;
-    }
+    .certificado-oficial{background:#fff;border:none !important;padding:15px 25px;max-width:100%;box-shadow:none;}
   }
 
   @media (max-width: 600px){
@@ -1498,7 +1490,6 @@ const titulos = {
   estadia: 'Certificado de Estadía',
 };
 
-/* LOCALSTORAGE */
 function guardarFotoEnStorage(clave, dataUrl) {
   try { localStorage.setItem('foto_' + clave, dataUrl); } catch (e) {}
 }
@@ -2037,12 +2028,103 @@ async function asignarComisariaPorJurisdiccion(domicilio, localidad) {
 }
 
 /* ============================================================
-   MOSTRAR AVISO CON MAPA LEAFLET
+   MOSTRAR AVISO CON MAPA LEAFLET (siempre visible)
    ============================================================ */
 let mapaLeafletActivo = null;
 let marcadorLeafletActivo = null;
 
-function mostrarAvisoComisaria(form, estado, dato) {
+function crearMapaConfirmacion(aviso, form, opciones) {
+  const { lat, lng, comisariaFija, esMultiple, texto, nombreEl } = opciones;
+
+  const bloqueMapa = document.createElement('div');
+  bloqueMapa.className = 'mapa-confirmacion';
+
+  const tituloTexto = esMultiple
+    ? '🗺️ Confirmá tu ubicación exacta en el mapa'
+    : '🗺️ Ubicación verificada automáticamente';
+
+  const ayudaTexto = esMultiple
+    ? '👆 <strong>Tocá o arrastrá el marcador</strong> hasta tu casa. La comisaría se asigna automáticamente según el punto exacto.'
+    : '📍 Esta es la ubicación de tu domicilio. La comisaría se asignó según el punto exacto.';
+
+  bloqueMapa.innerHTML = `
+    <div class="titulo">${tituloTexto}</div>
+    <div id="mapa-leaflet"></div>
+    <div class="ayuda">${ayudaTexto}</div>
+    <div class="coords" data-coords>📍 Ubicación actual: ${lat.toFixed(5)}, ${lng.toFixed(5)}</div>
+  `;
+  aviso.appendChild(bloqueMapa);
+
+  setTimeout(async () => {
+    const divMapa = bloqueMapa.querySelector('#mapa-leaflet');
+    const coordsEl = bloqueMapa.querySelector('[data-coords]');
+    const ayudaEl = bloqueMapa.querySelector('.ayuda');
+
+    if (!esMultiple && comisariaFija) {
+      ayudaEl.innerHTML = `✅ <strong>${comisariaFija}</strong> — Ubicación confirmada. Podés continuar.`;
+      ayudaEl.style.color = '#86efac';
+    }
+
+    mapaLeafletActivo = L.map(divMapa, {
+      center: [lat, lng],
+      zoom: 16,
+      zoomControl: true,
+      dragging: true,
+    });
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '© OpenStreetMap'
+    }).addTo(mapaLeafletActivo);
+
+    marcadorLeafletActivo = L.marker([lat, lng], {
+      draggable: esMultiple,
+      title: esMultiple ? 'Arrastrame a tu domicilio' : 'Tu domicilio'
+    }).addTo(mapaLeafletActivo);
+
+    if (!esMultiple && comisariaFija) {
+      marcadorLeafletActivo.bindPopup(`<strong>${comisariaFija}</strong><br>Ubicación verificada`).openPopup();
+    }
+
+    async function recalcularConCoordenadas(nuevaLat, nuevaLng) {
+      coordsEl.textContent = `📍 Ubicación actual: ${nuevaLat.toFixed(5)}, ${nuevaLng.toFixed(5)}`;
+      if (!poligonosCargados) await cargarTodosLosPoligonos();
+      const comisaria = buscarComisariaPorCoordenadas(nuevaLat, nuevaLng);
+      if (comisaria && comisaria.nombre) {
+        form.dataset.comisariaAsignada = comisaria.nombre;
+        aviso.classList.remove('cargando');
+        texto.textContent = '✅ Comisaría asignada:';
+        nombreEl.textContent = comisaria.nombre;
+        nombreEl.style.display = '';
+        ayudaEl.innerHTML = `✅ <strong>${comisaria.nombre}</strong> — ¡Listo, podés continuar!`;
+        ayudaEl.style.color = '#86efac';
+      } else {
+        form.dataset.comisariaAsignada = '';
+        texto.textContent = '⚠️ Este punto no cae en ninguna jurisdicción conocida.';
+        nombreEl.textContent = 'Se asignará manualmente';
+        nombreEl.style.display = '';
+        ayudaEl.innerHTML = '⚠️ Movés el marcador a otro punto.';
+        ayudaEl.style.color = '#fca5a5';
+      }
+    }
+
+    if (esMultiple) {
+      marcadorLeafletActivo.on('dragend', function (e) {
+        const pos = e.target.getLatLng();
+        recalcularConCoordenadas(pos.lat, pos.lng);
+      });
+
+      mapaLeafletActivo.on('click', function (e) {
+        marcadorLeafletActivo.setLatLng(e.latlng);
+        recalcularConCoordenadas(e.latlng.lat, e.latlng.lng);
+      });
+    }
+
+    setTimeout(() => { mapaLeafletActivo.invalidateSize(); }, 200);
+  }, 50);
+}
+
+async function mostrarAvisoComisaria(form, estado, dato) {
   const aviso = form.querySelector('[data-comisaria-aviso]');
   if (!aviso) return;
 
@@ -2065,97 +2147,59 @@ function mostrarAvisoComisaria(form, estado, dato) {
     aviso.classList.add('activo', 'cargando');
     texto.textContent = '⏳ Calculando comisaría...';
     nombreEl.textContent = '';
+
   } else if (estado === 'ok') {
     aviso.classList.add('activo');
     texto.textContent = '📍 Comisaría asignada:';
-    nombreEl.textContent = dato;
-    form.dataset.comisariaAsignada = dato;
+    nombreEl.textContent = dato.comisaria;
+    form.dataset.comisariaAsignada = dato.comisaria;
+
+    let centro = { lat: -24.786744, lng: -65.408122 };
+    if (dato.lat && dato.lon) {
+      centro = { lat: dato.lat, lng: dato.lon };
+    } else if (dato.domicilio && dato.localidad) {
+      try {
+        const ubic = await geocodificarConNominatim(dato.domicilio, dato.localidad);
+        if (ubic && ubic.lat && ubic.lon) {
+          centro = { lat: ubic.lat, lng: ubic.lon };
+        }
+      } catch (e) { console.warn('No se pudo geocodificar:', e); }
+    }
+
+    crearMapaConfirmacion(aviso, form, {
+      lat: centro.lat,
+      lng: centro.lng,
+      comisariaFija: dato.comisaria,
+      esMultiple: false,
+      texto,
+      nombreEl
+    });
+
   } else if (estado === 'multiple') {
     aviso.classList.add('activo', 'cargando');
     texto.textContent = '📍 Hay varias comisarías posibles. Confirmá tu ubicación en el mapa:';
     nombreEl.textContent = '';
     form.dataset.comisariaAsignada = '';
 
-    const opciones = dato.opciones || [];
-    const domicilio = dato.domicilio || '';
-    const localidad = dato.localidad || '';
-
-    const bloqueMapa = document.createElement('div');
-    bloqueMapa.className = 'mapa-confirmacion';
-    bloqueMapa.innerHTML = `
-      <div class="titulo">🗺️ <span>Arrastrá el marcador a tu domicilio exacto</span></div>
-      <div id="mapa-leaflet"></div>
-      <div class="ayuda">
-        👆 <strong>Tocá o arrastrá el marcador</strong> hasta tu casa. La comisaría se asigna automáticamente según el punto exacto.
-      </div>
-      <div class="coords" data-coords>📍 Ubicación actual: sin confirmar</div>
-    `;
-    aviso.appendChild(bloqueMapa);
-
-    setTimeout(async () => {
-      const divMapa = bloqueMapa.querySelector('#mapa-leaflet');
-      const coordsEl = bloqueMapa.querySelector('[data-coords]');
-
-      let centro = { lat: -24.786744, lng: -65.408122 };
+    let centro = { lat: -24.786744, lng: -65.408122 };
+    if (dato.domicilio && dato.localidad) {
       try {
-        const ubic = await geocodificarConNominatim(domicilio, localidad);
+        const ubic = await geocodificarConNominatim(dato.domicilio, dato.localidad);
         if (ubic && ubic.lat && ubic.lon) {
           centro = { lat: ubic.lat, lng: ubic.lon };
         }
       } catch (e) { console.warn('No se pudo geocodificar:', e); }
+    }
 
-      mapaLeafletActivo = L.map(divMapa, {
-        center: [centro.lat, centro.lng],
-        zoom: 16,
-        zoomControl: true,
-      });
+    crearMapaConfirmacion(aviso, form, {
+      lat: centro.lat,
+      lng: centro.lng,
+      comisariaFija: null,
+      esMultiple: true,
+      texto,
+      nombreEl
+    });
 
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        attribution: '© OpenStreetMap'
-      }).addTo(mapaLeafletActivo);
-
-      marcadorLeafletActivo = L.marker([centro.lat, centro.lng], {
-        draggable: true,
-        title: 'Arrastrame a tu domicilio'
-      }).addTo(mapaLeafletActivo);
-
-      coordsEl.textContent = `📍 Ubicación actual: ${centro.lat.toFixed(5)}, ${centro.lng.toFixed(5)}`;
-
-      async function recalcularConCoordenadas(lat, lng) {
-        coordsEl.textContent = `📍 Ubicación actual: ${lat.toFixed(5)}, ${lng.toFixed(5)}`;
-        if (!poligonosCargados) await cargarTodosLosPoligonos();
-        const comisaria = buscarComisariaPorCoordenadas(lat, lng);
-        if (comisaria && comisaria.nombre) {
-          form.dataset.comisariaAsignada = comisaria.nombre;
-          aviso.classList.remove('cargando');
-          texto.textContent = '✅ Comisaría asignada:';
-          nombreEl.textContent = comisaria.nombre;
-          nombreEl.style.display = '';
-          const ayuda = bloqueMapa.querySelector('.ayuda');
-          ayuda.innerHTML = `✅ <strong>${comisaria.nombre}</strong> — ¡Listo, podés continuar!`;
-          ayuda.style.color = '#86efac';
-        } else {
-          form.dataset.comisariaAsignada = '';
-          texto.textContent = '⚠️ Este punto no cae en ninguna jurisdicción conocida.';
-          nombreEl.textContent = 'Se asignará manualmente';
-          nombreEl.style.display = '';
-        }
-      }
-
-      marcadorLeafletActivo.on('dragend', function (e) {
-        const pos = e.target.getLatLng();
-        recalcularConCoordenadas(pos.lat, pos.lng);
-      });
-
-      mapaLeafletActivo.on('click', function (e) {
-        marcadorLeafletActivo.setLatLng(e.latlng);
-        recalcularConCoordenadas(e.latlng.lat, e.latlng.lng);
-      });
-
-      recalcularConCoordenadas(centro.lat, centro.lng);
-      setTimeout(() => { mapaLeafletActivo.invalidateSize(); }, 200);
-    }, 50);
   } else if (estado === 'error') {
     aviso.classList.add('activo', 'error');
     texto.textContent = '⚠️ No se pudo determinar la comisaría';
@@ -2196,7 +2240,13 @@ Object.entries(forms).forEach(([tramite, form]) => {
           localidad: selectLocalidad.value
         });
       } else if (resultado.comisaria) {
-        mostrarAvisoComisaria(form, 'ok', resultado.comisaria);
+        mostrarAvisoComisaria(form, 'ok', {
+          comisaria: resultado.comisaria,
+          lat: resultado.lat || null,
+          lon: resultado.lon || null,
+          domicilio: inputDomicilio.value.trim(),
+          localidad: selectLocalidad.value
+        });
       } else {
         mostrarAvisoComisaria(form, 'error');
       }
@@ -2507,9 +2557,7 @@ function generarCertificadoOficial(tramite, datos, comisaria) {
   }
 }
 
-/* ============================================================
-   ENVÍO DEL TRÁMITE A SUPABASE
-   ============================================================ */
+/* ENVÍO DEL TRÁMITE A SUPABASE */
 Object.entries(forms).forEach(([tramite, form]) => {
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -2563,7 +2611,7 @@ Object.entries(forms).forEach(([tramite, form]) => {
       if (asignacion && asignacion.opciones && asignacion.opciones.length > 0) {
         comisariaAsignada = form.dataset.comisariaAsignada;
         if (!comisariaAsignada) {
-          alert('Por favor, elegí tu comisaría en el mapa antes de enviar.');
+          alert('Por favor, confirmá tu ubicación en el mapa antes de enviar.');
           btnEnviar.disabled = false;
           btnEnviar.textContent = textoOriginal;
           return;
@@ -2584,7 +2632,6 @@ Object.entries(forms).forEach(([tramite, form]) => {
       }]);
       if (error) throw error;
 
-      // === VISTA PREVIA DEL CERTIFICADO ===
       const tramitesOficiales = ['residencia','convivencia','carencia','autorizacion','extravio','supervivencia'];
       if (tramitesOficiales.includes(tramite)) {
         document.querySelector('#documento > h2').style.display = 'none';
