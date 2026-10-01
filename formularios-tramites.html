@@ -330,32 +330,6 @@
   #documento .firma{margin-top:50px;display:flex;justify-content:space-between;font-size:0.8rem;flex-wrap:wrap;gap:16px;}
   #documento .firma div{border-top:1px solid rgba(255,255,255,0.4);padding-top:6px;width:30%;text-align:center;min-width:150px;color:rgba(255,255,255,0.8);}
 
-  .certificado-oficial{background:#fff;color:#1f2937;padding:40px 50px;
-    font-family:'Times New Roman', Georgia, serif;line-height:1.8;
-    text-align:justify;max-width:850px;margin:0 auto;
-    border:1px solid #c9a961;border-radius:8px;}
-  .cert-header{text-align:center;margin-bottom:26px;border-bottom:2px solid #0d2a4d;padding-bottom:14px;}
-  .cert-escudo{display:inline-block;width:70px;height:70px;
-    background-image:url('logo-policia.png.jpeg');background-size:contain;
-    background-repeat:no-repeat;background-position:center;margin-bottom:6px;}
-  .cert-titulo{font-family:'Segoe UI', Arial, sans-serif;font-weight:bold;color:#0d2a4d;}
-  .cert-titulo .cert-linea1{font-size:0.88rem;letter-spacing:0.15em;}
-  .cert-titulo .cert-linea2{font-size:1.1rem;letter-spacing:0.3em;color:#c9a961;margin:4px 0;font-family:'Times New Roman', serif;}
-  .cert-titulo .cert-nombre{font-size:1.15rem;letter-spacing:0.12em;margin-top:10px;padding-top:10px;border-top:1px solid #c9a961;text-decoration:underline;text-underline-offset:4px;}
-  .cert-texto{font-size:1rem;margin:18px 0;text-align:justify;color:#1f2937;}
-  .cert-texto strong{font-weight:bold;text-transform:uppercase;}
-  .cert-lista-convivientes{margin:16px 0 16px 30px;padding:0;list-style:none;}
-  .cert-lista-convivientes li{font-size:1rem;margin:6px 0;color:#1f2937;font-weight:bold;text-transform:uppercase;}
-  .cert-lista-convivientes li .parentesco{font-weight:normal;text-transform:none;font-style:italic;color:#4b5563;margin-left:6px;}
-  .cert-firmas{margin-top:70px;display:flex;justify-content:space-around;gap:20px;flex-wrap:wrap;}
-  .cert-firma{text-align:center;font-size:0.85rem;color:#1f2937;width:180px;}
-  .cert-firma-espacio{height:60px;border-bottom:1px solid #1f2937;margin-bottom:6px;}
-  .cert-firmas-tres{margin-top:70px;display:flex;justify-content:space-between;gap:15px;flex-wrap:wrap;}
-  .cert-firmas-tres .cert-firma{flex:1;min-width:130px;}
-  .cert-firmas-una{margin-top:70px;display:flex;justify-content:center;}
-  .cert-firmas-una .cert-firma{width:220px;}
-  .cert-lugar-fecha{text-align:right;font-size:0.95rem;margin:24px 0 18px;color:#1f2937;font-style:italic;}
-
   footer.site-footer{background:transparent;color:var(--dorado-claro);padding:28px 20px;margin-top:auto;border-top:1px solid rgba(201,169,97,0.3);text-align:center;font-size:1rem;line-height:1.7;position:relative;z-index:2;}
   footer.site-footer .footer-inner{max-width:760px;margin:0 auto;}
   footer.site-footer p{margin:4px 0;color:var(--dorado-brilloso);font-weight:500;text-shadow:0 0 10px rgba(240,215,140,0.4), 0 1px 2px rgba(0,0,0,0.5);}
@@ -364,11 +338,8 @@
   @media print{
     header,.tarjetas,form,.no-print,footer.site-footer{display:none !important;}
     #documento{display:block !important;border:none;box-shadow:none;background:#fff;padding:0;}
-    #documento h2,#documento dt{color:#0d2a4d;}
-    #documento dd,#documento .subt{color:#1f2937;}
     body{background:#fff;color:#000;}
     body::before{display:none !important;}
-    .certificado-oficial{background:#fff;border:none !important;padding:15px 25px;max-width:100%;box-shadow:none;}
   }
 
   @media (max-width: 600px){
@@ -1374,13 +1345,7 @@
     <p class="subt">Policía de Salta</p>
     <p class="subt" style="margin-top:-16px;">Tu trámite ya fue enviado a la comisaría correspondiente.</p>
     <dl id="doc-contenido"></dl>
-    <div class="firma">
-      <div>Firma del solicitante</div>
-      <div>Firma testigos</div>
-      <div>Firma y sello - Autoridad policial</div>
-    </div>
     <div class="btns no-print" style="margin-top:30px;">
-      <button class="btn-primario" onclick="window.print()">Imprimir / Guardar como PDF</button>
       <button class="btn-secundario" id="doc-volver">Volver al inicio</button>
     </div>
   </div>
@@ -1413,6 +1378,33 @@ const documento = document.getElementById('documento');
 const avisoBorrador = document.getElementById('aviso-borrador');
 
 const BUCKET_FOTOS = 'fotos-tramites';
+
+/* ============================================================
+   GENERACIÓN DE CÓDIGO ÚNICO DE TRÁMITE (8 dígitos numéricos)
+   ============================================================ */
+function generarCodigoTramite() {
+  const primerDigito = Math.floor(Math.random() * 9) + 1; // 1-9
+  let resto = '';
+  for (let i = 0; i < 7; i++) {
+    resto += Math.floor(Math.random() * 10);
+  }
+  return String(primerDigito) + resto;
+}
+
+async function generarCodigoUnico() {
+  for (let intento = 0; intento < 5; intento++) {
+    const codigo = generarCodigoTramite();
+    const { data, error } = await supabaseClient
+      .from('solicitudes')
+      .select('id')
+      .eq('codigo', codigo)
+      .limit(1);
+    if (error) { console.warn('Error verificando código:', error); continue; }
+    if (!data || data.length === 0) return codigo;
+  }
+  // Fallback extremo
+  return String(Date.now()).slice(-8);
+}
 
 const etiquetas = {
   nombre: 'Nombre completo', dni: 'DNI', fechaNacimiento: 'Fecha de nacimiento',
@@ -1569,7 +1561,7 @@ document.getElementById('doc-volver').addEventListener('click', () => {
   tarjetasEl.style.display = 'grid';
   try { localStorage.removeItem('tramite_activo'); } catch(e){}
 });
-  
+
 /* ============================================================
    PARSEO DEL CÓDIGO DEL DNI
    ============================================================ */
@@ -1628,7 +1620,6 @@ function camposParaTarget(target) {
   return null;
 }
 
-/* RESET DE CAPTURA */
 function resetCaptura(captura){
   const video = captura.querySelector('video');
   const img = captura.querySelector('img');
@@ -1660,7 +1651,6 @@ function resetCaptura(captura){
   borrarFotoDeStorage(captura.dataset.target);
 }
 
-/* CÁMARA + ESCANEO */
 document.querySelectorAll('.captura-foto').forEach(captura => {
   const video = captura.querySelector('video');
   const canvas = captura.querySelector('canvas');
@@ -1936,7 +1926,6 @@ function buscarComisariaPorCoordenadas(lat, lon) {
   return null;
 }
 
-/* HELPERS GEOCODING */
 async function consultarNominatim(consulta) {
   const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=ar&q=${encodeURIComponent(consulta)}`;
   try {
@@ -2027,9 +2016,6 @@ async function asignarComisariaPorJurisdiccion(domicilio, localidad) {
   return { comisaria: comisaria.nombre, ddp: comisaria.ddp, lat: ubicacion.lat, lon: ubicacion.lon, origen: 'poligono' };
 }
 
-/* ============================================================
-   MOSTRAR AVISO CON MAPA LEAFLET (siempre visible)
-   ============================================================ */
 let mapaLeafletActivo = null;
 let marcadorLeafletActivo = null;
 
@@ -2262,7 +2248,6 @@ Object.entries(forms).forEach(([tramite, form]) => {
   selectLocalidad.addEventListener('change', calcularComisaria);
 });
 
-/* SUBIR FOTO A STORAGE */
 async function subirFotoAStorage(dataUrl, tramite, nombreArchivo) {
   if (!dataUrl || !dataUrl.startsWith('data:image')) return null;
   const respuesta = await fetch(dataUrl);
@@ -2279,285 +2264,9 @@ async function subirFotoAStorage(dataUrl, tramite, nombreArchivo) {
   return ruta;
 }
 
-/* FORMATEADORES Y GENERADORES DE CERTIFICADOS OFICIALES */
-function formatearDni(dni) {
-  if (!dni) return '—';
-  const s = String(dni).replace(/\D/g, '');
-  if (s.length === 8) return s.slice(0,2) + '.' + s.slice(2,5) + '.' + s.slice(5);
-  if (s.length === 7) return s.slice(0,1) + '.' + s.slice(1,4) + '.' + s.slice(4);
-  return s;
-}
-
-function calcularEdad(fechaISO) {
-  if (!fechaISO) return '—';
-  const hoy = new Date();
-  const nac = new Date(fechaISO);
-  let edad = hoy.getFullYear() - nac.getFullYear();
-  const m = hoy.getMonth() - nac.getMonth();
-  if (m < 0 || (m === 0 && hoy.getDate() < nac.getDate())) edad--;
-  return edad;
-}
-
-function formatearFechaCorta(fechaISO) {
-  if (!fechaISO) return '—';
-  const f = new Date(fechaISO + 'T00:00:00');
-  if (isNaN(f)) return fechaISO;
-  const dd = String(f.getDate()).padStart(2, '0');
-  const mm = String(f.getMonth() + 1).padStart(2, '0');
-  const yy = String(f.getFullYear()).slice(-2);
-  return `${dd}/${mm}/${yy}`;
-}
-
-function obtenerFechaActual() {
-  const hoy = new Date();
-  const meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-  return {
-    dia: String(hoy.getDate()).padStart(2, '0'),
-    mes: meses[hoy.getMonth()],
-    anio: hoy.getFullYear(),
-    hora: String(hoy.getHours()).padStart(2, '0') + ':' + String(hoy.getMinutes()).padStart(2, '0')
-  };
-}
-
-function certHeader(titulo) {
-  return `
-    <div class="cert-header">
-      <div class="cert-escudo"></div>
-      <div class="cert-titulo">
-        <div class="cert-linea1">POLICÍA DE LA PROVINCIA</div>
-        <div class="cert-linea2">S A L T A</div>
-        <div class="cert-nombre">${titulo}</div>
-      </div>
-    </div>`;
-}
-
-function generarCertificadoResidencia(r, comisaria) {
-  const f = obtenerFechaActual();
-  const t1 = (r.testigo1Nombre || '—').toUpperCase();
-  const t2 = (r.testigo2Nombre || '—').toUpperCase();
-  const sol = (r.nombre || '—').toUpperCase();
-  const dom = r.domicilio || '—';
-  const loc = r.localidad || '—';
-  return `
-    <div class="certificado-oficial">
-      ${certHeader('CERTIFICADO DE RESIDENCIA')}
-      <p class="cert-texto">
-        <strong>____:</strong> El Funcionario Policial que suscribe CERTIFICA de acuerdo a los
-        testimonios de los Sres. Testigos: <strong>${t1}</strong> DNI Nº ${formatearDni(r.testigo1Dni)}
-        con dlio. en ${dom} y de <strong>${t2}</strong> DNI Nº ${formatearDni(r.testigo2Dni)}
-        con dlio. en ${dom}, ambos de la Ciudad de ${loc}, a quienes les consta que la persona de
-        <strong>${sol}</strong> DNI Nº ${formatearDni(r.dni)}, argentino/a mayor de edad,
-        RESIDE: En el domicilio sito en <strong>${dom}</strong>, ${loc}.
-      </p>
-      <p class="cert-texto">
-        <strong>____:</strong> Se extiende el presente a solicitud de la parte interesada con el
-        solo objeto de ser presentado por ante ${r.motivo || '—'}. Dado en ${comisaria}, a los
-        ${f.dia} días del mes de ${f.mes} del año ${f.anio}.
-      </p>
-      <div class="cert-firmas-tres">
-        <div class="cert-firma"><div class="cert-firma-espacio"></div><div>Firma del Solicitante</div></div>
-        <div class="cert-firma"><div class="cert-firma-espacio"></div><div>Tgo. de Acto I</div></div>
-        <div class="cert-firma"><div class="cert-firma-espacio"></div><div>Tgo. de Acto II</div></div>
-      </div>
-    </div>`;
-}
-
-function generarCertificadoConvivencia(r, comisaria) {
-  const f = obtenerFechaActual();
-  const t1 = (r.testigo1Nombre || '—').toUpperCase();
-  const t2 = (r.testigo2Nombre || '—').toUpperCase();
-  const sol = (r.nombreSolicitante || '—').toUpperCase();
-  const conv = (r.nombreConviviente || '—').toUpperCase();
-  const dom = r.domicilioComun || '—';
-  const loc = r.localidad || '—';
-  return `
-    <div class="certificado-oficial">
-      ${certHeader('CERTIFICADO DE CONVIVENCIA')}
-      <p class="cert-texto">
-        <strong>____:</strong> El Funcionario Policial que suscribe CERTIFICA que de acuerdo al
-        testimonio brindado por los testigos Sres. <strong>${t1}</strong> DNI Nº
-        ${formatearDni(r.testigo1Dni)}, Dlio. en ${dom} y <strong>${t2}</strong> DNI Nº
-        ${formatearDni(r.testigo2Dni)}, con Dlio. en ${dom}, ambos del Barrio ${loc} – Salta
-        Capital, argentinos, mayores de edad, establece que la persona de <strong>${sol}</strong>,
-        DNI Nº ${formatearDni(r.dniSolicitante)}, argentino/a, mayor de edad RESIDE: en el
-        domicilio ubicado en ${dom} – ${loc} y CONVIVE con las siguientes personas:
-      </p>
-      <ul class="cert-lista-convivientes">
-        <li>${sol} DNI Nº ${formatearDni(r.dniSolicitante)} <span class="parentesco">(Solicitante)</span></li>
-        <li>${conv} DNI Nº ${formatearDni(r.dniConviviente)} <span class="parentesco">(${r.parentesco || '—'})</span></li>
-      </ul>
-      <p class="cert-texto">
-        <strong>____:</strong> Se expide el presente Certificado a solicitud de la parte interesada
-        a los fines de ser presentado por ante ${r.motivo || '—'}. Otorgado en ${comisaria} de la
-        Ciudad de Salta, Pcia. del mismo nombre, a los ${f.dia} días del mes de ${f.mes} del año ${f.anio}.
-      </p>
-      <div class="cert-firmas">
-        <div class="cert-firma"><div class="cert-firma-espacio"></div><div>Testigo Nº 1</div></div>
-        <div class="cert-firma"><div class="cert-firma-espacio"></div><div>Testigo Nº 2</div></div>
-      </div>
-    </div>`;
-}
-
-function generarCertificadoCarencia(r, comisaria) {
-  const f = obtenerFechaActual();
-  const t1 = (r.testigo1Nombre || '—').toUpperCase();
-  const t2 = (r.testigo2Nombre || '—').toUpperCase();
-  const sol = (r.nombre || '—').toUpperCase();
-  const dom = r.domicilio || '—';
-  const loc = r.localidad || '—';
-  return `
-    <div class="certificado-oficial">
-      ${certHeader('CERTIFICADO DE CARENTE DE RECURSO')}
-      <p class="cert-texto">
-        <strong>----:</strong> El Funcionario Policial que suscribe CERTIFICA que de acuerdo a los
-        testimonios brindados por los testigos Sres. <strong>${t1}</strong> DNI Nº
-        ${formatearDni(r.testigo1Dni)}, Dlio. en ${dom} y <strong>${t2}</strong> DNI Nº
-        ${formatearDni(r.testigo2Dni)}, Dlio. en ${dom}. Declaran Bajo Juramento de Ley que saben
-        y les consta que el/la Sr./Sra. <strong>${sol}</strong>, DNI Nº ${formatearDni(r.dni)},
-        Dlio. ${dom} de esta Ciudad, <strong>ES CARENTE DE RECURSOS ECONÓMICOS</strong>. Se
-        extiende el presente certificado a solicitud de la parte interesada y al solo efecto de
-        ser presentado por ante ${r.motivo || '—'}.
-      </p>
-      <p class="cert-texto" style="text-align:right;margin-top:20px;">
-        ${loc}, ${f.mes} ${f.dia} de ${f.anio}.-
-      </p>
-      <div class="cert-firmas-tres">
-        <div class="cert-firma"><div class="cert-firma-espacio"></div><div>Firma del Solicitante</div></div>
-        <div class="cert-firma"><div class="cert-firma-espacio"></div><div>Testigo Nº 1</div></div>
-        <div class="cert-firma"><div class="cert-firma-espacio"></div><div>Testigo Nº 2</div></div>
-      </div>
-    </div>`;
-}
-
-function generarConstanciaAutorizacion(r, comisaria) {
-  const f = obtenerFechaActual();
-  const prog = (r.nombreProgenitor || '—').toUpperCase();
-  const progDni = formatearDni(r.dniProgenitor);
-  const dom = r.domicilio || '—';
-  const menor = (r.nombreMenor || '—').toUpperCase();
-  const menorDni = formatearDni(r.dniMenor);
-  const edad = calcularEdad(r.fechaNacimientoMenor);
-  const destino = r.destino || '—';
-  let empresa = r.empresaTransporte || '—';
-  if (empresa === 'Otro (especificar abajo)' && r.empresaOtra) empresa = r.empresaOtra;
-  const fechaSalida = formatearFechaCorta(r.fechaSalida);
-  const fechaRegreso = formatearFechaCorta(r.fechaRegreso);
-  let viajaTexto = 'solo';
-  if (r.tipoViaje === 'acompanado') {
-    const acomp = (r.nombreAcompanante || 'acompañante').toUpperCase();
-    const vinculo = r.vinculoAcompanante ? ` (${r.vinculoAcompanante})` : '';
-    viajaTexto = `acompañado por ${acomp}${vinculo}`;
-  }
-  const prep = (empresa.toLowerCase().includes('vehículo') || empresa.toLowerCase().includes('vehiculo')) ? 'en' : 'perteneciente a la empresa';
-  return `
-    <div class="certificado-oficial">
-      ${certHeader('CONSTANCIA DE AUTORIZACIÓN')}
-      <p class="cert-texto">
-        <strong>----:</strong> La/El que suscribe <strong>${prog}</strong> DNI N° ${progDni}
-        con Dlio. en ${dom} de esta ciudad, AUTORIZO a mi hijo/a <strong>${menor}</strong>
-        DNI N° ${menorDni} de ${edad} años a viajar a la localidad de <strong>${destino}</strong>,
-        en fecha ${fechaSalida} ${prep} <strong>${empresa}</strong>, el mismo se trasladaría
-        ${viajaTexto} y retornaría de la misma manera en fecha ${fechaRegreso} a esta ciudad.
-      </p>
-      <div class="cert-lugar-fecha">
-        ${comisaria} – Salta, ${f.mes} ${f.dia} del ${f.anio}.-
-      </div>
-      <p class="cert-texto">
-        <strong>-----:</strong> El Funcionario Policial que suscribe CERTIFICA que la firma que
-        antecede pertenece a la/el Sr./Sra. <strong>${prog}</strong> DNI N° ${progDni} la cual
-        fue estampada en mi presencia.
-      </p>
-      <div class="cert-firmas-una">
-        <div class="cert-firma"><div class="cert-firma-espacio"></div><div>Firma del Progenitor Autorizante</div></div>
-      </div>
-    </div>`;
-}
-
-function generarConstanciaExtravio(r, comisaria) {
-  const f = obtenerFechaActual();
-  const sol = (r.nombre || '—').toUpperCase();
-  const solDni = formatearDni(r.dni);
-  const edad = calcularEdad(r.fechaNacimiento);
-  const dom = r.domicilio || '—';
-  const loc = r.localidad || '—';
-  const tipoDoc = (r.tipoDocumento || 'documento').toLowerCase();
-  const numDoc = r.numeroDocumento ? ` Nº ${r.numeroDocumento}` : '';
-  const fechaExt = formatearFechaCorta(r.fechaExtravio);
-  const circ = (r.circunstancia || 'extravió').toLowerCase();
-  const lugar = r.lugarExtravio || '—';
-  const detalle = r.detalleExtravio || '';
-  let parrafo = `en la fecha ${fechaExt}, ${circ} en ${lugar}`;
-  if (detalle) parrafo += `, ${detalle}`;
-  parrafo += `, su <strong>${tipoDoc.toUpperCase()}${numDoc}</strong> a nombre de la misma`;
-  return `
-    <div class="certificado-oficial">
-      ${certHeader('CONSTANCIA DE EXTRAVÍO')}
-      <p class="cert-texto">
-        <strong>____:</strong> En la Ciudad de ${loc} de la Provincia del mismo nombre a los
-        ${f.dia} días del mes de ${f.mes} de ${f.anio}, siendo hs. ${f.hora} se labra la presente
-        a fin de dejar constancia que la persona de <strong>${sol}</strong> (${edad}) DNI Nº
-        ${solDni}, con domicilio en ${dom} de esta Ciudad, se hace presente por ante esta
-        preventora a fin de dejar constancia que ${parrafo}, motivo por lo que solicita la
-        presente a los fines de ser presentado por ante ${r.motivo || '—'}.-
-      </p>
-      <div class="cert-firmas-una">
-        <div class="cert-firma"><div class="cert-firma-espacio"></div><div>Firma del Solicitante</div></div>
-      </div>
-      <div class="cert-lugar-fecha" style="margin-top:50px;">
-        ${comisaria} – Salta, ${f.mes} ${f.dia} de ${f.anio}.-
-      </div>
-      <p class="cert-texto">
-        El Funcionario Policial que suscribe CERTIFICA que la firma que antecede, pertenece al/la
-        Sr./Sra. <strong>${sol}</strong> DNI Nº ${solDni} por haber sido puesta ante mi presencia.
-      </p>
-    </div>`;
-}
-
-function generarCertificadoSupervivencia(r, comisaria) {
-  const f = obtenerFechaActual();
-  const t1 = (r.testigo1Nombre || '—').toUpperCase();
-  const t2 = (r.testigo2Nombre || '—').toUpperCase();
-  const sol = (r.nombre || '—').toUpperCase();
-  const solDni = formatearDni(r.dni);
-  const dom = r.domicilio || '—';
-  const loc = r.localidad || '—';
-  const motivo = (r.motivo || r.tipoBeneficio || '—');
-  return `
-    <div class="certificado-oficial">
-      ${certHeader('CERTIFICADO DE SUPERVIVENCIA')}
-      <p class="cert-texto">
-        <strong>___:</strong> El Funcionario Policial que suscribe CERTIFICA que de acuerdo a los
-        testimonios brindados por los testigos Sres. <strong>${t1}</strong>, DNI Nº
-        ${formatearDni(r.testigo1Dni)}, Dlio. ${dom} y <strong>${t2}</strong> DNI Nº
-        ${formatearDni(r.testigo2Dni)}, Dlio. en ${dom} de esta Ciudad. Establecen que la persona
-        de <strong>${sol}</strong>, DNI Nº ${solDni}, <strong>VIVE Y RESIDE</strong> en ${dom}
-        ${loc} de esta Ciudad. Se extiende el presente certificado a solicitud de la parte
-        interesada y al solo efecto de ser presentado por ante ${motivo}.
-      </p>
-      <p class="cert-texto" style="text-align:right;margin-top:20px;">
-        ${loc}, ${f.mes} ${f.dia} de ${f.anio}.-
-      </p>
-      <div class="cert-firmas-tres">
-        <div class="cert-firma"><div class="cert-firma-espacio"></div><div>Firma del Solicitante</div></div>
-        <div class="cert-firma"><div class="cert-firma-espacio"></div><div>Testigo Nº 1</div></div>
-        <div class="cert-firma"><div class="cert-firma-espacio"></div><div>Testigo Nº 2</div></div>
-      </div>
-    </div>`;
-}
-
-function generarCertificadoOficial(tramite, datos, comisaria) {
-  switch (tramite) {
-    case 'residencia':    return generarCertificadoResidencia(datos, comisaria);
-    case 'convivencia':   return generarCertificadoConvivencia(datos, comisaria);
-    case 'carencia':      return generarCertificadoCarencia(datos, comisaria);
-    case 'autorizacion':  return generarConstanciaAutorizacion(datos, comisaria);
-    case 'extravio':      return generarConstanciaExtravio(datos, comisaria);
-    case 'supervivencia': return generarCertificadoSupervivencia(datos, comisaria);
-    default: return null;
-  }
-}
-
-/* ENVÍO DEL TRÁMITE A SUPABASE */
+/* ============================================================
+   ENVÍO DEL TRÁMITE
+   ============================================================ */
 Object.entries(forms).forEach(([tramite, form]) => {
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -2622,6 +2331,9 @@ Object.entries(forms).forEach(([tramite, form]) => {
         comisariaAsignada = form.dataset.comisariaAsignada || 'No se pudo determinar automáticamente (a asignar por el personal)';
       }
 
+      btnEnviar.textContent = 'Generando código...';
+      const codigoTramite = await generarCodigoUnico();
+
       btnEnviar.textContent = 'Guardando trámite...';
       const { error } = await supabaseClient.from('solicitudes').insert([{
         tramite: tramite,
@@ -2629,43 +2341,68 @@ Object.entries(forms).forEach(([tramite, form]) => {
         comisaria_asignada: comisariaAsignada,
         estado: 'pendiente',
         datos: registro,
+        codigo: codigoTramite,
       }]);
       if (error) throw error;
 
-      const tramitesOficiales = ['residencia','convivencia','carencia','autorizacion','extravio','supervivencia'];
-      if (tramitesOficiales.includes(tramite)) {
-        document.querySelector('#documento > h2').style.display = 'none';
-        document.querySelectorAll('#documento > .subt').forEach(el => el.style.display = 'none');
-        document.querySelector('#documento > .firma').style.display = 'none';
-        contenido.innerHTML = generarCertificadoOficial(tramite, registro, comisariaAsignada);
-      } else {
-        for (const [campo, valor] of Object.entries(registro)) {
-          const dt = document.createElement('dt');
-          dt.textContent = etiquetas[campo] || campo;
-          const dd = document.createElement('dd');
-          if (campo.startsWith('foto_')) {
-            const { data: signedData, error: signedError } = await supabaseClient
-              .storage.from(BUCKET_FOTOS).createSignedUrl(valor, 600);
-            if (!signedError && signedData && signedData.signedUrl) {
-              const img = document.createElement('img');
-              img.src = signedData.signedUrl;
-              dd.appendChild(img);
-            } else {
-              dd.textContent = 'Foto guardada (no se pudo previsualizar)';
-            }
-          } else {
-            dd.textContent = valor;
-          }
-          contenido.appendChild(dt);
-          contenido.appendChild(dd);
-        }
-        const dtCom = document.createElement('dt');
-        dtCom.textContent = 'Comisaría asignada';
-        const ddCom = document.createElement('dd');
-        ddCom.textContent = comisariaAsignada;
-        contenido.appendChild(dtCom);
-        contenido.appendChild(ddCom);
-      }
+      // ============================================================
+      // 🚫 NO mostrar el certificado. Mostrar mensaje de espera.
+      // ============================================================
+      document.querySelector('#documento > h2').textContent = 'Trámite enviado correctamente';
+      document.querySelectorAll('#documento > .subt').forEach(el => el.style.display = 'block');
+
+      contenido.innerHTML = `
+        <div style="background:rgba(21,128,61,0.2);border:1px solid rgba(134,239,172,0.5);
+                    border-left:4px solid #86efac;padding:20px 24px;border-radius:10px;
+                    margin:18px 0;text-align:center;">
+          <div style="font-size:2.5rem;margin-bottom:8px;">✅</div>
+          <h3 style="margin:0 0 8px;color:#86efac;font-size:1.15rem;font-weight:700;">
+            ¡Tu trámite fue enviado!
+          </h3>
+          <p style="margin:0;color:#fff;font-size:0.95rem;line-height:1.6;">
+            Tu solicitud fue derivada a <strong>${comisariaAsignada}</strong>.<br>
+            <strong>Esperá la validación del personal policial.</strong>
+          </p>
+        </div>
+
+        <div style="background:rgba(201,169,97,0.15);border:2px dashed rgba(201,169,97,0.7);
+                    border-radius:12px;padding:22px;margin:20px 0;text-align:center;">
+          <div style="font-size:0.82rem;color:var(--dorado-claro);
+                      text-transform:uppercase;letter-spacing:0.1em;font-weight:700;
+                      margin-bottom:10px;">
+            🔐 Tu código único de trámite
+          </div>
+          <div style="font-family:'Courier New',monospace;font-size:2.4rem;font-weight:700;
+                      color:var(--dorado-brilloso);letter-spacing:0.2em;
+                      background:rgba(0,0,0,0.3);padding:18px 22px;border-radius:8px;
+                      user-select:all;word-break:break-all;">
+            ${codigoTramite}
+          </div>
+          <p style="margin:14px 0 0;font-size:0.85rem;color:rgba(255,255,255,0.85);
+                    line-height:1.5;">
+            📌 <strong>Guardá este código.</strong> Lo vas a necesitar para retirar
+            tu certificado en la comisaría.
+          </p>
+        </div>
+
+        <div style="background:rgba(185,28,28,0.2);border:1px solid rgba(252,165,165,0.5);
+                    border-left:4px solid #fca5a5;border-radius:10px;padding:16px 20px;margin:18px 0;">
+          <p style="margin:0;font-size:0.9rem;color:#fff;line-height:1.6;">
+            ⏰ <strong>Tenés 5 días hábiles para retirarlo</strong> una vez que el
+            personal lo valide. Si no te presentás, el certificado se elimina
+            automáticamente y vas a tener que iniciar el trámite de nuevo.
+          </p>
+        </div>
+
+        <div style="background:rgba(44,90,160,0.25);border:1px solid rgba(201,169,97,0.4);
+                    border-radius:10px;padding:16px 20px;margin:18px 0;">
+          <p style="margin:0;font-size:0.9rem;color:#fff;line-height:1.6;">
+            📧 <strong>Estate atento a tu Gmail.</strong> Cuando el personal policial
+            valide tu trámite, te vamos a enviar un correo con tu código y la fecha
+            límite para retirarlo.
+          </p>
+        </div>
+      `;
 
       document.getElementById('doc-titulo').textContent = titulos[tramite];
       form.classList.remove('activo');
