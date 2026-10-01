@@ -1560,7 +1560,6 @@ window.addEventListener('DOMContentLoaded', () => {
     estado.textContent = 'Foto recuperada (se había guardado antes).';
     estado.classList.add('ok');
     btnCamara.hidden = true;
-    // Si la foto estaba guardada, bloqueamos los campos correspondientes
     const form = captura.closest('form');
     const campos = camposABloquearParaTarget(clave);
     if (form && campos.length) bloquearCampos(form, campos);
@@ -1700,7 +1699,6 @@ function resetCaptura(captura){
   if (btnFlash) { btnFlash.classList.remove('activo'); btnFlash.classList.remove('encendido'); }
   borrarFotoDeStorage(captura.dataset.target);
 
-  // Desbloqueamos los campos correspondientes
   const form = captura.closest('form');
   const campos = camposABloquearParaTarget(captura.dataset.target);
   if (form && campos.length) desbloquearCampos(form, campos);
@@ -1833,7 +1831,6 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
     if (video.srcObject) { video.srcObject.getTracks().forEach(t => t.stop()); video.srcObject = null; }
     trackActual = null;
 
-    // Autocompletar campos
     if (campos) {
       if (datos.nombreCompleto && form.querySelector(`[name="${campos.nombre}"]`))
         form.querySelector(`[name="${campos.nombre}"]`).value = datos.nombreCompleto;
@@ -1845,7 +1842,6 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
       }
     }
 
-    // 🔒 Bloquear campos del solicitante (según target)
     const camposBloqueo = camposABloquearParaTarget(captura.dataset.target);
     if (form && camposBloqueo.length) bloquearCampos(form, camposBloqueo);
 
@@ -1893,7 +1889,6 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
       estado.classList.add('ok');
       estado.classList.remove('error');
       escaneoEstado.textContent = 'Foto guardada. Completá los datos manualmente.';
-      // ⚠️ NO bloqueamos campos porque no se escaneó
     });
   }
 });
@@ -2055,6 +2050,9 @@ async function geocodificarConNominatim(domicilio, localidad) {
   return null;
 }
 
+/* ============================================================
+   ASIGNACIÓN DE COMISARÍA — con coords de la comisaría si es match por barrio
+   ============================================================ */
 async function asignarComisariaPorJurisdiccion(domicilio, localidad) {
   if (!domicilio || !localidad) return { error: 'Falta domicilio o localidad' };
   if (typeof CORRECCIONES_BARRIO !== 'undefined' && CORRECCIONES_BARRIO) {
@@ -2067,7 +2065,11 @@ async function asignarComisariaPorJurisdiccion(domicilio, localidad) {
         if (Array.isArray(valor)) {
           return { opciones: valor, origen: 'correccion_barrio_multiple', barrio: barrio };
         }
-        return { comisaria: valor, origen: 'correccion_barrio', barrio: barrio };
+        // Buscar coords de la comisaría asignada para centrar el mapa
+        let lat = null, lon = null;
+        const dep = DEPENDENCIAS_POLICIALES.find(d => d.nombre === valor);
+        if (dep && dep.lat) { lat = dep.lat; lon = dep.lon; }
+        return { comisaria: valor, origen: 'correccion_barrio', barrio: barrio, lat, lon };
       }
     }
   }
@@ -2082,19 +2084,27 @@ async function asignarComisariaPorJurisdiccion(domicilio, localidad) {
 let mapaLeafletActivo = null;
 let marcadorLeafletActivo = null;
 
+/* ============================================================
+   MAPA DE CONFIRMACIÓN — marcador SIEMPRE arrastrable
+   modoBarrio: si viene de match por barrio, mover el marcador NO cambia la comisaría
+   ============================================================ */
 function crearMapaConfirmacion(aviso, form, opciones) {
-  const { lat, lng, comisariaFija, esMultiple, texto, nombreEl } = opciones;
+  const { lat, lng, comisariaFija, esMultiple, modoBarrio, texto, nombreEl } = opciones;
 
   const bloqueMapa = document.createElement('div');
   bloqueMapa.className = 'mapa-confirmacion';
 
-  const tituloTexto = esMultiple
-    ? '🗺️ Confirmá tu ubicación exacta en el mapa'
-    : '🗺️ Ubicación verificada automáticamente';
+  const tituloTexto = modoBarrio
+    ? '🗺️ Ajustá tu ubicación exacta si hace falta'
+    : (esMultiple
+        ? '🗺️ Confirmá tu ubicación exacta en el mapa'
+        : '🗺️ Ubicación verificada automáticamente');
 
-  const ayudaTexto = esMultiple
-    ? '👆 <strong>Tocá o arrastrá el marcador</strong> hasta tu casa. La comisaría se asigna automáticamente según el punto exacto.'
-    : '📍 Esta es la ubicación de tu domicilio. La comisaría se asignó según el punto exacto.';
+  const ayudaTexto = modoBarrio
+    ? '👆 <strong>Arrastrá el marcador</strong> si tu casa no está exactamente donde marca. La comisaría asignada por tu barrio no cambia.'
+    : (esMultiple
+        ? '👆 <strong>Tocá o arrastrá el marcador</strong> hasta tu casa. La comisaría se asigna automáticamente según el punto exacto.'
+        : '📍 Esta es la ubicación aproximada. La comisaría se asignó según tu barrio o punto exacto.');
 
   bloqueMapa.innerHTML = `
     <div class="titulo">${tituloTexto}</div>
@@ -2110,7 +2120,7 @@ function crearMapaConfirmacion(aviso, form, opciones) {
     const ayudaEl = bloqueMapa.querySelector('.ayuda');
 
     if (!esMultiple && comisariaFija) {
-      ayudaEl.innerHTML = `✅ <strong>${comisariaFija}</strong> — Ubicación confirmada. Podés continuar.`;
+      ayudaEl.innerHTML = `✅ <strong>${comisariaFija}</strong> — Ubicación confirmada.`;
       ayudaEl.style.color = '#86efac';
     }
 
@@ -2126,13 +2136,14 @@ function crearMapaConfirmacion(aviso, form, opciones) {
       attribution: '© OpenStreetMap'
     }).addTo(mapaLeafletActivo);
 
+    // 🎯 Marcador SIEMPRE arrastrable
     marcadorLeafletActivo = L.marker([lat, lng], {
-      draggable: esMultiple,
-      title: esMultiple ? 'Arrastrame a tu domicilio' : 'Tu domicilio'
+      draggable: true,
+      title: 'Arrastrame a la ubicación exacta de tu casa'
     }).addTo(mapaLeafletActivo);
 
     if (!esMultiple && comisariaFija) {
-      marcadorLeafletActivo.bindPopup(`<strong>${comisariaFija}</strong><br>Ubicación verificada`).openPopup();
+      marcadorLeafletActivo.bindPopup(`<strong>${comisariaFija}</strong><br>Ubicación aproximada`).openPopup();
     }
 
     async function recalcularConCoordenadas(nuevaLat, nuevaLng) {
@@ -2157,22 +2168,36 @@ function crearMapaConfirmacion(aviso, form, opciones) {
       }
     }
 
-    if (esMultiple) {
-      marcadorLeafletActivo.on('dragend', function (e) {
-        const pos = e.target.getLatLng();
+    // 🔒 Si fue match por barrio, no recalcular comisaría — solo actualizar coords
+    marcadorLeafletActivo.on('dragend', function (e) {
+      const pos = e.target.getLatLng();
+      if (modoBarrio) {
+        coordsEl.textContent = `📍 Ubicación ajustada: ${pos.lat.toFixed(5)}, ${pos.lng.toFixed(5)}`;
+        ayudaEl.innerHTML = `✅ <strong>${comisariaFija}</strong> — Ubicación ajustada. La comisaría asignada por tu barrio sigue siendo la misma.`;
+        ayudaEl.style.color = '#86efac';
+      } else {
         recalcularConCoordenadas(pos.lat, pos.lng);
-      });
+      }
+    });
 
-      mapaLeafletActivo.on('click', function (e) {
-        marcadorLeafletActivo.setLatLng(e.latlng);
+    mapaLeafletActivo.on('click', function (e) {
+      marcadorLeafletActivo.setLatLng(e.latlng);
+      if (modoBarrio) {
+        coordsEl.textContent = `📍 Ubicación ajustada: ${e.latlng.lat.toFixed(5)}, ${e.latlng.lng.toFixed(5)}`;
+        ayudaEl.innerHTML = `✅ <strong>${comisariaFija}</strong> — Ubicación ajustada. La comisaría sigue siendo la misma.`;
+        ayudaEl.style.color = '#86efac';
+      } else {
         recalcularConCoordenadas(e.latlng.lat, e.latlng.lng);
-      });
-    }
+      }
+    });
 
     setTimeout(() => { mapaLeafletActivo.invalidateSize(); }, 200);
   }, 50);
 }
 
+/* ============================================================
+   MOSTRAR AVISO DE COMISARÍA — pasa el flag modoBarrio al mapa
+   ============================================================ */
 async function mostrarAvisoComisaria(form, estado, dato) {
   const aviso = form.querySelector('[data-comisaria-aviso]');
   if (!aviso) return;
@@ -2203,6 +2228,8 @@ async function mostrarAvisoComisaria(form, estado, dato) {
     nombreEl.textContent = dato.comisaria;
     form.dataset.comisariaAsignada = dato.comisaria;
 
+    const esModoBarrio = dato.origen === 'correccion_barrio';
+
     let centro = { lat: -24.786744, lng: -65.408122 };
     if (dato.lat && dato.lon) {
       centro = { lat: dato.lat, lng: dato.lon };
@@ -2220,6 +2247,7 @@ async function mostrarAvisoComisaria(form, estado, dato) {
       lng: centro.lng,
       comisariaFija: dato.comisaria,
       esMultiple: false,
+      modoBarrio: esModoBarrio,
       texto,
       nombreEl
     });
@@ -2245,6 +2273,7 @@ async function mostrarAvisoComisaria(form, estado, dato) {
       lng: centro.lng,
       comisariaFija: null,
       esMultiple: true,
+      modoBarrio: false,
       texto,
       nombreEl
     });
@@ -2291,6 +2320,7 @@ Object.entries(forms).forEach(([tramite, form]) => {
       } else if (resultado.comisaria) {
         mostrarAvisoComisaria(form, 'ok', {
           comisaria: resultado.comisaria,
+          origen: resultado.origen,
           lat: resultado.lat || null,
           lon: resultado.lon || null,
           domicilio: inputDomicilio.value.trim(),
