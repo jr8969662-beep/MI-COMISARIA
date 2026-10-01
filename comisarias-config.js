@@ -3,30 +3,87 @@
 */
 
 const CORRECCIONES_BARRIO = {
-  // ==================== DDP 1 ====================
+  // ==================== DDP 1 - SALTA CAPITAL ====================
+
+  // === Comisaría N°1 - Centro ===
   "microcentro": "Comisaría N°1 - Centro (DDP 1)",
   "macrocentro": "Comisaría N°1 - Centro (DDP 1)",
   "cuadrante comercial": "Comisaría N°1 - Centro (DDP 1)",
+  "centro": "Comisaría N°1 - Centro (DDP 1)",
+  "lerma": "Comisaría N°1 - Centro (DDP 1)",
+  "san antonio": "Comisaría N°1 - Centro (DDP 1)",
+  "villa arenales": "Comisaría N°1 - Centro (DDP 1)",
+
+  // === Comisaría N°2 - Santa Cecilia ===
   "santa cecilia": "Comisaría N°2 - Santa Cecilia (DDP 1)",
-  "villa san antonio": "Comisaría N°2 - Santa Cecilia (DDP 1)",
   "hernando de lerma": "Comisaría N°2 - Santa Cecilia (DDP 1)",
+  "villa san antonio": [
+    "Comisaría N°1 - Centro (DDP 1)",
+    "Comisaría N°2 - Santa Cecilia (DDP 1)"
+  ],
+  "villa cristina": [
+    "Comisaría N°2 - Santa Cecilia (DDP 1)",
+    "Subcomisaría Barrio Policial (DDP 1)"
+  ],
+  "ceferino": [
+    "Comisaría N°2 - Santa Cecilia (DDP 1)",
+    "Destacamento Ceferino (DDP 1)"
+  ],
+
+  // === Comisaría N°3 - Tres Cerritos ===
   "tres cerritos": "Comisaría N°3 - Tres Cerritos (DDP 1)",
   "jose vicente sola": "Comisaría N°3 - Tres Cerritos (DDP 1)",
+  "vicente sola": "Comisaría N°3 - Tres Cerritos (DDP 1)",
+  "lamadrid": "Comisaría N°3 - Tres Cerritos (DDP 1)",
+  "dr miguel ortiz": "Comisaría N°3 - Tres Cerritos (DDP 1)",
+  "el pilar": "Comisaría N°3 - Tres Cerritos (DDP 1)",
+  "chachapoyas": [
+    "Comisaría N°3 - Tres Cerritos (DDP 1)",
+    "Destacamento Chachapoyas (DDP 1)"
+  ],
+
+  // === Comisaría N°4 - Villa Mitre ===
   "pompilio guzman": "Comisaría N°4 - Villa Mitre (DDP 1)",
   "plaza las industrias": "Comisaría N°4 - Villa Mitre (DDP 1)",
-  "solidaridad": "Comisaría N°5 - Solidaridad (DDP 1)",
-  "juan calchaqui": "Comisaría N°5 - Solidaridad (DDP 1)",
-  "provipo": "Comisaría N°5 - Solidaridad (DDP 1)",
-  "campo caseros": "Comisaría N°5 - Solidaridad (DDP 1)",
-  "el carmen": "Comisaría N°5 - Solidaridad (DDP 1)",
+  "villa mitre": [
+    "Comisaría N°4 - Villa Mitre (DDP 1)",
+    "Comisaría N°12 - Santa Ana I (DDP 1)",
+    "Subcomisaría Villa Mitre (DDP 1)"
+  ],
+
+  // === Comisaría N°5 - San Martín (DDP 1) ===
+  "san martin": [
+    "Comisaría N°4 - Villa Mitre (DDP 1)",
+    "Comisaría N°5 - San Martín (DDP 1)"
+  ],
+  "campo caseros": "Comisaría N°5 - San Martín (DDP 1)",
+  "el carmen": "Comisaría N°5 - San Martín (DDP 1)",
+  "20 de febrero": "Comisaría N°5 - San Martín (DDP 1)",
+  "veinte de febrero": "Comisaría N°5 - San Martín (DDP 1)",
+  "villa lujan": "Comisaría N°5 - San Martín (DDP 1)",
+  "juan calchaqui": "Comisaría N°5 - San Martín (DDP 1)",
+  "provipo": "Comisaría N°5 - San Martín (DDP 1)",
+
+  // === Comisaría N°5 - Solidaridad (DDP 10) ===
+  "solidaridad": "Comisaría 5 (DDP 10)",
+  "la paz": "Comisaría 5 (DDP 10)",
+  "norte grande": "Comisaría 5 (DDP 10)",
+
+  // === Comisaría N°6 - Ciudad del Milagro ===
   "ciudad del milagro": "Comisaría N°6 - Ciudad del Milagro (DDP 1)",
   "1 de mayo": "Comisaría N°6 - Ciudad del Milagro (DDP 1)",
   "primero de mayo": "Comisaría N°6 - Ciudad del Milagro (DDP 1)",
-  "20 de febrero": "Comisaría N°7 - El Tribuno (DDP 1)",
-  "veinte de febrero": "Comisaría N°7 - El Tribuno (DDP 1)",
+
+  // === Comisaría N°7 - El Tribuno ===
   "villa belgrano": "Comisaría N°7 - El Tribuno (DDP 1)",
   "barrio pilar": "Comisaría N°7 - El Tribuno (DDP 1)",
-  "villa lujan": "Comisaría N°7 - El Tribuno (DDP 1)",
+  "el tribuno": [
+    "Comisaría N°7 - El Tribuno (DDP 1)",
+    "Comisaría N°13 - Cerrillos (DDP 1)",
+    "Subcomisaría Barrio Docente (DDP 1)"
+  ],
+
+  // === Comisaría N°8 - Santa Ana ===
   "santa ana": "Comisaría N°8 - Santa Ana (DDP 1)",
   "santa ana i": "Comisaría N°8 - Santa Ana (DDP 1)",
   "santa ana ii": "Comisaría N°8 - Santa Ana (DDP 1)",
@@ -34,40 +91,170 @@ const CORRECCIONES_BARRIO = {
   "santa ana iv": "Destacamento Santa Ana IV (DDP 1)",
   "santa ana 4": "Destacamento Santa Ana IV (DDP 1)",
   "aerolineas": "Comisaría N°8 - Santa Ana (DDP 1)",
+
+  // === Comisaría N°9 - Portezuelo Sur ===
   "san jose": "Comisaría N°9 - Portezuelo Sur (DDP 1)",
   "villa san lorenzo": "Comisaría N°9 - Portezuelo Sur (DDP 1)",
   "portezuelo sur": "Comisaría N°9 - Portezuelo Sur (DDP 1)",
   "la trinidad": "Comisaría N°9 - Portezuelo Sur (DDP 1)",
+  "portezuelo": [
+    "Comisaría N°12 - Santa Ana I (DDP 1)",
+    "Destacamento Autódromo (DDP 1)"
+  ],
+  "san lorenzo chico": [
+    "Comisaría N°9 - Portezuelo Sur (DDP 1)",
+    "Comisaría N°25 - San Lorenzo Chico (DDP 1)"
+  ],
+
+  // === Comisaría N°10 - Santa Cecilia ===
   "villa veraniega": "Comisaría N°10 - Santa Cecilia (DDP 1)",
+
+  // === Comisaría N°11 - 17 de Octubre ===
   "juan pablo ii": "Comisaría N°11 - 17 de Octubre (DDP 1)",
   "juan pablo 2": "Comisaría N°11 - 17 de Octubre (DDP 1)",
+  "juan pablo ii sur": "Comisaría N°11 - 17 de Octubre (DDP 1)",
   "17 de octubre": "Comisaría N°11 - 17 de Octubre (DDP 1)",
+  "diecisiete de octubre": "Comisaría N°11 - 17 de Octubre (DDP 1)",
   "juan manuel de rosas": "Comisaría N°11 - 17 de Octubre (DDP 1)",
   "balneario": "Comisaría N°11 - 17 de Octubre (DDP 1)",
   "la tradicion": "Comisaría N°11 - 17 de Octubre (DDP 1)",
+  "union": "Comisaría N°11 - 17 de Octubre (DDP 1)",
+  "leopoldo lugones": "Comisaría N°11 - 17 de Octubre (DDP 1)",
+  "patricia heitman": "Comisaría N°11 - 17 de Octubre (DDP 1)",
+  "17 de mayo": "Comisaría N°11 - 17 de Octubre (DDP 1)",
+
+  // === Comisaría N°12 - Santa Ana I ===
+  "el sol": [
+    "Comisaría N°12 - Santa Ana I (DDP 1)",
+    "Comisaría N°17 - Solidaridad (DDP 1)",
+    "Subcomisaría El Sol (DDP 1)"
+  ],
+  "barrio el sol": [
+    "Comisaría N°12 - Santa Ana I (DDP 1)",
+    "Comisaría N°17 - Solidaridad (DDP 1)",
+    "Subcomisaría El Sol (DDP 1)"
+  ],
+
+  // === Comisaría N°13 - Cerrillos ===
   "san remo": "Comisaría N°13 - Cerrillos (DDP 1)",
   "scalabrini ortiz": "Comisaría N°13 - Cerrillos (DDP 1)",
   "villa palacios": "Comisaría N°13 - Cerrillos (DDP 1)",
+
+  // === Comisaría N°14 - Campo Santo (Castañares) ===
   "castanares": "Comisaría N°14 - Campo Santo (DDP 1)",
+  "castañares": "Comisaría N°14 - Campo Santo (DDP 1)",
   "parque belgrano": "Comisaría N°14 - Campo Santo (DDP 1)",
+  "parque general belgrano": "Comisaría N°14 - Campo Santo (DDP 1)",
+
+  // === Comisaría N°15 - San Remo ===
   "valle hermoso": "Comisaría N°15 - San Remo (DDP 1)",
+  "san luis": [
+    "Comisaría N°15 - San Remo (DDP 1)",
+    "Subcomisaría San Luis (DDP 1)",
+    "Puesto Policial San Luis Centro (DDP 1)"
+  ],
+  "casa del sol": [
+    "Comisaría N°15 - San Remo (DDP 1)",
+    "Subcomisaría San Luis (DDP 1)"
+  ],
+
+  // === Comisaría N°16 - Grand Bourg / El Centro ===
+  "grand bourg": [
+    "Comisaría N°10 - Santa Cecilia (DDP 1)",
+    "Comisaría N°16 - El Centro (DDP 1)",
+    "Subcomisaría Grand Bourg (DDP 1)",
+    "Subcomisaría Grand Bourg Este (DDP 1)"
+  ],
+  "las leñas": "Comisaría N°16 - El Centro (DDP 1)",
+  "las leñas i": "Comisaría N°16 - El Centro (DDP 1)",
+  "las leñas ii": "Comisaría N°16 - El Centro (DDP 1)",
+  "las leñas iii": "Comisaría N°16 - El Centro (DDP 1)",
+  "las lenas": "Comisaría N°16 - El Centro (DDP 1)",
+  "las magdalenas": "Comisaría N°16 - El Centro (DDP 1)",
+  "la alborada": "Comisaría N°16 - El Centro (DDP 1)",
+  "procrear": "Comisaría N°16 - El Centro (DDP 1)",
+  "puerto argentino": "Comisaría N°16 - El Centro (DDP 1)",
+  "lomas de medeiros": "Comisaría N°16 - El Centro (DDP 1)",
+  "lomas de medeiro": "Comisaría N°16 - El Centro (DDP 1)",
+  "los pinos i": "Comisaría N°16 - El Centro (DDP 1)",
+  "los pinos ii": "Comisaría N°16 - El Centro (DDP 1)",
+  "los pinos iii": "Comisaría N°16 - El Centro (DDP 1)",
+  "los profesionales": "Comisaría N°16 - El Centro (DDP 1)",
+  "nuestra señora del carmen": "Comisaría N°16 - El Centro (DDP 1)",
+  "las costas": [
+    "Comisaría N°16 - El Centro (DDP 1)",
+    "Destacamento Las Costas (DDP 1)"
+  ],
+  "la loma": [
+    "Comisaría N°16 - El Centro (DDP 1)",
+    "Subcomisaría Grand Bourg (DDP 1)"
+  ],
+  "el tipal": [
+    "Comisaría N°16 - El Centro (DDP 1)",
+    "Subcomisaría Grand Bourg (DDP 1)"
+  ],
+  "los perales": "Subcomisaría Grand Bourg Este (DDP 1)",
+  "altos de grand bourg": "Subcomisaría Grand Bourg Este (DDP 1)",
+  "centro administrativo": "Subcomisaría Grand Bourg (DDP 1)",
+
+  // === Comisaría N°17 - Solidaridad ===
   "boulogne sur mer": "Comisaría N°17 - Solidaridad (DDP 1)",
+  "juanita": [
+    "Comisaría N°17 - Solidaridad (DDP 1)",
+    "Subcomisaría El Sol (DDP 1)"
+  ],
+  "villa juanita": [
+    "Comisaría N°17 - Solidaridad (DDP 1)",
+    "Subcomisaría El Sol (DDP 1)"
+  ],
+
+  // === Comisaría N°18 - Chicoana ===
   "san justo": "Comisaría N°18 - Chicoana (DDP 1)",
   "loteo esmeralda": "Comisaría N°18 - Chicoana (DDP 1)",
   "vertedero san javier": "Comisaría N°18 - Chicoana (DDP 1)",
+
+  // === Comisaría N°19 - El Carril ===
   "15 de febrero": "Comisaría N°19 - El Carril (DDP 1)",
   "quince de febrero": "Comisaría N°19 - El Carril (DDP 1)",
+
+  // === Comisaría N°20 - La Ribera ===
   "la ribera": "Comisaría N°20 - La Ribera (DDP 1)",
   "costas del rio arenas": "Comisaría N°20 - La Ribera (DDP 1)",
   "rio arenas": "Comisaría N°20 - La Ribera (DDP 1)",
+
+  // === Comisaría N°24 - Centro Norte ===
   "lujan este": "Comisaría N°24 - Centro Norte (DDP 1)",
   "vias del ferrocarril": "Comisaría N°24 - Centro Norte (DDP 1)",
+
+  // === Comisaría N°25 - San Lorenzo Chico ===
   "circunvalacion oeste": "Comisaría N°25 - San Lorenzo Chico (DDP 1)",
+
+  // === Comisaría N°101 - Santa Rita ===
   "ruta 21": "Comisaría N°101 - Santa Rita (DDP 1)",
-  "la paz": "Comisaría N°102 - Atocha II (DDP 1)",
+  "las tunas": [
+    "Comisaría N°101 - Santa Rita (DDP 1)",
+    "Comisaría N°118 - Cerveceros (DDP 1)"
+  ],
+
+  // === Comisaría N°102 - Atocha II ===
   "ampliacion solidaridad": "Comisaría N°102 - Atocha II (DDP 1)",
+  "atocha": [
+    "Comisaría N°102 - Atocha II (DDP 1)",
+    "Subcomisaría de Atocha (DDP 1)"
+  ],
+  "atocha i": "Subcomisaría de Atocha (DDP 1)",
+  "atocha ii": "Subcomisaría de Atocha (DDP 1)",
+  "atocha iii": "Subcomisaría de Atocha (DDP 1)",
+  "la cienaga": "Subcomisaría de Atocha (DDP 1)",
+
+  // === Comisaría N°103 - 17 de Octubre ===
   "nueva esperanza": "Comisaría N°103 - 17 de Octubre (DDP 1)",
+  "nueva esperanza i": "Comisaría N°103 - 17 de Octubre (DDP 1)",
+  "nueva esperanza ii": "Comisaría N°103 - 17 de Octubre (DDP 1)",
   "pie del cerro": "Comisaría N°103 - 17 de Octubre (DDP 1)",
+
+  // === Comisaría N°104 - Palermo ===
+  "palermo": "Comisaría N°104 - Palermo (DDP 1)",
   "palermo i": "Comisaría N°104 - Palermo (DDP 1)",
   "palermo ii": "Comisaría N°104 - Palermo (DDP 1)",
   "palermo iii": "Comisaría N°104 - Palermo (DDP 1)",
@@ -76,60 +263,121 @@ const CORRECCIONES_BARRIO = {
   "palermo 3": "Comisaría N°104 - Palermo (DDP 1)",
   "roberto romero": "Comisaría N°104 - Palermo (DDP 1)",
   "divino nino": "Comisaría N°104 - Palermo (DDP 1)",
+  "divino niño": "Comisaría N°104 - Palermo (DDP 1)",
+  "divino nino de jesus i": "Comisaría N°104 - Palermo (DDP 1)",
+  "divino nino de jesus ii": "Comisaría N°104 - Palermo (DDP 1)",
+  "jesus maria": "Comisaría N°104 - Palermo (DDP 1)",
+  "gustavo leguizamon": "Comisaría N°104 - Palermo (DDP 1)",
+  "las palmeritas": "Comisaría N°104 - Palermo (DDP 1)",
+  "las palmeras": "Comisaría N°104 - Palermo (DDP 1)",
+  "san ramon": "Comisaría N°104 - Palermo (DDP 1)",
   "el progreso": "Comisaría N°104 - Palermo (DDP 1)",
+  "alto la viña": [
+    "Comisaría N°104 - Palermo (DDP 1)",
+    "Subcomisaría San Lorenzo (DDP 1)"
+  ],
+
+  // === Comisaría N°105 - La Merced ===
   "siglo xxi": "Comisaría N°105 - La Merced (DDP 1)",
   "siglo 21": "Comisaría N°105 - La Merced (DDP 1)",
   "santa anita": "Comisaría N°105 - La Merced (DDP 1)",
+  "san benito": "Comisaría N°105 - La Merced (DDP 1)",
+
+  // === Comisaría N°106 - Limache ===
   "san francisco": "Comisaría N°106 - Limache (DDP 1)",
   "ciudad valdivia": "Comisaría N°106 - Limache (DDP 1)",
   "limache": "Comisaría N°106 - Limache (DDP 1)",
+
+  // === Comisaría N°107 - San Carlos ===
   "loteo san benito": "Comisaría N°107 - San Carlos (DDP 1)",
   "ex combatientes de malvinas": "Comisaría N°107 - San Carlos (DDP 1)",
+  "san carlos": [
+    "Comisaría N°107 - San Carlos (DDP 1)",
+    "Subcomisaría Barrio Docente (DDP 1)"
+  ],
+
+  // === Comisaría N°108 - Campo Quijano ===
   "santa clara de asis": "Comisaría N°108 - Campo Quijano (DDP 1)",
   "av kennedy": "Comisaría N°108 - Campo Quijano (DDP 1)",
   "avenida kennedy": "Comisaría N°108 - Campo Quijano (DDP 1)",
+
+  // === Comisaría N°110 - Huaico II ===
   "el huaico iv": "Comisaría N°110 - Huaico II (DDP 1)",
   "el huaico v": "Comisaría N°110 - Huaico II (DDP 1)",
   "huaico iv": "Comisaría N°110 - Huaico II (DDP 1)",
   "huaico v": "Comisaría N°110 - Huaico II (DDP 1)",
+  "huaico i": "Comisaría N°110 - Huaico II (DDP 1)",
+  "huaico ii": "Comisaría N°110 - Huaico II (DDP 1)",
   "valle de lerma": "Comisaría N°110 - Huaico II (DDP 1)",
+  "el huaico": [
+    "Comisaría N°6 - Ciudad del Milagro (DDP 1)",
+    "Comisaría N°110 - Huaico II (DDP 1)",
+    "Subcomisaría de El Huaico (DDP 1)"
+  ],
+  "mirasoles": [
+    "Comisaría N°6 - Ciudad del Milagro (DDP 1)",
+    "Comisaría N°110 - Huaico II (DDP 1)",
+    "Subcomisaría de El Huaico (DDP 1)"
+  ],
+  "escuela de cadetes": "Subcomisaría de El Huaico (DDP 1)",
+
+  // === Comisaría N°111 - Limache Nuevo ===
   "loteo san gabriel": "Comisaría N°111 - Limache Nuevo (DDP 1)",
   "centro de convenciones": "Comisaría N°111 - Limache Nuevo (DDP 1)",
   "valdivia": "Comisaría N°111 - Limache Nuevo (DDP 1)",
+
+  // === Comisaría N°112 - La Silleta ===
   "la silleta norte": "Comisaría N°112 - La Silleta (DDP 1)",
   "la silleta": "Comisaría N°112 - La Silleta (DDP 1)",
   "las lenas": "Comisaría N°112 - La Silleta (DDP 1)",
+
+  // === Comisaría N°115 - El Círculo ===
   "el circulo": "Comisaría N°115 - El Círculo (DDP 1)",
   "solares de san jose": "Comisaría N°115 - El Círculo (DDP 1)",
+
+  // === Comisaría N°118 - Cerveceros ===
   "cerveceros": "Comisaría N°118 - Cerveceros (DDP 1)",
   "las tunas norte": "Comisaría N°118 - Cerveceros (DDP 1)",
   "cooperativas ruta 26": "Comisaría N°118 - Cerveceros (DDP 1)",
+
+  // === Subcomisaría Villa Lavalle ===
   "villa lavalle": "Subcomisaría Villa Lavalle (DDP 1)",
   "papa francisco": "Subcomisaría Villa Lavalle (DDP 1)",
   "convivencia": "Subcomisaría Villa Lavalle (DDP 1)",
+
+  // === Subcomisaría Barrio Docente ===
   "barrio docente": "Subcomisaría Barrio Docente (DDP 1)",
   "docente": "Subcomisaría Barrio Docente (DDP 1)",
   "intersindical": "Subcomisaría Barrio Docente (DDP 1)",
   "periodista": "Subcomisaría Barrio Docente (DDP 1)",
+
+  // === Subcomisaría Villa Asunción ===
   "villa asuncion": "Subcomisaría Villa Asunción (DDP 1)",
   "villa costanera": "Subcomisaría Villa Asunción (DDP 1)",
   "solis pizarro": "Subcomisaría Villa Asunción (DDP 1)",
-  "los perales": "Subcomisaría Grand Bourg Este (DDP 1)",
-  "altos de grand bourg": "Subcomisaría Grand Bourg Este (DDP 1)",
-  "centro administrativo": "Subcomisaría Grand Bourg (DDP 1)",
+  "garcia basalo": "Subcomisaría Villa Asunción (DDP 1)",
+  "bicentenario": "Subcomisaría Villa Asunción (DDP 1)",
+
+  // === Subcomisaría Barrio Policial ===
   "barrio policial": "Subcomisaría Barrio Policial (DDP 1)",
-  "villa cristina": "Subcomisaría Barrio Policial (DDP 1)",
   "velez sarsfield": "Subcomisaría Barrio Policial (DDP 1)",
+  "villa chartas": [
+    "Comisaría N°4 - Villa Mitre (DDP 1)",
+    "Subcomisaría Barrio Policial (DDP 1)"
+  ],
+  "costanera": [
+    "Subcomisaría Barrio Policial (DDP 1)",
+    "Subcomisaría Villa Asunción (DDP 1)"
+  ],
+
+  // === Subcomisaría El Aybal ===
   "el aybal": "Subcomisaría El Aybal (DDP 1)",
   "ampliacion el aybal": "Subcomisaría El Aybal (DDP 1)",
   "sociedad rural": "Subcomisaría El Aybal (DDP 1)",
   "predio rural": "Subcomisaría El Aybal (DDP 1)",
   "acceso aeropuerto": "Subcomisaría El Aybal (DDP 1)",
-  "escuela de cadetes": "Subcomisaría de El Huaico (DDP 1)",
-  "atocha i": "Subcomisaría de Atocha (DDP 1)",
-  "atocha ii": "Subcomisaría de Atocha (DDP 1)",
-  "atocha iii": "Subcomisaría de Atocha (DDP 1)",
-  "la cienaga": "Subcomisaría de Atocha (DDP 1)",
+
+  // === Destacamentos ===
   "el triangulo": "Destacamento El Triángulo (DDP 1)",
   "finca las costas": "Destacamento Las Costas (DDP 1)",
   "la quebrada": "Destacamento Las Costas (DDP 1)",
@@ -137,6 +385,7 @@ const CORRECCIONES_BARRIO = {
   "parque industrial": "Destacamento Parque Industrial (DDP 1)",
   "barrio constitucion": "Destacamento Parque Industrial (DDP 1)",
   "constitucion": "Destacamento Parque Industrial (DDP 1)",
+  "villa constitucion": "Destacamento Parque Industrial (DDP 1)",
   "ipv limache": "Destacamento Limache (DDP 1)",
   "limache industrial": "Destacamento Limache (DDP 1)",
   "rotonda sur": "Destacamento Limache (DDP 1)",
@@ -156,18 +405,45 @@ const CORRECCIONES_BARRIO = {
   "villa san luis": "Puesto Policial San Luis Centro (DDP 1)",
   "finca valdivia": "Puesto Policial San Luis Centro (DDP 1)",
   "caballerizas": "Puesto Policial San Luis Centro (DDP 1)",
-  "san cayetano": "Destacamento San Cayetano (DDP 1)",
+  "san cayetano": [
+    "Comisaría N°5 - San Martín (DDP 1)",
+    "Destacamento San Cayetano (DDP 1)"
+  ],
   "faldeos cerro 20 de febrero": "Destacamento San Cayetano (DDP 1)",
   "cuarteles": "Destacamento San Cayetano (DDP 1)",
-  "san benito": "Comisaría N°105 - La Merced (DDP 1)",
 
-  // Múltiples opciones
-  "grand bourg": [
-    "Comisaría N°10 - Santa Cecilia (DDP 1)",
-    "Comisaría N°16 - El Centro (DDP 1)",
-    "Subcomisaría Grand Bourg (DDP 1)",
-    "Subcomisaría Grand Bourg Este (DDP 1)"
+  // === Villa Esmeralda / Rebeca ===
+  "villa esmeralda": [
+    "Comisaría N°9 - Portezuelo Sur (DDP 1)",
+    "Comisaría N°15 - San Remo (DDP 1)",
+    "Destacamento Villa Rebeca (DDP 1)"
   ],
+  "villa rebeca": [
+    "Comisaría N°9 - Portezuelo Sur (DDP 1)",
+    "Destacamento Villa Rebeca (DDP 1)"
+  ],
+
+  // === Universitario / Autódromo ===
+  "universitario": [
+    "Comisaría N°3 - Tres Cerritos (DDP 1)",
+    "Comisaría N°14 - Campo Santo (DDP 1)"
+  ],
+  "barrio universitario": [
+    "Comisaría N°3 - Tres Cerritos (DDP 1)",
+    "Comisaría N°14 - Campo Santo (DDP 1)"
+  ],
+  "autodromo": [
+    "Comisaría N°12 - Santa Ana I (DDP 1)",
+    "Destacamento Autódromo (DDP 1)"
+  ],
+
+  // === Casino ===
+  "casino": [
+    "Destacamento Mercado Cofruthos (DDP 1)",
+    "Destacamento Barrio Casino (DDP 1)"
+  ],
+
+  // === La Almudena ===
   "la almudena": [
     "Comisaría N°10 - Santa Cecilia (DDP 1)",
     "Comisaría N°16 - El Centro (DDP 1)",
@@ -178,141 +454,11 @@ const CORRECCIONES_BARRIO = {
     "Comisaría N°16 - El Centro (DDP 1)",
     "Comisaría N°19 - El Carril (DDP 1)"
   ],
+
+  // === General Mosconi ===
   "general mosconi": [
     "Comisaría N°14 - Campo Santo (DDP 1)",
     "Comisaría N°24 - Centro Norte (DDP 1)"
-  ],
-  "villa mitre": [
-    "Comisaría N°4 - Villa Mitre (DDP 1)",
-    "Comisaría N°12 - Santa Ana I (DDP 1)",
-    "Subcomisaría Villa Mitre (DDP 1)"
-  ],
-  "el sol": [
-    "Comisaría N°12 - Santa Ana I (DDP 1)",
-    "Comisaría N°17 - Solidaridad (DDP 1)",
-    "Subcomisaría El Sol (DDP 1)"
-  ],
-  "barrio el sol": [
-    "Comisaría N°12 - Santa Ana I (DDP 1)",
-    "Comisaría N°17 - Solidaridad (DDP 1)",
-    "Subcomisaría El Sol (DDP 1)"
-  ],
-  "juanita": [
-    "Comisaría N°17 - Solidaridad (DDP 1)",
-    "Subcomisaría El Sol (DDP 1)"
-  ],
-  "villa juanita": [
-    "Comisaría N°17 - Solidaridad (DDP 1)",
-    "Subcomisaría El Sol (DDP 1)"
-  ],
-  "santa lucia": [
-    "Comisaría N°20 - La Ribera (DDP 1)",
-    "Subcomisaría Villa Asunción (DDP 1)"
-  ],
-  "san carlos": [
-    "Comisaría N°107 - San Carlos (DDP 1)",
-    "Subcomisaría Barrio Docente (DDP 1)"
-  ],
-  "palermo": [
-    "Comisaría N°104 - Palermo (DDP 1)",
-    "Subcomisaría Grand Bourg Este (DDP 1)"
-  ],
-  "universitario": [
-    "Comisaría N°3 - Tres Cerritos (DDP 1)",
-    "Comisaría N°14 - Campo Santo (DDP 1)"
-  ],
-  "barrio universitario": [
-    "Comisaría N°3 - Tres Cerritos (DDP 1)",
-    "Comisaría N°14 - Campo Santo (DDP 1)"
-  ],
-  "las tunas": [
-    "Comisaría N°101 - Santa Rita (DDP 1)",
-    "Comisaría N°118 - Cerveceros (DDP 1)"
-  ],
-  "atocha": [
-    "Comisaría N°102 - Atocha II (DDP 1)",
-    "Subcomisaría de Atocha (DDP 1)"
-  ],
-  "villa esmeralda": [
-    "Comisaría N°9 - Portezuelo Sur (DDP 1)",
-    "Comisaría N°15 - San Remo (DDP 1)",
-    "Destacamento Villa Rebeca (DDP 1)"
-  ],
-  "villa rebeca": [
-    "Comisaría N°9 - Portezuelo Sur (DDP 1)",
-    "Destacamento Villa Rebeca (DDP 1)"
-  ],
-  "el huaico": [
-    "Comisaría N°6 - Ciudad del Milagro (DDP 1)",
-    "Comisaría N°110 - Huaico II (DDP 1)",
-    "Subcomisaría de El Huaico (DDP 1)"
-  ],
-  "mirasoles": [
-    "Comisaría N°6 - Ciudad del Milagro (DDP 1)",
-    "Comisaría N°110 - Huaico II (DDP 1)",
-    "Subcomisaría de El Huaico (DDP 1)"
-  ],
-  "san luis": [
-    "Comisaría N°15 - San Remo (DDP 1)",
-    "Subcomisaría San Luis (DDP 1)",
-    "Puesto Policial San Luis Centro (DDP 1)"
-  ],
-  "casa del sol": [
-    "Comisaría N°15 - San Remo (DDP 1)",
-    "Subcomisaría San Luis (DDP 1)"
-  ],
-  "portezuelo": [
-    "Comisaría N°12 - Santa Ana I (DDP 1)",
-    "Destacamento Autódromo (DDP 1)"
-  ],
-  "el tribuno": [
-    "Comisaría N°7 - El Tribuno (DDP 1)",
-    "Comisaría N°13 - Cerrillos (DDP 1)",
-    "Subcomisaría Barrio Docente (DDP 1)"
-  ],
-  "las costas": [
-    "Comisaría N°16 - El Centro (DDP 1)",
-    "Destacamento Las Costas (DDP 1)"
-  ],
-  "la loma": [
-    "Comisaría N°16 - El Centro (DDP 1)",
-    "Subcomisaría Grand Bourg (DDP 1)"
-  ],
-  "el tipal": [
-    "Comisaría N°16 - El Centro (DDP 1)",
-    "Subcomisaría Grand Bourg (DDP 1)"
-  ],
-  "san lorenzo chico": [
-    "Comisaría N°9 - Portezuelo Sur (DDP 1)",
-    "Comisaría N°25 - San Lorenzo Chico (DDP 1)"
-  ],
-  "autodromo": [
-    "Comisaría N°12 - Santa Ana I (DDP 1)",
-    "Destacamento Autódromo (DDP 1)"
-  ],
-  "ceferino": [
-    "Comisaría N°2 - Santa Cecilia (DDP 1)",
-    "Destacamento Ceferino (DDP 1)"
-  ],
-  "chachapoyas": [
-    "Comisaría N°3 - Tres Cerritos (DDP 1)",
-    "Destacamento Chachapoyas (DDP 1)"
-  ],
-  "casino": [
-    "Destacamento Mercado Cofruthos (DDP 1)",
-    "Destacamento Barrio Casino (DDP 1)"
-  ],
-  "villa chartas": [
-    "Comisaría N°4 - Villa Mitre (DDP 1)",
-    "Subcomisaría Barrio Policial (DDP 1)"
-  ],
-  "costanera": [
-    "Subcomisaría Barrio Policial (DDP 1)",
-    "Subcomisaría Villa Asunción (DDP 1)"
-  ],
-  "san martin": [
-    "Comisaría N°4 - Villa Mitre (DDP 1)",
-    "Comisaría N°5 - Solidaridad (DDP 1)"
   ]
 };
 
@@ -322,7 +468,7 @@ const DEPENDENCIAS_POLICIALES = [
   { nombre: "Comisaría N°2 - Santa Cecilia (DDP 1)", lat: -24.799021, lon: -65.416157 },
   { nombre: "Comisaría N°3 - Tres Cerritos (DDP 1)", lat: -24.764263, lon: -65.399474 },
   { nombre: "Comisaría N°4 - Villa Mitre (DDP 1)", lat: -24.816072, lon: -65.378484 },
-  { nombre: "Comisaría N°5 - Solidaridad (DDP 1)", lat: -24.7807724, lon: -65.4274511 },
+  { nombre: "Comisaría N°5 - San Martín (DDP 1)", lat: -24.7807724, lon: -65.4274511 },
   { nombre: "Comisaría N°6 - Ciudad del Milagro (DDP 1)", lat: -24.723614, lon: -65.408431 },
   { nombre: "Comisaría N°7 - El Tribuno (DDP 1)", lat: -24.846625, lon: -65.441169 },
   { nombre: "Comisaría N°8 - Santa Ana (DDP 1)", lat: -24.807981, lon: -65.439922 },
@@ -363,15 +509,22 @@ const DEPENDENCIAS_POLICIALES = [
   { nombre: "Subcomisaría El Aybal (DDP 1)" },
   { nombre: "Subcomisaría de El Huaico (DDP 1)" },
   { nombre: "Subcomisaría de Atocha (DDP 1)" },
+  { nombre: "Subcomisaría San Luis (DDP 1)" },
+  { nombre: "Subcomisaría El Sol (DDP 1)" },
   { nombre: "Destacamento El Triángulo (DDP 1)" },
   { nombre: "Destacamento Las Costas (DDP 1)" },
   { nombre: "Destacamento Parque Industrial (DDP 1)" },
   { nombre: "Destacamento Limache (DDP 1)" },
   { nombre: "Destacamento San Rafael (DDP 1)" },
   { nombre: "Destacamento Mercado Cofruthos (DDP 1)" },
+  { nombre: "Destacamento Barrio Casino (DDP 1)" },
   { nombre: "Destacamento Villa Las Rosas (DDP 1)" },
   { nombre: "Destacamento San Ignacio (DDP 1)" },
   { nombre: "Destacamento San Cayetano (DDP 1)" },
+  { nombre: "Destacamento Ceferino (DDP 1)" },
+  { nombre: "Destacamento Chachapoyas (DDP 1)" },
+  { nombre: "Destacamento Autódromo (DDP 1)" },
+  { nombre: "Destacamento Villa Rebeca (DDP 1)" },
   { nombre: "Base Operativa San Agustín (DDP 1)" },
   { nombre: "Puesto Policial San Luis Centro (DDP 1)" },
 
