@@ -1487,6 +1487,24 @@ function obtenerZona(nombreComisaria) {
   return "";
 }
 
+/* ============================================================
+   BARRIOS QUE CAMBIAN DE COMISARÍA SEGÚN LA ZONA ELEGIDA
+   ============================================================ */
+const BARRIOS_MULTI_ZONA = {
+  "juan pablo ii": {
+    "Norte": "Comisaría N°11 - 17 de Octubre (DDP 1)",
+    "Sur":   "Comisaría N°7 - El Tribuno (DDP 1)",
+  },
+  "juan pablo 2": {
+    "Norte": "Comisaría N°11 - 17 de Octubre (DDP 1)",
+    "Sur":   "Comisaría N°7 - El Tribuno (DDP 1)",
+  },
+  "juan pablo segundo": {
+    "Norte": "Comisaría N°11 - 17 de Octubre (DDP 1)",
+    "Sur":   "Comisaría N°7 - El Tribuno (DDP 1)",
+  },
+};
+
 /* Autocompletar zona al cambiar select a mano */
 document.querySelectorAll('.select-zona').forEach(select => {
   select.addEventListener('change', () => {
@@ -2184,6 +2202,30 @@ async function geocodificarConNominatim(domicilio, localidad) {
 async function asignarComisariaPorJurisdiccion(domicilio, localidad, zona) {
   if (!domicilio || !localidad) return { error: 'Falta domicilio o localidad' };
 
+  // 1) Barrios que cambian de comisaría según la zona elegida
+  const domNorm = domicilio.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const barriosMulti = Object.keys(BARRIOS_MULTI_ZONA).sort((a, b) => b.length - a.length);
+  for (const barrio of barriosMulti) {
+    const barrioNorm = barrio.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    if (domNorm.includes(barrioNorm)) {
+      const porZona = BARRIOS_MULTI_ZONA[barrio];
+      if (zona && porZona[zona]) {
+        return {
+          comisaria: porZona[zona],
+          origen: 'multi_zona',
+          barrio: barrio,
+          zona: zona,
+        };
+      }
+      return {
+        requiereZona: true,
+        barrio: barrio,
+        zonasDisponibles: Object.keys(porZona),
+      };
+    }
+  }
+
+  // 2) Correcciones por barrio (una sola comisaría)
   if (typeof CORRECCIONES_BARRIO !== 'undefined' && CORRECCIONES_BARRIO) {
     const domicilioNormalizado = domicilio.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
     const barriosOrdenados = Object.keys(CORRECCIONES_BARRIO).sort((a, b) => b.length - a.length);
@@ -2205,6 +2247,7 @@ async function asignarComisariaPorJurisdiccion(domicilio, localidad, zona) {
     }
   }
 
+  // 3) Polígonos
   if (!poligonosCargados) await cargarTodosLosPoligonos();
   const ubicacion = await geocodificarConNominatim(domicilio, localidad);
   if (!ubicacion) return { error: 'No se pudo ubicar el domicilio' };
@@ -2294,10 +2337,11 @@ function crearMapaConfirmacion(aviso, form, opciones) {
       const zonaActual = form.querySelector('[name="zona"]')?.value || null;
       const comisaria = buscarComisariaPorCoordenadas(nuevaLat, nuevaLng, zonaActual);
       const selZona = form.querySelector('[name="zona"]');
+      const origenMulti = form.dataset.origenMultiZona === 'true';
 
       if (comisaria && comisaria.nombre) {
         form.dataset.comisariaAsignada = comisaria.nombre;
-        if (selZona && selZona.dataset.editadaManualmente !== 'true') {
+        if (selZona && selZona.dataset.editadaManualmente !== 'true' && !origenMulti) {
           const z = obtenerZona(comisaria.nombre);
           if (z) selZona.value = z;
         }
@@ -2375,7 +2419,10 @@ async function mostrarAvisoComisaria(form, estado, dato) {
     nombreEl.textContent = dato.comisaria;
     form.dataset.comisariaAsignada = dato.comisaria;
 
-    if (selectZona && selectZona.dataset.editadaManualmente !== 'true') {
+    // Marcamos si viene de un barrio multi-zona (para no pisar la zona elegida)
+    form.dataset.origenMultiZona = dato.origen === 'multi_zona' ? 'true' : 'false';
+
+    if (selectZona && selectZona.dataset.editadaManualmente !== 'true' && dato.origen !== 'multi_zona') {
       const z = obtenerZona(dato.comisaria);
       if (z) selectZona.value = z;
     }
@@ -2465,6 +2512,19 @@ Object.entries(forms).forEach(([tramite, form]) => {
     mostrarAvisoComisaria(form, 'cargando');
     try {
       const resultado = await asignarComisariaPorJurisdiccion(domicilio, localidad, zona);
+
+      // Caso especial: barrio con varias zonas (ej. Juan Pablo II)
+      if (resultado.requiereZona) {
+        const aviso = form.querySelector('[data-comisaria-aviso]');
+        if (aviso) {
+          aviso.classList.add('activo', 'cargando');
+          aviso.querySelector('.texto').textContent = '⚠️ Este barrio tiene dos zonas. Elegí la correcta arriba:';
+          aviso.querySelector('.nombre').textContent = resultado.zonasDisponibles.join(' o ');
+        }
+        form.dataset.comisariaAsignada = '';
+        return;
+      }
+
       if (resultado.opciones && resultado.opciones.length > 0) {
         mostrarAvisoComisaria(form, 'multiple', {
           opciones: resultado.opciones,
