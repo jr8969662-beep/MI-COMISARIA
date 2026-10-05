@@ -1437,9 +1437,6 @@ const avisoBorrador = document.getElementById('aviso-borrador');
 
 const BUCKET_FOTOS = 'fotos-tramites';
 
-/* ============================================================
-   GENERACIÓN DE CÓDIGO ÚNICO DE TRÁMITE (8 dígitos numéricos)
-   ============================================================ */
 function generarCodigoTramite() {
   const primerDigito = Math.floor(Math.random() * 9) + 1;
   let resto = '';
@@ -1556,9 +1553,6 @@ function mostrarAvisoBorrador() {
   if (hayFotosGuardadas()) avisoBorrador.classList.add('activo');
 }
 
-/* ============================================================
-   BLOQUEO DE CAMPOS AL ESCANEAR DNI
-   ============================================================ */
 function camposABloquearParaTarget(target) {
   const [prefijo, persona] = target.split('-');
   if (persona === 'testigo1' || persona === 'testigo2') return [];
@@ -1667,9 +1661,6 @@ document.getElementById('doc-volver').addEventListener('click', () => {
   try { localStorage.removeItem('tramite_activo'); } catch(e){}
 });
 
-/* ============================================================
-   PARSEO DEL CÓDIGO DEL DNI
-   ============================================================ */
 function parsearCodigoDNI(texto) {
   const contenido = String(texto || "").replace(/[\r\n]+/g, "@");
   const partes = contenido.split("@").map(p => p.trim()).filter(Boolean);
@@ -1949,7 +1940,6 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
   }
 });
 
-/* LÓGICA DE AUTORIZACIÓN */
 document.addEventListener('DOMContentLoaded', () => {
   const selectEmpresa = document.getElementById('aut-empresa');
   const inputEmpresaOtra = document.getElementById('aut-empresa-otra');
@@ -1988,7 +1978,6 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
-/* POLÍGONOS */
 const POLIGONOS_DDP = {};
 let poligonosCargados = false;
 let cargandoPoligonos = false;
@@ -2029,10 +2018,7 @@ function puntoEnPoligono(lat, lon, coordenadas) {
   return dentro;
 }
 
-/* Busca comisaría por coordenadas, opcionalmente filtrando por zona */
 function buscarComisariaPorCoordenadas(lat, lon, zonaFiltro) {
-  // Si hay filtro por zona, primero restringimos el universo de polígonos
-  // Solo consideramos las comisarías que pertenecen a esa zona
   let nombresPermitidos = null;
   if (zonaFiltro) {
     nombresPermitidos = new Set(
@@ -2119,13 +2105,9 @@ async function geocodificarConNominatim(domicilio, localidad) {
   return null;
 }
 
-/* ============================================================
-   ASIGNACIÓN DE COMISARÍA — con filtro por ZONA
-   ============================================================ */
 async function asignarComisariaPorJurisdiccion(domicilio, localidad, zona) {
   if (!domicilio || !localidad) return { error: 'Falta domicilio o localidad' };
 
-  // 1) Intentar match por barrio (prioridad máxima, ignora zona)
   if (typeof CORRECCIONES_BARRIO !== 'undefined' && CORRECCIONES_BARRIO) {
     const domicilioNormalizado = domicilio.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
     const barriosOrdenados = Object.keys(CORRECCIONES_BARRIO).sort((a, b) => b.length - a.length);
@@ -2144,14 +2126,12 @@ async function asignarComisariaPorJurisdiccion(domicilio, localidad, zona) {
     }
   }
 
-  // 2) Si no matchea por barrio, geocodificar y usar polígonos filtrados por zona
   if (!poligonosCargados) await cargarTodosLosPoligonos();
   const ubicacion = await geocodificarConNominatim(domicilio, localidad);
   if (!ubicacion) return { error: 'No se pudo ubicar el domicilio' };
 
   const comisaria = buscarComisariaPorCoordenadas(ubicacion.lat, ubicacion.lon, zona);
   if (!comisaria) {
-    // Si no encontró en la zona elegida, intentar sin filtro como fallback
     const comisariaSinFiltro = buscarComisariaPorCoordenadas(ubicacion.lat, ubicacion.lon, null);
     if (comisariaSinFiltro) {
       return {
@@ -2440,9 +2420,6 @@ async function subirFotoAStorage(dataUrl, tramite, nombreArchivo) {
   return ruta;
 }
 
-/* ============================================================
-   ENVÍO DEL TRÁMITE
-   ============================================================ */
 Object.entries(forms).forEach(([tramite, form]) => {
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -2511,7 +2488,6 @@ Object.entries(forms).forEach(([tramite, form]) => {
       btnEnviar.textContent = 'Generando código...';
       const codigoTramite = await generarCodigoUnico();
 
-      // Guardar el origen de la asignación
       registro._origenAsignacion = asignacion?.origen || 'manual';
       if (asignacion?.zonaElegida) registro._zonaElegida = asignacion.zonaElegida;
 
