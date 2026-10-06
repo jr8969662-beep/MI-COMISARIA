@@ -1754,7 +1754,73 @@ document.getElementById('doc-volver').addEventListener('click', () => {
   try { localStorage.removeItem('tramite_activo'); } catch(e){}
 });
 
+/* ============================================================
+   PARSER PARA EL NUEVO DNI ELECTRÓNICO (código QR)
+   Formato:
+   NRO_TRAMITE@APELLIDO@NOMBRE@DNI@TIPO_DOC@FECHA_NAC@FECHA_EMISION@JWT
+   Ejemplo: 004749670950@SANCHEZ@RAMIRO ERNESTO@25122169@D@26/02/76@21/04/26@eyJ...
+   ============================================================ */
+function parsearCodigoDNIQR(texto) {
+  const contenido = String(texto || '').trim();
+
+  // Detección: el nuevo QR empieza con 12 dígitos + "@" + letras
+  if (!/^\d{12}@[A-ZÁÉÍÓÚÑ]/.test(contenido)) return null;
+
+  const partes = contenido.split('@');
+  if (partes.length < 6) return null;
+
+  const [
+    nroTramite,
+    apellido,
+    nombre,
+    dni,
+    tipoDoc,
+    fechaNacDMY,
+    fechaEmisionDMY,
+    jwt
+  ] = partes;
+
+  if (!/^\d{7,8}$/.test(dni)) return null;
+
+  // Convertir fecha DD/MM/AA → YYYY-MM-DD
+  let fechaISO = "";
+  if (/^\d{2}\/\d{2}\/\d{2,4}$/.test(fechaNacDMY)) {
+    const [dd, mm, aa] = fechaNacDMY.split('/');
+    let anio = aa;
+    if (aa.length === 2) {
+      anio = parseInt(aa) > 50 ? '19' + aa : '20' + aa;
+    }
+    fechaISO = `${anio}-${mm.padStart(2, '0')}-${dd.padStart(2, '0')}`;
+  }
+
+  // Mapear tipo de documento
+  const tipos = {
+    'D': 'DNI',
+    'C': 'LC',
+    'E': 'LE',
+    'P': 'Pasaporte',
+    'I': 'CI',
+  };
+
+  return {
+    nombreCompleto: `${apellido} ${nombre}`.trim(),
+    apellido: apellido,
+    nombre: nombre,
+    dni: dni,
+    tipoDocumento: tipos[tipoDoc] || tipoDoc,
+    fechaNacimientoISO: fechaISO,
+    nroTramite: nroTramite,
+    esNuevoDNI: true,
+    sexo: ''
+  };
+}
+
 function parsearCodigoDNI(texto) {
+  // Primero intentamos con el parser del DNI nuevo (QR)
+  const datosQR = parsearCodigoDNIQR(texto);
+  if (datosQR) return datosQR;
+
+  // Si no es el formato nuevo, seguimos con el parser del DNI viejo (PDF417)
   const contenido = String(texto || "").replace(/[\r\n]+/g, "@");
   const partes = contenido.split("@").map(p => p.trim()).filter(Boolean);
   const dniMatch = contenido.match(/\b\d{7,8}\b/);
@@ -1893,7 +1959,7 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
       if (marcoDni) marcoDni.classList.add('activo');
       if (avisoFoto) avisoFoto.classList.remove('activo');
       if (scanIndicador) scanIndicador.classList.add('activo');
-      estado.textContent = 'Apuntá al código de barras del DNI. Se escaneará automáticamente.';
+      estado.textContent = 'Apuntá al código del DNI (código de barras o QR). Se escaneará automáticamente.';
       estado.classList.remove('ok', 'error');
 
       trackActual = stream.getVideoTracks()[0];
@@ -1926,7 +1992,7 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
     scannerActivo = true;
     intentosSinDeteccion = 0;
     if (barcodeDisponible && !detector) {
-      try { detector = new BarcodeDetector({ formats: ['pdf417'] }); }
+      try { detector = new BarcodeDetector({ formats: ['pdf417', 'qr_code'] }); }
       catch (e) { detector = null; }
     }
     captura._scanInterval = setInterval(escanearFrame, 1000);
@@ -1985,7 +2051,8 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
     const camposBloqueo = camposABloquearParaTarget(captura.dataset.target);
     if (form && camposBloqueo.length) bloquearCampos(form, camposBloqueo);
 
-    estado.textContent = `✓ DNI escaneado: ${datos.nombreCompleto || ''} (${datos.dni || ''}) — Datos bloqueados`;
+    const etiquetaDNI = datos.esNuevoDNI ? 'DNI nuevo (QR)' : 'DNI (PDF417)';
+    estado.textContent = `✓ ${etiquetaDNI} escaneado: ${datos.nombreCompleto || ''} (${datos.dni || ''}) — Datos bloqueados`;
     estado.classList.add('ok');
     estado.classList.remove('error');
     escaneoEstado.textContent = '🔒 Los datos fueron bloqueados para evitar modificaciones.';
@@ -2419,7 +2486,6 @@ async function mostrarAvisoComisaria(form, estado, dato) {
     nombreEl.textContent = dato.comisaria;
     form.dataset.comisariaAsignada = dato.comisaria;
 
-    // Marcamos si viene de un barrio multi-zona (para no pisar la zona elegida)
     form.dataset.origenMultiZona = dato.origen === 'multi_zona' ? 'true' : 'false';
 
     if (selectZona && selectZona.dataset.editadaManualmente !== 'true' && dato.origen !== 'multi_zona') {
@@ -2513,7 +2579,6 @@ Object.entries(forms).forEach(([tramite, form]) => {
     try {
       const resultado = await asignarComisariaPorJurisdiccion(domicilio, localidad, zona);
 
-      // Caso especial: barrio con varias zonas (ej. Juan Pablo II)
       if (resultado.requiereZona) {
         const aviso = form.querySelector('[data-comisaria-aviso]');
         if (aviso) {
