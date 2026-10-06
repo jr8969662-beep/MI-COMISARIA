@@ -1782,18 +1782,20 @@ function parsearCodigoDNIQR(texto) {
 
   if (!/^\d{7,8}$/.test(dni)) return null;
 
-  // Convertir fecha DD/MM/AA → YYYY-MM-DD
-  let fechaISO = "";
-  if (/^\d{2}\/\d{2}\/\d{2,4}$/.test(fechaNacDMY)) {
-    const [dd, mm, aa] = fechaNacDMY.split('/');
+  // Función auxiliar para convertir DD/MM/AA → YYYY-MM-DD
+  function convertirFechaDMY(fechaStr) {
+    if (!fechaStr || !/^\d{2}\/\d{2}\/\d{2,4}$/.test(fechaStr)) return '';
+    const [dd, mm, aa] = fechaStr.split('/');
     let anio = aa;
     if (aa.length === 2) {
       anio = parseInt(aa) > 50 ? '19' + aa : '20' + aa;
     }
-    fechaISO = `${anio}-${mm.padStart(2, '0')}-${dd.padStart(2, '0')}`;
+    return `${anio}-${mm.padStart(2, '0')}-${dd.padStart(2, '0')}`;
   }
 
-  // Mapear tipo de documento
+  const fechaISO = convertirFechaDMY(fechaNacDMY);
+  const fechaEmisionISO = convertirFechaDMY(fechaEmisionDMY);
+
   const tipos = {
     'D': 'DNI',
     'C': 'LC',
@@ -1809,6 +1811,7 @@ function parsearCodigoDNIQR(texto) {
     dni: dni,
     tipoDocumento: tipos[tipoDoc] || tipoDoc,
     fechaNacimientoISO: fechaISO,
+    fechaEmisionISO: fechaEmisionISO,
     nroTramite: nroTramite,
     esNuevoDNI: true,
     sexo: ''
@@ -2046,6 +2049,47 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
         const inputFecha = form.querySelector(`[name="${campos.fechaNacimiento}"]`);
         if (inputFecha) inputFecha.value = datos.fechaNacimientoISO;
       }
+    }
+
+    // ============================================================
+    // NUEVO: Guardar datos extra del DNI nuevo (QR) en campos hidden
+    // ============================================================
+    if (datos.esNuevoDNI) {
+      let inputNroTramite = form.querySelector('input[name="nroTramiteDNI"]');
+      if (!inputNroTramite) {
+        inputNroTramite = document.createElement('input');
+        inputNroTramite.type = 'hidden';
+        inputNroTramite.name = 'nroTramiteDNI';
+        form.appendChild(inputNroTramite);
+      }
+      inputNroTramite.value = datos.nroTramite || '';
+
+      let inputTipoDoc = form.querySelector('input[name="tipoDocumentoDNI"]');
+      if (!inputTipoDoc) {
+        inputTipoDoc = document.createElement('input');
+        inputTipoDoc.type = 'hidden';
+        inputTipoDoc.name = 'tipoDocumentoDNI';
+        form.appendChild(inputTipoDoc);
+      }
+      inputTipoDoc.value = datos.tipoDocumento || '';
+
+      let inputFechaEmision = form.querySelector('input[name="fechaEmisionDNI"]');
+      if (!inputFechaEmision) {
+        inputFechaEmision = document.createElement('input');
+        inputFechaEmision.type = 'hidden';
+        inputFechaEmision.name = 'fechaEmisionDNI';
+        form.appendChild(inputFechaEmision);
+      }
+      inputFechaEmision.value = datos.fechaEmisionISO || '';
+
+      let inputEsNuevo = form.querySelector('input[name="esDNINuevo"]');
+      if (!inputEsNuevo) {
+        inputEsNuevo = document.createElement('input');
+        inputEsNuevo.type = 'hidden';
+        inputEsNuevo.name = 'esDNINuevo';
+        form.appendChild(inputEsNuevo);
+      }
+      inputEsNuevo.value = 'true';
     }
 
     const camposBloqueo = camposABloquearParaTarget(captura.dataset.target);
