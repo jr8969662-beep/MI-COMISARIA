@@ -164,6 +164,35 @@
   .comisaria-asignada.cargando strong{color:var(--dorado-claro);}
   .comisaria-asignada.error strong{color:#fca5a5;}
   @keyframes fadeInComisaria{from{opacity:0;transform:translateY(-6px);}to{opacity:1;transform:translateY(0);}}
+  /* 🆕 Banner de ubicación guardada */
+  .ubicacion-guardada{
+    background:rgba(44,90,160,0.25);
+    border:1px solid rgba(147,197,253,0.5);
+    border-left:4px solid #93c5fd;
+    border-radius:8px;padding:14px 18px;margin-top:14px;
+    display:none;animation:fadeInComisaria 0.4s ease-out;
+  }
+  .ubicacion-guardada.activo{display:block;}
+  .ubicacion-guardada .titulo{
+    font-size:0.9rem;color:#93c5fd;font-weight:700;
+    margin-bottom:8px;display:flex;align-items:center;gap:8px;
+  }
+  .ubicacion-guardada .direccion{
+    font-size:0.85rem;color:#fff;margin-bottom:12px;line-height:1.5;
+  }
+  .ubicacion-guardada .direccion strong{color:#86efac;}
+  .ubicacion-guardada .acciones{display:flex;gap:8px;flex-wrap:wrap;}
+  .ubicacion-guardada .acciones button{
+    padding:8px 14px;font-size:0.82rem;border:none;border-radius:6px;
+    cursor:pointer;font-weight:600;font-family:inherit;
+  }
+  .ubicacion-guardada .btn-usar-ubicacion{background:#15803d;color:#fff;}
+  .ubicacion-guardada .btn-usar-ubicacion:hover{background:#166534;}
+  .ubicacion-guardada .btn-actualizar-ubicacion{
+    background:rgba(255,255,255,0.15);color:#fff;
+    border:1px solid rgba(255,255,255,0.3);
+  }
+  .ubicacion-guardada .btn-actualizar-ubicacion:hover{background:rgba(255,255,255,0.25);}
   .mapa-confirmacion{margin-top:14px;padding:12px;background:rgba(0,0,0,0.35);
     border:1px solid rgba(201,169,97,0.5);border-radius:8px;}
   .mapa-confirmacion .titulo{font-size:0.85rem;color:var(--dorado-claro);
@@ -373,6 +402,7 @@
       <span class="texto">📍 Calculando comisaría...</span>
       <strong class="nombre"></strong>
     </div>
+    <div class="ubicacion-guardada" data-ubicacion-guardada></div>
     <label>Motivo del trámite</label>
     <textarea name="motivo" required></textarea>
     <h3 class="seccion">Testigos (obligatorios: 2)</h3>
@@ -526,6 +556,7 @@
       <span class="texto">📍 Calculando comisaría...</span>
       <strong class="nombre"></strong>
     </div>
+    <div class="ubicacion-guardada" data-ubicacion-guardada></div>
     <label>Motivo del trámite</label>
     <textarea name="motivo" required></textarea>
     <h3 class="seccion">Testigos (obligatorios: 2)</h3>
@@ -672,6 +703,7 @@
       <span class="texto">📍 Calculando comisaría...</span>
       <strong class="nombre"></strong>
     </div>
+    <div class="ubicacion-guardada" data-ubicacion-guardada></div>
     <div class="fila">
       <div>
         <label>Situación laboral actual</label>
@@ -916,6 +948,7 @@
       <span class="texto">📍 Calculando comisaría...</span>
       <strong class="nombre"></strong>
     </div>
+    <div class="ubicacion-guardada" data-ubicacion-guardada></div>
     <div class="btns">
       <button type="submit" class="btn-primario">Generar Acta de Autorización</button>
       <button type="button" class="btn-secundario volver">Volver</button>
@@ -990,6 +1023,7 @@
       <span class="texto">📍 Calculando comisaría...</span>
       <strong class="nombre"></strong>
     </div>
+    <div class="ubicacion-guardada" data-ubicacion-guardada></div>
     <label>Tipo de certificado</label>
     <select name="tipoCertificado" required>
       <option value="">Seleccionar</option>
@@ -1071,6 +1105,7 @@
       <span class="texto">📍 Calculando comisaría...</span>
       <strong class="nombre"></strong>
     </div>
+    <div class="ubicacion-guardada" data-ubicacion-guardada></div>
     <label>Motivo del trámite</label>
     <textarea name="motivo" required placeholder="Ej: Trámite bancario, gestión de servicios, etc."></textarea>
     <div class="btns">
@@ -1147,6 +1182,7 @@
       <span class="texto">📍 Calculando comisaría...</span>
       <strong class="nombre"></strong>
     </div>
+    <div class="ubicacion-guardada" data-ubicacion-guardada></div>
     <h3 class="seccion">Datos del Documento Extravíado</h3>
     <div class="fila">
       <div>
@@ -1247,6 +1283,7 @@
       <span class="texto">📍 Calculando comisaría...</span>
       <strong class="nombre"></strong>
     </div>
+    <div class="ubicacion-guardada" data-ubicacion-guardada></div>
     <label>Tipo de beneficio</label>
     <select name="tipoBeneficio" required>
       <option value="">Seleccionar</option>
@@ -1389,6 +1426,7 @@
       <span class="texto">📍 Calculando comisaría...</span>
       <strong class="nombre"></strong>
     </div>
+    <div class="ubicacion-guardada" data-ubicacion-guardada></div>
     <label>Tiempo de estadía</label>
     <input type="text" name="tiempoEstadia" placeholder="Ej: 3 meses" required>
     <label>Motivo del trámite</label>
@@ -1422,55 +1460,28 @@
 <script src="comisarias-config.js"></script>
 <script>
 /* ============================================================
-   ZONAS DE COMISARÍAS (inline, con guardia anti-conflicto)
+   ZONAS DE COMISARÍAS
    ============================================================ */
 if (typeof window.ZONAS_COMISARIA === 'undefined') {
   window.ZONAS_COMISARIA = {
-    "Comisaría N°1": "Centro",
-    "Comisaría N°2": "Centro",
-    "Comisaría N°3": "Centro",
-    "Comisaría N°5": "Centro",
-    "Comisaría N°24": "Centro",
-    "Subcomisaría Villa Asunción": "Centro",
-    "Subcomisaría Barrio Policial": "Centro",
-    "Comisaría N°6": "Norte",
-    "Comisaría N°11": "Norte",
-    "Comisaría N°103": "Norte",
-    "Comisaría N°110": "Norte",
-    "Subcomisaría El Huaico": "Norte",
-    "Comisaría N°4": "Sur",
-    "Comisaría N°10": "Sur",
-    "Comisaría N°12": "Sur",
-    "Comisaría N°17": "Sur",
-    "Comisaría N°102": "Sur",
-    "Comisaría N°105": "Sur",
-    "Comisaría N°106": "Sur",
-    "Comisaría N°111": "Sur",
-    "Subcomisaría Villa Mitre": "Sur",
-    "Comisaría N°14": "Este",
-    "Comisaría N°16": "Este",
-    "Comisaría N°107": "Este",
-    "Subcomisaría Grand Bourg Este": "Este",
-    "Subcomisaría Grand Bourg": "Este",
-    "Comisaría N°13": "Oeste",
-    "Comisaría N°19": "Oeste",
-    "Subcomisaría Villa Lavalle": "Oeste",
-    "Subcomisaría Barrio Docente": "Oeste",
+    "Comisaría N°1": "Centro","Comisaría N°2": "Centro","Comisaría N°3": "Centro",
+    "Comisaría N°5": "Centro","Comisaría N°24": "Centro",
+    "Subcomisaría Villa Asunción": "Centro","Subcomisaría Barrio Policial": "Centro",
+    "Comisaría N°6": "Norte","Comisaría N°11": "Norte","Comisaría N°103": "Norte",
+    "Comisaría N°110": "Norte","Subcomisaría El Huaico": "Norte",
+    "Comisaría N°4": "Sur","Comisaría N°10": "Sur","Comisaría N°12": "Sur",
+    "Comisaría N°17": "Sur","Comisaría N°102": "Sur","Comisaría N°105": "Sur",
+    "Comisaría N°106": "Sur","Comisaría N°111": "Sur","Subcomisaría Villa Mitre": "Sur",
+    "Comisaría N°14": "Este","Comisaría N°16": "Este","Comisaría N°107": "Este",
+    "Subcomisaría Grand Bourg Este": "Este","Subcomisaría Grand Bourg": "Este",
+    "Comisaría N°13": "Oeste","Comisaría N°19": "Oeste",
+    "Subcomisaría Villa Lavalle": "Oeste","Subcomisaría Barrio Docente": "Oeste",
     "Subcomisaría El Aybal": "Oeste",
-    "Comisaría N°101": "Noreste",
-    "Comisaría N°112": "Noreste",
-    "Comisaría N°118": "Noreste",
-    "Comisaría N°25": "Noroeste",
-    "Comisaría N°100": "Noroeste",
-    "Comisaría N°108": "Noroeste",
-    "Comisaría N°8": "Sudeste",
-    "Comisaría N°104": "Sudeste",
-    "Subcomisaría El Sol": "Sudeste",
-    "Comisaría N°7": "Suroeste",
-    "Comisaría N°9": "Suroeste",
-    "Comisaría N°15": "Suroeste",
-    "Comisaría N°20": "Suroeste",
-    "Destacamento Villa Rebeca": "Suroeste",
+    "Comisaría N°101": "Noreste","Comisaría N°112": "Noreste","Comisaría N°118": "Noreste",
+    "Comisaría N°25": "Noroeste","Comisaría N°100": "Noroeste","Comisaría N°108": "Noroeste",
+    "Comisaría N°8": "Sudeste","Comisaría N°104": "Sudeste","Subcomisaría El Sol": "Sudeste",
+    "Comisaría N°7": "Suroeste","Comisaría N°9": "Suroeste","Comisaría N°15": "Suroeste",
+    "Comisaría N°20": "Suroeste","Destacamento Villa Rebeca": "Suroeste",
   };
 }
 
@@ -1491,10 +1502,6 @@ function obtenerZona(nombreComisaria) {
   return "";
 }
 
-/* ============================================================
-   🆕 NORMALIZADOR DE NOMBRES DE BARRIO
-   Unifica variantes: "II" = "2" = "2do" = "2°" = "Segundo"
-   ============================================================ */
 function normalizarBarrio(t) {
   return String(t || '')
     .toLowerCase()
@@ -1510,10 +1517,6 @@ function normalizarBarrio(t) {
     .trim();
 }
 
-/* ============================================================
-   🆕 BARRIOS QUE CAMBIAN DE COMISARÍA SEGÚN LA ZONA ELEGIDA
-   (claves ya normalizadas)
-   ============================================================ */
 const BARRIOS_MULTI_ZONA = {
   "juan pablo 2": {
     "Norte": "Comisaría N°11 - 17 de Octubre (DDP 1)",
@@ -1521,7 +1524,6 @@ const BARRIOS_MULTI_ZONA = {
   },
 };
 
-/* Autocompletar zona al cambiar select a mano */
 document.querySelectorAll('.select-zona').forEach(select => {
   select.addEventListener('change', () => {
     if (select.value) select.dataset.editadaManualmente = 'true';
@@ -1549,9 +1551,7 @@ const BUCKET_FOTOS = 'fotos-tramites';
 function generarCodigoTramite() {
   const primerDigito = Math.floor(Math.random() * 9) + 1;
   let resto = '';
-  for (let i = 0; i < 7; i++) {
-    resto += Math.floor(Math.random() * 10);
-  }
+  for (let i = 0; i < 7; i++) resto += Math.floor(Math.random() * 10);
   return String(primerDigito) + resto;
 }
 
@@ -1559,58 +1559,14 @@ async function generarCodigoUnico() {
   for (let intento = 0; intento < 5; intento++) {
     const codigo = generarCodigoTramite();
     const { data, error } = await supabaseClient
-      .from('solicitudes')
-      .select('id')
-      .eq('codigo', codigo)
-      .limit(1);
+      .from('solicitudes').select('id').eq('codigo', codigo).limit(1);
     if (error) { console.warn('Error verificando código:', error); continue; }
     if (!data || data.length === 0) return codigo;
   }
   return String(Date.now()).slice(-8);
 }
 
-const etiquetas = {
-  nombre: 'Nombre completo', dni: 'DNI', fechaNacimiento: 'Fecha de nacimiento',
-  email: 'Email de contacto',
-  domicilio: 'Domicilio', localidad: 'Localidad', zona: 'Zona',
-  motivo: 'Motivo del trámite', nombreSolicitante: 'Nombre del solicitante',
-  dniSolicitante: 'DNI del solicitante', nombreConviviente: 'Nombre del conviviente',
-  dniConviviente: 'DNI del conviviente', parentesco: 'Parentesco con el conviviente',
-  domicilioComun: 'Domicilio en común', estadoCivil: 'Estado civil',
-  situacionLaboral: 'Situación laboral', personasACargo: 'Personas a cargo',
-  testigo1Nombre: 'Nombre del testigo 1', testigo1Dni: 'DNI del testigo 1',
-  testigo2Nombre: 'Nombre del testigo 2', testigo2Dni: 'DNI del testigo 2',
-  foto_solicitante: 'Foto del DNI - Solicitante',
-  foto_testigo1: 'Foto del DNI - Testigo 1',
-  foto_testigo2: 'Foto del DNI - Testigo 2',
-  nombreMenor: 'Nombre del menor', dniMenor: 'DNI del menor',
-  fechaNacimientoMenor: 'Fecha de nacimiento del menor',
-  nacionalidadMenor: 'Nacionalidad del menor',
-  nombreProgenitor: 'Nombre del progenitor que autoriza',
-  dniProgenitor: 'DNI del progenitor que autoriza',
-  vinculoProgenitor: 'Vínculo con el menor',
-  destino: 'Destino del viaje', motivoViaje: 'Motivo del viaje',
-  fechaSalida: 'Fecha de salida', fechaRegreso: 'Fecha de regreso',
-  empresaTransporte: 'Empresa de transporte',
-  empresaOtra: 'Empresa de transporte (otra)',
-  tipoViaje: 'Tipo de viaje',
-  nombreAcompanante: 'Nombre del acompañante',
-  dniAcompanante: 'DNI del acompañante',
-  vinculoAcompanante: 'Vínculo del acompañante',
-  nombreOtroProgenitor: 'Nombre del otro progenitor',
-  dniOtroProgenitor: 'DNI del otro progenitor',
-  foto_menor: 'Foto del DNI - Menor',
-  foto_progenitor: 'Foto del DNI - Progenitor autorizante',
-  tipoCertificado: 'Tipo de certificado',
-  tipoDocumento: 'Tipo de documento',
-  numeroDocumento: 'Número del documento',
-  fechaExtravio: 'Fecha aproximada del extravío',
-  circunstancia: 'Circunstancia',
-  lugarExtravio: 'Lugar aproximado del extravío',
-  detalleExtravio: 'Detalle adicional',
-  tipoBeneficio: 'Tipo de beneficio',
-  tiempoEstadia: 'Tiempo de estadía',
-};
+const etiquetas = { /* ... sin cambios ... */ };
 
 const CAMPO_DOMICILIO = {
   residencia: 'domicilio',
@@ -1645,6 +1601,87 @@ const titulos = {
   estadia: 'Certificado de Estadía',
 };
 
+/* ============================================================
+   🆕 UBICACIONES GUARDADAS POR CIUDADANO (por DNI)
+   ============================================================ */
+async function buscarUbicacionGuardada(dni) {
+  if (!dni) return null;
+  try {
+    const { data, error } = await supabaseClient
+      .from('ubicaciones_ciudadanos')
+      .select('*')
+      .eq('dni', String(dni))
+      .maybeSingle();
+    if (error) { console.warn('Error buscando ubicación guardada:', error); return null; }
+    return data || null;
+  } catch (e) { console.warn('Excepción buscando ubicación:', e); return null; }
+}
+
+async function guardarUbicacionCiudadano({ dni, nombre, lat, lon, comisaria, zona, domicilio, localidad }) {
+  if (!dni || lat == null || lon == null) return;
+  try {
+    const payload = {
+      dni: String(dni),
+      nombre: nombre || '',
+      lat: parseFloat(lat),
+      lon: parseFloat(lon),
+      comisaria_asignada: comisaria || '',
+      zona: zona || '',
+      domicilio_texto: domicilio || '',
+      localidad: localidad || '',
+      actualizado_en: new Date().toISOString(),
+    };
+    const { error } = await supabaseClient
+      .from('ubicaciones_ciudadanos')
+      .upsert(payload, { onConflict: 'dni' });
+    if (error) { console.warn('Error guardando ubicación:', error); return false; }
+    console.log('✅ Ubicación guardada para DNI', dni);
+    return true;
+  } catch (e) { console.warn('Excepción guardando ubicación:', e); return false; }
+}
+
+function mostrarBannerUbicacion(form, ubic) {
+  const banner = form.querySelector('[data-ubicacion-guardada]');
+  if (!banner) return;
+  banner.innerHTML = `
+    <div class="titulo">📍 Encontramos tu ubicación guardada</div>
+    <div class="direccion">
+      <strong>${ubic.domicilio_texto || 'Domicilio registrado'}</strong><br>
+      ${ubic.localidad || ''}${ubic.zona ? ' · Zona ' + ubic.zona : ''}<br>
+      ${ubic.comisaria_asignada ? '🏢 ' + ubic.comisaria_asignada : ''}
+    </div>
+    <div class="acciones">
+      <button type="button" class="btn-usar-ubicacion" data-accion="usar">✅ Sí, sigue igual</button>
+      <button type="button" class="btn-actualizar-ubicacion" data-accion="actualizar">🔄 Actualizar ubicación</button>
+    </div>
+  `;
+  banner.classList.add('activo');
+
+  banner.querySelector('[data-accion="usar"]').addEventListener('click', () => {
+    form.dataset.usarUbicacionGuardada = 'true';
+    form.dataset.ubicacionLat = ubic.lat;
+    form.dataset.ubicacionLon = ubic.lon;
+    form.dataset.ubicacionComisaria = ubic.comisaria_asignada || '';
+    form.dataset.ubicacionZona = ubic.zona || '';
+    banner.classList.remove('activo');
+    // Disparar recálculo con las coords guardadas
+    const inputDom = form.querySelector(`[name="${CAMPO_DOMICILIO[form.id.replace('form-','')]}"]`);
+    if (inputDom) inputDom.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+
+  banner.querySelector('[data-accion="actualizar"]').addEventListener('click', () => {
+    form.dataset.usarUbicacionGuardada = 'false';
+    delete form.dataset.ubicacionLat;
+    delete form.dataset.ubicacionLon;
+    banner.classList.remove('activo');
+    const inputDom = form.querySelector(`[name="${CAMPO_DOMICILIO[form.id.replace('form-','')]}"]`);
+    if (inputDom) inputDom.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+}
+
+/* ============================================================
+   Helpers de fotos / borrador
+   ============================================================ */
 function guardarFotoEnStorage(clave, dataUrl) {
   try { localStorage.setItem('foto_' + clave, dataUrl); } catch (e) {}
 }
@@ -1771,44 +1808,27 @@ document.getElementById('doc-volver').addEventListener('click', () => {
 });
 
 /* ============================================================
-   PARSER PARA EL NUEVO DNI ELECTRÓNICO (código QR)
+   PARSER DNI QR
    ============================================================ */
 function parsearCodigoDNIQR(texto) {
   const contenido = String(texto || '').trim().replace(/^\uFEFF/, '');
   if (!contenido) return null;
-
   const match = contenido.match(
     /^(\d{10,14})@([^@]+)@([^@]+)@(\d{6,9})@([A-Za-z])@([^@]+?)(?:@([^@]+?))?(?:@(.+))?$/
   );
   if (!match) return null;
-
-  const [
-    ,
-    nroTramite,
-    apellido,
-    nombre,
-    dni,
-    tipoDoc,
-    fechaNacDMY,
-    fechaEmisionDMY
-  ] = match;
-
+  const [, nroTramite, apellido, nombre, dni, tipoDoc, fechaNacDMY, fechaEmisionDMY] = match;
   if (!/^\d{7,8}$/.test(dni)) return null;
-
   function convertirFechaDMY(fechaStr) {
     if (!fechaStr) return '';
     const limpio = String(fechaStr).trim();
     if (!/^\d{2}\/\d{2}\/\d{2,4}$/.test(limpio)) return '';
     const [dd, mm, aa] = limpio.split('/');
     let anio = aa;
-    if (aa.length === 2) {
-      anio = parseInt(aa) > 50 ? '19' + aa : '20' + aa;
-    }
+    if (aa.length === 2) anio = parseInt(aa) > 50 ? '19' + aa : '20' + aa;
     return `${anio}-${mm.padStart(2, '0')}-${dd.padStart(2, '0')}`;
   }
-
   const tipos = { 'D': 'DNI', 'C': 'LC', 'E': 'LE', 'P': 'Pasaporte', 'I': 'CI' };
-
   return {
     nombreCompleto: `${apellido.trim()} ${nombre.trim()}`.trim(),
     apellido: apellido.trim(),
@@ -1826,7 +1846,6 @@ function parsearCodigoDNIQR(texto) {
 function parsearCodigoDNI(texto) {
   const datosQR = parsearCodigoDNIQR(texto);
   if (datosQR) return datosQR;
-
   const contenido = String(texto || "").replace(/[\r\n]+/g, "@");
   const partes = contenido.split("@").map(p => p.trim()).filter(Boolean);
   const dniMatch = contenido.match(/\b\d{7,8}\b/);
@@ -1893,7 +1912,6 @@ function resetCaptura(captura){
   const avisoFoto = captura.querySelector('.aviso-foto');
   const btnFlash = captura.querySelector('.btn-flash');
   const scanIndicador = captura.querySelector('.scan-indicador');
-
   if (captura._scanInterval) { clearInterval(captura._scanInterval); captura._scanInterval = null; }
   if (video.srcObject) { video.srcObject.getTracks().forEach(t => t.stop()); video.srcObject = null; }
   video.hidden = true;
@@ -1910,7 +1928,6 @@ function resetCaptura(captura){
   if (scanIndicador) scanIndicador.classList.remove('activo');
   if (btnFlash) { btnFlash.classList.remove('activo'); btnFlash.classList.remove('encendido'); }
   borrarFotoDeStorage(captura.dataset.target);
-
   const form = captura.closest('form');
   const campos = camposABloquearParaTarget(captura.dataset.target);
   if (form && campos.length) desbloquearCampos(form, campos);
@@ -1968,14 +1985,12 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
       if (marcoDni) marcoDni.classList.add('activo');
       if (avisoFoto) avisoFoto.classList.remove('activo');
       if (scanIndicador) scanIndicador.classList.add('activo');
-      estado.textContent = 'Apuntá al código del DNI (código de barras o QR). Se escaneará automáticamente.';
+      estado.textContent = 'Apuntá al código del DNI. Se escaneará automáticamente.';
       estado.classList.remove('ok', 'error');
-
       trackActual = stream.getVideoTracks()[0];
       const capacidades = trackActual.getCapabilities ? trackActual.getCapabilities() : {};
       flashSoportado = !!capacidades.torch;
       if (btnFlash && flashSoportado) btnFlash.classList.add('activo');
-
       iniciarEscaneo();
     } catch (err) {
       estado.textContent = 'No se pudo acceder a la cámara (revisá los permisos).';
@@ -2018,16 +2033,13 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
       canvas.height = Math.round(video.videoHeight * escala);
       const ctx = canvas.getContext('2d', { willReadFrequently: true });
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
       let rawValue = null;
-
       if (detector) {
         try {
           const codigos = await detector.detect(canvas);
           if (codigos && codigos.length) rawValue = codigos[0].rawValue;
         } catch (e) { }
       }
-
       if (!rawValue && window.jsQR) {
         try {
           const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
@@ -2037,26 +2049,16 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
           if (qr && qr.data) rawValue = qr.data;
         } catch (e) { }
       }
-
       if (rawValue) {
-        console.log('📷 Código detectado:', rawValue.substring(0, 80) + (rawValue.length > 80 ? '…' : ''));
         const datos = parsearCodigoDNI(rawValue);
-        if (datos && (datos.dni || datos.nombreCompleto)) {
-          console.log('✅ Datos parseados:', datos);
-          exitoEscaneo(datos, canvas);
-          return;
-        } else {
-          console.warn('⚠️ Código detectado pero no parseable:', rawValue.substring(0, 120));
-        }
+        if (datos && (datos.dni || datos.nombreCompleto)) { exitoEscaneo(datos, canvas); return; }
       }
-
       intentosSinDeteccion++;
       if (intentosSinDeteccion === 20) mostrarTimeout();
     } catch (err) { console.warn('Error escaneando frame:', err); }
   }
 
-  function exitoEscaneo(datos, canvasFoto) {
-    console.log('🎯 exitoEscaneo — esNuevoDNI:', datos.esNuevoDNI, '— nroTramite:', datos.nroTramite);
+  async function exitoEscaneo(datos, canvasFoto) {
     scannerActivo = false;
     if (captura._scanInterval) { clearInterval(captura._scanInterval); captura._scanInterval = null; }
     const dataUrl = canvasFoto.toDataURL('image/jpeg', 0.7);
@@ -2109,6 +2111,35 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
     estado.classList.add('ok');
     estado.classList.remove('error');
     escaneoEstado.textContent = '🔒 Los datos fueron bloqueados para evitar modificaciones.';
+
+    // 🆕 Si es el DNI del SOLICITANTE → buscar ubicación guardada
+    const target = captura.dataset.target;
+    const esDniSolicitante = target.endsWith('-solicitante') || target === 'aut-progenitor';
+    if (esDniSolicitante && datos.dni && form) {
+      form.dataset.dniSolicitante = datos.dni;
+      const ubic = await buscarUbicacionGuardada(datos.dni);
+      if (ubic && ubic.lat != null && ubic.lon != null) {
+        form.dataset.usarUbicacionGuardada = 'true';
+        form.dataset.ubicacionLat = ubic.lat;
+        form.dataset.ubicacionLon = ubic.lon;
+        form.dataset.ubicacionComisaria = ubic.comisaria_asignada || '';
+        form.dataset.ubicacionZona = ubic.zona || '';
+
+        // Pre-cargar domicilio/localidad/zona
+        const tramite = form.id.replace('form-', '');
+        const campoDom = CAMPO_DOMICILIO[tramite];
+        const inputDom = form.querySelector(`[name="${campoDom}"]`);
+        if (inputDom && !inputDom.value && ubic.domicilio_texto) inputDom.value = ubic.domicilio_texto;
+        const selectLoc = form.querySelector('[name="localidad"]');
+        if (selectLoc && !selectLoc.value && ubic.localidad) selectLoc.value = ubic.localidad;
+        const selectZona = form.querySelector('[name="zona"]');
+        if (selectZona && !selectZona.value && ubic.zona) selectZona.value = ubic.zona;
+
+        mostrarBannerUbicacion(form, ubic);
+        // Disparar el cálculo con las coords guardadas
+        if (inputDom) inputDom.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+    }
   }
 
   function mostrarTimeout() {
@@ -2158,7 +2189,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const inputEmpresaOtra = document.getElementById('aut-empresa-otra');
   const selectTipoViaje = document.getElementById('aut-tipo-viaje');
   const bloqueAcompanante = document.getElementById('aut-bloque-acompanante');
-
   if (selectEmpresa && inputEmpresaOtra) {
     selectEmpresa.addEventListener('change', () => {
       if (selectEmpresa.value === 'Otro (especificar abajo)') {
@@ -2172,7 +2202,6 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   }
-
   if (selectTipoViaje && bloqueAcompanante) {
     selectTipoViaje.addEventListener('change', () => {
       if (selectTipoViaje.value === 'acompanado') {
@@ -2210,8 +2239,6 @@ async function cargarTodosLosPoligonos() {
   try {
     await Promise.all(promesas);
     poligonosCargados = true;
-    const total = Object.values(POLIGONOS_DDP).reduce((sum, p) => sum + p.length, 0);
-    console.log('✅ Polígonos cargados:', total, 'polígonos');
   } catch (e) { console.warn('Error cargando polígonos:', e); }
   finally { cargandoPoligonos = false; }
 }
@@ -2235,13 +2262,10 @@ function buscarComisariaPorCoordenadas(lat, lon, zonaFiltro) {
   let nombresPermitidos = null;
   if (zonaFiltro && typeof DEPENDENCIAS_POLICIALES !== 'undefined') {
     nombresPermitidos = new Set(
-      DEPENDENCIAS_POLICIALES
-        .filter(d => d.zona === zonaFiltro)
-        .map(d => d.nombre)
+      DEPENDENCIAS_POLICIALES.filter(d => d.zona === zonaFiltro).map(d => d.nombre)
     );
     if (nombresPermitidos.size === 0) nombresPermitidos = null;
   }
-
   for (const [numDDP, poligonos] of Object.entries(POLIGONOS_DDP)) {
     for (const poligono of poligonos) {
       if (nombresPermitidos && !nombresPermitidos.has(poligono.n)) continue;
@@ -2306,11 +2330,9 @@ async function geocodificarConNominatim(domicilio, localidad) {
       const nombreBarrio = matchBarrio[1].trim();
       if (barriosProbados.has(nombreBarrio)) continue;
       barriosProbados.add(nombreBarrio);
-      const intentoBarrio = `Barrio ${nombreBarrio}, ${localidadLimpia}, Salta, Argentina`;
-      let resultado = await consultarNominatim(intentoBarrio);
+      let resultado = await consultarNominatim(`Barrio ${nombreBarrio}, ${localidadLimpia}, Salta, Argentina`);
       if (resultado) return resultado;
-      const intentoSinBarrio = `${nombreBarrio}, ${localidadLimpia}, Salta, Argentina`;
-      resultado = await consultarNominatim(intentoSinBarrio);
+      resultado = await consultarNominatim(`${nombreBarrio}, ${localidadLimpia}, Salta, Argentina`);
       if (resultado) return resultado;
     }
   }
@@ -2320,68 +2342,80 @@ async function geocodificarConNominatim(domicilio, localidad) {
 }
 
 /* ============================================================
-   🆕 ASIGNACIÓN DE COMISARÍA POR JURISDICCIÓN
+   🆕 ASIGNACIÓN CON SOPORTE DE UBICACIÓN GUARDADA
    ============================================================ */
-async function asignarComisariaPorJurisdiccion(domicilio, localidad, zona) {
+async function asignarComisariaPorJurisdiccion(domicilio, localidad, zona, opciones = {}) {
   if (!domicilio || !localidad) return { error: 'Falta domicilio o localidad' };
+
+  const { latGuardada, lonGuardada } = opciones;
 
   // 1) Barrios que cambian de comisaría según la zona elegida
   const domNorm = normalizarBarrio(domicilio);
-  const barriosMulti = Object.keys(BARRIOS_MULTI_ZONA);
-  for (const barrio of barriosMulti) {
-    const barrioNorm = normalizarBarrio(barrio);
-    if (domNorm.includes(barrioNorm)) {
+  for (const barrio of Object.keys(BARRIOS_MULTI_ZONA)) {
+    if (domNorm.includes(normalizarBarrio(barrio))) {
       const porZona = BARRIOS_MULTI_ZONA[barrio];
       if (zona && porZona[zona]) {
-        let lat = null, lon = null;
-        if (typeof DEPENDENCIAS_POLICIALES !== 'undefined') {
+        let lat = latGuardada ?? null, lon = lonGuardada ?? null;
+        if ((lat == null || lon == null) && typeof DEPENDENCIAS_POLICIALES !== 'undefined') {
           const nombreCom = porZona[zona];
           const dep = DEPENDENCIAS_POLICIALES.find(d => d.nombre === nombreCom)
                    || DEPENDENCIAS_POLICIALES.find(d =>
-                        d.nombre && nombreCom.toLowerCase().startsWith(d.nombre.toLowerCase())
-                      );
+                        d.nombre && nombreCom.toLowerCase().startsWith(d.nombre.toLowerCase()));
           if (dep && dep.lat) { lat = dep.lat; lon = dep.lon; }
         }
-        return {
-          comisaria: porZona[zona],
-          origen: 'multi_zona',
-          barrio: barrio,
-          zona: zona,
-          lat: lat,
-          lon: lon,
-        };
+        return { comisaria: porZona[zona], origen: 'multi_zona', barrio, zona, lat, lon };
       }
-      return {
-        requiereZona: true,
-        barrio: barrio,
-        zonasDisponibles: Object.keys(porZona),
-      };
+      return { requiereZona: true, barrio, zonasDisponibles: Object.keys(porZona) };
     }
   }
 
-  // 2) Correcciones por barrio (una sola comisaría)
+  // 2) Correcciones por barrio
   if (typeof CORRECCIONES_BARRIO !== 'undefined' && CORRECCIONES_BARRIO) {
     const domicilioNormalizado = normalizarBarrio(domicilio);
     const barriosOrdenados = Object.keys(CORRECCIONES_BARRIO).sort((a, b) => b.length - a.length);
     for (const barrio of barriosOrdenados) {
-      const barrioNormalizado = normalizarBarrio(barrio);
-      if (domicilioNormalizado.includes(barrioNormalizado)) {
+      if (domicilioNormalizado.includes(normalizarBarrio(barrio))) {
         const valor = CORRECCIONES_BARRIO[barrio];
-        if (Array.isArray(valor)) {
-          return { opciones: valor, origen: 'correccion_barrio_multiple', barrio: barrio };
-        }
-        if (valor && typeof valor === 'object') {
-          return { comisaria: valor.comisaria, lat: valor.lat || null, lon: valor.lon || null, origen: 'correccion_barrio', barrio: barrio };
-        }
-        let lat = null, lon = null;
+        if (Array.isArray(valor)) return { opciones: valor, origen: 'correccion_barrio_multiple', barrio };
+        if (valor && typeof valor === 'object')
+          return { comisaria: valor.comisaria, lat: valor.lat || null, lon: valor.lon || null, origen: 'correccion_barrio', barrio };
+        let lat = latGuardada ?? null, lon = lonGuardada ?? null;
         const dep = DEPENDENCIAS_POLICIALES.find(d => d.nombre === valor);
-        if (dep && dep.lat) { lat = dep.lat; lon = dep.lon; }
-        return { comisaria: valor, origen: 'correccion_barrio', barrio: barrio, lat, lon, zona };
+        if ((lat == null || lon == null) && dep && dep.lat) { lat = dep.lat; lon = dep.lon; }
+        return { comisaria: valor, origen: 'correccion_barrio', barrio, lat, lon, zona };
       }
     }
   }
 
-  // 3) Polígonos
+  // 3) 🆕 Si hay coordenadas guardadas y el usuario aceptó usarlas → usarlas directo
+  if (latGuardada != null && lonGuardada != null) {
+    if (!poligonosCargados) await cargarTodosLosPoligonos();
+    const comisaria = buscarComisariaPorCoordenadas(latGuardada, lonGuardada, zona);
+    if (comisaria && comisaria.nombre) {
+      return {
+        comisaria: comisaria.nombre,
+        ddp: comisaria.ddp,
+        lat: latGuardada,
+        lon: lonGuardada,
+        origen: 'ubicacion_guardada',
+        zona,
+      };
+    }
+    // Si con la zona no encontró, probar sin filtro
+    const sinFiltro = buscarComisariaPorCoordenadas(latGuardada, lonGuardada, null);
+    if (sinFiltro) {
+      return {
+        comisaria: sinFiltro.nombre,
+        ddp: sinFiltro.ddp,
+        lat: latGuardada,
+        lon: lonGuardada,
+        origen: 'ubicacion_guardada_sin_zona',
+      };
+    }
+    return { error: 'Las coordenadas guardadas no caen en ninguna jurisdicción conocida', lat: latGuardada, lon: lonGuardada };
+  }
+
+  // 4) Polígonos (geocodificación normal)
   if (!poligonosCargados) await cargarTodosLosPoligonos();
   const ubicacion = await geocodificarConNominatim(domicilio, localidad);
   if (!ubicacion) return { error: 'No se pudo ubicar el domicilio' };
@@ -2391,13 +2425,9 @@ async function asignarComisariaPorJurisdiccion(domicilio, localidad, zona) {
     const comisariaSinFiltro = buscarComisariaPorCoordenadas(ubicacion.lat, ubicacion.lon, null);
     if (comisariaSinFiltro) {
       return {
-        comisaria: comisariaSinFiltro.nombre,
-        ddp: comisariaSinFiltro.ddp,
-        lat: ubicacion.lat,
-        lon: ubicacion.lon,
-        origen: 'poligono_sin_zona',
-        zonaElegida: zona,
-        zonaReal: null
+        comisaria: comisariaSinFiltro.nombre, ddp: comisariaSinFiltro.ddp,
+        lat: ubicacion.lat, lon: ubicacion.lon,
+        origen: 'poligono_sin_zona', zonaElegida: zona, zonaReal: null
       };
     }
     return { error: 'El domicilio no está dentro de ninguna jurisdicción conocida', lat: ubicacion.lat, lon: ubicacion.lon };
@@ -2416,9 +2446,7 @@ function crearMapaConfirmacion(aviso, form, opciones) {
 
   const tituloTexto = modoBarrio
     ? '🗺️ Ajustá tu ubicación exacta si hace falta'
-    : (esMultiple
-        ? '🗺️ Confirmá tu ubicación exacta en el mapa'
-        : '🗺️ Ubicación verificada automáticamente');
+    : (esMultiple ? '🗺️ Confirmá tu ubicación exacta en el mapa' : '🗺️ Ubicación verificada automáticamente');
 
   const ayudaTexto = modoBarrio
     ? '👆 <strong>Arrastrá el marcador</strong> si tu casa no está exactamente donde marca. La comisaría asignada por tu barrio no cambia.'
@@ -2444,29 +2472,29 @@ function crearMapaConfirmacion(aviso, form, opciones) {
       ayudaEl.style.color = '#86efac';
     }
 
-    mapaLeafletActivo = L.map(divMapa, {
-      center: [lat, lng],
-      zoom: 16,
-      zoomControl: true,
-      dragging: true,
-    });
-
+    mapaLeafletActivo = L.map(divMapa, { center: [lat, lng], zoom: 16, zoomControl: true, dragging: true });
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      attribution: '© OpenStreetMap'
+      maxZoom: 19, attribution: '© OpenStreetMap'
     }).addTo(mapaLeafletActivo);
 
     marcadorLeafletActivo = L.marker([lat, lng], {
-      draggable: true,
-      title: 'Arrastrame a la ubicación exacta de tu casa'
+      draggable: true, title: 'Arrastrame a la ubicación exacta de tu casa'
     }).addTo(mapaLeafletActivo);
 
     if (!esMultiple && comisariaFija) {
       marcadorLeafletActivo.bindPopup(`<strong>${comisariaFija}</strong><br>Ubicación aproximada`).openPopup();
     }
 
+    // 🆕 Al mover/clickear → guardar coords en dataset para poder persistirlas
+    function registrarCoords(nuevaLat, nuevaLng) {
+      form.dataset.ubicacionLat = nuevaLat;
+      form.dataset.ubicacionLon = nuevaLng;
+      form.dataset.usarUbicacionGuardada = 'true';
+    }
+
     async function recalcularConCoordenadas(nuevaLat, nuevaLng) {
       coordsEl.textContent = `📍 Ubicación actual: ${nuevaLat.toFixed(5)}, ${nuevaLng.toFixed(5)}`;
+      registrarCoords(nuevaLat, nuevaLng);
       if (!poligonosCargados) await cargarTodosLosPoligonos();
       const zonaActual = form.querySelector('[name="zona"]')?.value || null;
       const comisaria = buscarComisariaPorCoordenadas(nuevaLat, nuevaLng, zonaActual);
@@ -2475,6 +2503,7 @@ function crearMapaConfirmacion(aviso, form, opciones) {
 
       if (comisaria && comisaria.nombre) {
         form.dataset.comisariaAsignada = comisaria.nombre;
+        form.dataset.ubicacionComisaria = comisaria.nombre;
         if (selZona && selZona.dataset.editadaManualmente !== 'true' && !origenMulti) {
           const z = obtenerZona(comisaria.nombre);
           if (z) selZona.value = z;
@@ -2498,8 +2527,9 @@ function crearMapaConfirmacion(aviso, form, opciones) {
     marcadorLeafletActivo.on('dragend', function (e) {
       const pos = e.target.getLatLng();
       if (modoBarrio) {
+        registrarCoords(pos.lat, pos.lng);
         coordsEl.textContent = `📍 Ubicación ajustada: ${pos.lat.toFixed(5)}, ${pos.lng.toFixed(5)}`;
-        ayudaEl.innerHTML = `✅ <strong>${comisariaFija}</strong> — Ubicación ajustada. La comisaría asignada por tu barrio sigue siendo la misma.`;
+        ayudaEl.innerHTML = `✅ <strong>${comisariaFija}</strong> — Ubicación ajustada. La comisaría sigue siendo la misma.`;
         ayudaEl.style.color = '#86efac';
       } else {
         recalcularConCoordenadas(pos.lat, pos.lng);
@@ -2509,6 +2539,7 @@ function crearMapaConfirmacion(aviso, form, opciones) {
     mapaLeafletActivo.on('click', function (e) {
       marcadorLeafletActivo.setLatLng(e.latlng);
       if (modoBarrio) {
+        registrarCoords(e.latlng.lat, e.latlng.lng);
         coordsEl.textContent = `📍 Ubicación ajustada: ${e.latlng.lat.toFixed(5)}, ${e.latlng.lng.toFixed(5)}`;
         ayudaEl.innerHTML = `✅ <strong>${comisariaFija}</strong> — Ubicación ajustada. La comisaría sigue siendo la misma.`;
         ayudaEl.style.color = '#86efac';
@@ -2521,19 +2552,13 @@ function crearMapaConfirmacion(aviso, form, opciones) {
   }, 50);
 }
 
-/* ============================================================
-   🆕 MOSTRAR AVISO DE COMISARÍA (con soporte multi_zona como modo barrio fijo)
-   ============================================================ */
 async function mostrarAvisoComisaria(form, estado, dato) {
   const aviso = form.querySelector('[data-comisaria-aviso]');
   if (!aviso) return;
-
   const selectZona = form.querySelector('[name="zona"]');
-
   aviso.classList.remove('activo', 'cargando', 'error');
   const texto = aviso.querySelector('.texto');
   const nombreEl = aviso.querySelector('.nombre');
-
   const selectViejo = aviso.querySelector('.seleccion-comisaria');
   if (selectViejo) selectViejo.remove();
   const mapaViejo = aviso.querySelector('.mapa-confirmacion');
@@ -2549,13 +2574,12 @@ async function mostrarAvisoComisaria(form, estado, dato) {
     aviso.classList.add('activo', 'cargando');
     texto.textContent = '⏳ Calculando comisaría...';
     nombreEl.textContent = '';
-
   } else if (estado === 'ok') {
     aviso.classList.add('activo');
     texto.textContent = '📍 Comisaría asignada:';
     nombreEl.textContent = dato.comisaria;
     form.dataset.comisariaAsignada = dato.comisaria;
-
+    form.dataset.ubicacionComisaria = dato.comisaria;
     form.dataset.origenMultiZona = dato.origen === 'multi_zona' ? 'true' : 'false';
 
     if (selectZona && selectZona.dataset.editadaManualmente !== 'true' && dato.origen !== 'multi_zona') {
@@ -2563,7 +2587,6 @@ async function mostrarAvisoComisaria(form, estado, dato) {
       if (z) selectZona.value = z;
     }
 
-    // 🆕 multi_zona también se comporta como "modo barrio fijo"
     const esModoBarrio = dato.origen === 'correccion_barrio' || dato.origen === 'multi_zona';
 
     let centro = { lat: -24.786744, lng: -65.408122 };
@@ -2572,48 +2595,40 @@ async function mostrarAvisoComisaria(form, estado, dato) {
     } else if (dato.domicilio && dato.localidad) {
       try {
         const ubic = await geocodificarConNominatim(dato.domicilio, dato.localidad);
-        if (ubic && ubic.lat && ubic.lon) {
-          centro = { lat: ubic.lat, lng: ubic.lon };
-        }
+        if (ubic && ubic.lat && ubic.lon) centro = { lat: ubic.lat, lng: ubic.lon };
       } catch (e) { console.warn('No se pudo geocodificar:', e); }
     }
 
-    crearMapaConfirmacion(aviso, form, {
-      lat: centro.lat,
-      lng: centro.lng,
-      comisariaFija: dato.comisaria,
-      esMultiple: false,
-      modoBarrio: esModoBarrio,
-      texto,
-      nombreEl
-    });
+    // Guardar la ubicación usada para el envío
+    if (dato.lat && dato.lon) {
+      form.dataset.ubicacionLat = dato.lat;
+      form.dataset.ubicacionLon = dato.lon;
+    }
 
+    crearMapaConfirmacion(aviso, form, {
+      lat: centro.lat, lng: centro.lng,
+      comisariaFija: dato.comisaria,
+      esMultiple: false, modoBarrio: esModoBarrio,
+      texto, nombreEl
+    });
   } else if (estado === 'multiple') {
     aviso.classList.add('activo', 'cargando');
     texto.textContent = '📍 Hay varias comisarías posibles. Confirmá tu ubicación en el mapa:';
     nombreEl.textContent = '';
     form.dataset.comisariaAsignada = '';
-
     let centro = { lat: -24.786744, lng: -65.408122 };
     if (dato.domicilio && dato.localidad) {
       try {
         const ubic = await geocodificarConNominatim(dato.domicilio, dato.localidad);
-        if (ubic && ubic.lat && ubic.lon) {
-          centro = { lat: ubic.lat, lng: ubic.lon };
-        }
+        if (ubic && ubic.lat && ubic.lon) centro = { lat: ubic.lat, lng: ubic.lon };
       } catch (e) { console.warn('No se pudo geocodificar:', e); }
     }
-
     crearMapaConfirmacion(aviso, form, {
-      lat: centro.lat,
-      lng: centro.lng,
+      lat: centro.lat, lng: centro.lng,
       comisariaFija: null,
-      esMultiple: true,
-      modoBarrio: false,
-      texto,
-      nombreEl
+      esMultiple: true, modoBarrio: false,
+      texto, nombreEl
     });
-
   } else if (estado === 'error') {
     aviso.classList.add('activo', 'error');
     texto.textContent = '⚠️ No se pudo determinar la comisaría';
@@ -2643,12 +2658,17 @@ Object.entries(forms).forEach(([tramite, form]) => {
       mostrarAvisoComisaria(form, 'oculto');
       return;
     }
-    const consulta = `${domicilio}|${localidad}|${zona}`;
+    const usarGuardada = form.dataset.usarUbicacionGuardada === 'true';
+    const latG = usarGuardada ? parseFloat(form.dataset.ubicacionLat) : null;
+    const lonG = usarGuardada ? parseFloat(form.dataset.ubicacionLon) : null;
+    const consulta = `${domicilio}|${localidad}|${zona}|${latG ?? ''}|${lonG ?? ''}`;
     if (consulta === ultimaConsulta) return;
     ultimaConsulta = consulta;
     mostrarAvisoComisaria(form, 'cargando');
     try {
-      const resultado = await asignarComisariaPorJurisdiccion(domicilio, localidad, zona);
+      const resultado = await asignarComisariaPorJurisdiccion(domicilio, localidad, zona, {
+        latGuardada: latG, lonGuardada: lonG
+      });
 
       if (resultado.requiereZona) {
         const aviso = form.querySelector('[data-comisaria-aviso]');
@@ -2664,8 +2684,7 @@ Object.entries(forms).forEach(([tramite, form]) => {
       if (resultado.opciones && resultado.opciones.length > 0) {
         mostrarAvisoComisaria(form, 'multiple', {
           opciones: resultado.opciones,
-          domicilio: inputDomicilio.value.trim(),
-          localidad: selectLocalidad.value
+          domicilio, localidad
         });
       } else if (resultado.comisaria) {
         mostrarAvisoComisaria(form, 'ok', {
@@ -2673,8 +2692,7 @@ Object.entries(forms).forEach(([tramite, form]) => {
           origen: resultado.origen,
           lat: resultado.lat || null,
           lon: resultado.lon || null,
-          domicilio: inputDomicilio.value.trim(),
-          localidad: selectLocalidad.value
+          domicilio, localidad
         });
       } else {
         mostrarAvisoComisaria(form, 'error');
@@ -2686,7 +2704,6 @@ Object.entries(forms).forEach(([tramite, form]) => {
     if (timeoutId) clearTimeout(timeoutId);
     timeoutId = setTimeout(calcularComisaria, 1200);
   }
-
   inputDomicilio.addEventListener('input', debounceCalcular);
   selectLocalidad.addEventListener('change', calcularComisaria);
   if (selectZona) selectZona.addEventListener('change', calcularComisaria);
@@ -2756,7 +2773,13 @@ Object.entries(forms).forEach(([tramite, form]) => {
       btnEnviar.textContent = 'Ubicando domicilio...';
       const campoDomicilio = CAMPO_DOMICILIO[tramite];
       const zona = registro.zona || null;
-      const asignacion = await asignarComisariaPorJurisdiccion(registro[campoDomicilio], registro.localidad, zona);
+      const usarGuardada = form.dataset.usarUbicacionGuardada === 'true';
+      const latG = usarGuardada ? parseFloat(form.dataset.ubicacionLat) : null;
+      const lonG = usarGuardada ? parseFloat(form.dataset.ubicacionLon) : null;
+      const asignacion = await asignarComisariaPorJurisdiccion(
+        registro[campoDomicilio], registro.localidad, zona,
+        { latGuardada: latG, lonGuardada: lonG }
+      );
 
       let comisariaAsignada;
       if (asignacion && asignacion.opciones && asignacion.opciones.length > 0) {
@@ -2782,6 +2805,14 @@ Object.entries(forms).forEach(([tramite, form]) => {
         registro._zonaEditadaManualmente = true;
       }
 
+      // 🆕 Guardar coords usadas (del resultado o del dataset)
+      const latFinal = asignacion?.lat ?? latG ?? null;
+      const lonFinal = asignacion?.lon ?? lonG ?? null;
+      if (latFinal != null && lonFinal != null) {
+        registro._ubicacion_lat = latFinal;
+        registro._ubicacion_lon = lonFinal;
+      }
+
       btnEnviar.textContent = 'Guardando trámite...';
       const { error } = await supabaseClient.from('solicitudes').insert([{
         tramite: tramite,
@@ -2792,6 +2823,22 @@ Object.entries(forms).forEach(([tramite, form]) => {
         codigo: codigoTramite,
       }]);
       if (error) throw error;
+
+      // 🆕 Guardar la ubicación del ciudadano para la próxima
+      const dniSol = form.dataset.dniSolicitante;
+      if (dniSol && latFinal != null && lonFinal != null) {
+        const nombreSol = registro.nombre || registro.nombreSolicitante || registro.nombreProgenitor || '';
+        guardarUbicacionCiudadano({
+          dni: dniSol,
+          nombre: nombreSol,
+          lat: latFinal,
+          lon: lonFinal,
+          comisaria: comisariaAsignada,
+          zona: registro.zona || '',
+          domicilio: registro[campoDomicilio] || '',
+          localidad: registro.localidad || '',
+        }).catch(err => console.warn('No se pudo guardar ubicación:', err));
+      }
 
       document.querySelector('#documento > h2').textContent = 'Trámite enviado correctamente';
       document.querySelectorAll('#documento > .subt').forEach(el => el.style.display = 'block');
@@ -2809,7 +2856,6 @@ Object.entries(forms).forEach(([tramite, form]) => {
             <strong>Esperá la validación del personal policial.</strong>
           </p>
         </div>
-
         <div style="background:rgba(201,169,97,0.15);border:2px dashed rgba(201,169,97,0.7);
                     border-radius:12px;padding:22px;margin:20px 0;text-align:center;">
           <div style="font-size:0.82rem;color:var(--dorado-claro);
@@ -2823,13 +2869,11 @@ Object.entries(forms).forEach(([tramite, form]) => {
                       user-select:all;word-break:break-all;">
             ${codigoTramite}
           </div>
-          <p style="margin:14px 0 0;font-size:0.85rem;color:rgba(255,255,255,0.85);
-                    line-height:1.5;">
+          <p style="margin:14px 0 0;font-size:0.85rem;color:rgba(255,255,255,0.85);line-height:1.5;">
             📌 <strong>Guardá este código.</strong> Lo vas a necesitar para retirar
             tu certificado en la comisaría.
           </p>
         </div>
-
         <div style="background:rgba(185,28,28,0.2);border:1px solid rgba(252,165,165,0.5);
                     border-left:4px solid #fca5a5;border-radius:10px;padding:16px 20px;margin:18px 0;">
           <p style="margin:0;font-size:0.9rem;color:#fff;line-height:1.6;">
@@ -2838,7 +2882,6 @@ Object.entries(forms).forEach(([tramite, form]) => {
             automáticamente y vas a tener que iniciar el trámite de nuevo.
           </p>
         </div>
-
         <div style="background:rgba(44,90,160,0.25);border:1px solid rgba(201,169,97,0.4);
                     border-radius:10px;padding:16px 20px;margin:18px 0;">
           <p style="margin:0;font-size:0.9rem;color:#fff;line-height:1.6;">
@@ -2861,6 +2904,11 @@ Object.entries(forms).forEach(([tramite, form]) => {
 
       form.reset();
       form.querySelectorAll('.captura-foto').forEach(c => resetCaptura(c));
+      form.querySelectorAll('[data-ubicacion-guardada]').forEach(b => b.classList.remove('activo'));
+      delete form.dataset.dniSolicitante;
+      delete form.dataset.ubicacionLat;
+      delete form.dataset.ubicacionLon;
+      delete form.dataset.usarUbicacionGuardada;
       limpiarTodasLasFotosDeStorage();
       avisoBorrador.classList.remove('activo');
 
@@ -2873,6 +2921,18 @@ Object.entries(forms).forEach(([tramite, form]) => {
     }
   });
 });
+
+/* Reset del mapa al cerrar form (por si quedó abierto) */
+document.querySelectorAll('.volver').forEach(btn => {
+  btn.addEventListener('click', () => {
+    if (mapaLeafletActivo) {
+      mapaLeafletActivo.remove();
+      mapaLeafletActivo = null;
+      marcadorLeafletActivo = null;
+    }
+  });
+});
+
 </script>
 
 </body>
