@@ -6,6 +6,7 @@
 <title>Trámites Policiales Salta</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 <style>
   :root{
     --azul-fondo:#0a1e3d; --azul-oscuro:#0d2a4d; --azul:#1a3a6b; --azul-claro:#2c5aa0;
@@ -304,7 +305,8 @@
       <span class="tarjeta-cta">Iniciar trámite →</span>
     </button>
   </div>
-    <!-- Formulario: Residencia -->
+
+  <!-- Formulario: Residencia -->
   <form id="form-residencia">
     <h2>Certificado de Residencia</h2>
     <h3 class="seccion" style="border-top:none;margin-top:0;padding-top:0;">📸 Escaneá tu DNI</h3>
@@ -1420,55 +1422,58 @@
 <script src="comisarias-config.js"></script>
 <script>
 /* ============================================================
-   ZONAS DE COMISARÍAS (inline)
+   ZONAS DE COMISARÍAS (inline, con guardia anti-conflicto)
+   Si comisarias-config.js ya la expone en window, la respetamos.
    ============================================================ */
-const ZONAS_COMISARIA = {
-  "Comisaría N°1": "Centro",
-  "Comisaría N°2": "Centro",
-  "Comisaría N°3": "Centro",
-  "Comisaría N°5": "Centro",
-  "Comisaría N°24": "Centro",
-  "Subcomisaría Villa Asunción": "Centro",
-  "Subcomisaría Barrio Policial": "Centro",
-  "Comisaría N°6": "Norte",
-  "Comisaría N°11": "Norte",
-  "Comisaría N°103": "Norte",
-  "Comisaría N°110": "Norte",
-  "Subcomisaría El Huaico": "Norte",
-  "Comisaría N°4": "Sur",
-  "Comisaría N°10": "Sur",
-  "Comisaría N°12": "Sur",
-  "Comisaría N°17": "Sur",
-  "Comisaría N°102": "Sur",
-  "Comisaría N°105": "Sur",
-  "Comisaría N°106": "Sur",
-  "Comisaría N°111": "Sur",
-  "Subcomisaría Villa Mitre": "Sur",
-  "Comisaría N°14": "Este",
-  "Comisaría N°16": "Este",
-  "Comisaría N°107": "Este",
-  "Subcomisaría Grand Bourg Este": "Este",
-  "Subcomisaría Grand Bourg": "Este",
-  "Comisaría N°13": "Oeste",
-  "Comisaría N°19": "Oeste",
-  "Subcomisaría Villa Lavalle": "Oeste",
-  "Subcomisaría Barrio Docente": "Oeste",
-  "Subcomisaría El Aybal": "Oeste",
-  "Comisaría N°101": "Noreste",
-  "Comisaría N°112": "Noreste",
-  "Comisaría N°118": "Noreste",
-  "Comisaría N°25": "Noroeste",
-  "Comisaría N°100": "Noroeste",
-  "Comisaría N°108": "Noroeste",
-  "Comisaría N°8": "Sudeste",
-  "Comisaría N°104": "Sudeste",
-  "Subcomisaría El Sol": "Sudeste",
-  "Comisaría N°7": "Suroeste",
-  "Comisaría N°9": "Suroeste",
-  "Comisaría N°15": "Suroeste",
-  "Comisaría N°20": "Suroeste",
-  "Destacamento Villa Rebeca": "Suroeste",
-};
+if (typeof window.ZONAS_COMISARIA === 'undefined') {
+  window.ZONAS_COMISARIA = {
+    "Comisaría N°1": "Centro",
+    "Comisaría N°2": "Centro",
+    "Comisaría N°3": "Centro",
+    "Comisaría N°5": "Centro",
+    "Comisaría N°24": "Centro",
+    "Subcomisaría Villa Asunción": "Centro",
+    "Subcomisaría Barrio Policial": "Centro",
+    "Comisaría N°6": "Norte",
+    "Comisaría N°11": "Norte",
+    "Comisaría N°103": "Norte",
+    "Comisaría N°110": "Norte",
+    "Subcomisaría El Huaico": "Norte",
+    "Comisaría N°4": "Sur",
+    "Comisaría N°10": "Sur",
+    "Comisaría N°12": "Sur",
+    "Comisaría N°17": "Sur",
+    "Comisaría N°102": "Sur",
+    "Comisaría N°105": "Sur",
+    "Comisaría N°106": "Sur",
+    "Comisaría N°111": "Sur",
+    "Subcomisaría Villa Mitre": "Sur",
+    "Comisaría N°14": "Este",
+    "Comisaría N°16": "Este",
+    "Comisaría N°107": "Este",
+    "Subcomisaría Grand Bourg Este": "Este",
+    "Subcomisaría Grand Bourg": "Este",
+    "Comisaría N°13": "Oeste",
+    "Comisaría N°19": "Oeste",
+    "Subcomisaría Villa Lavalle": "Oeste",
+    "Subcomisaría Barrio Docente": "Oeste",
+    "Subcomisaría El Aybal": "Oeste",
+    "Comisaría N°101": "Noreste",
+    "Comisaría N°112": "Noreste",
+    "Comisaría N°118": "Noreste",
+    "Comisaría N°25": "Noroeste",
+    "Comisaría N°100": "Noroeste",
+    "Comisaría N°108": "Noroeste",
+    "Comisaría N°8": "Sudeste",
+    "Comisaría N°104": "Sudeste",
+    "Subcomisaría El Sol": "Sudeste",
+    "Comisaría N°7": "Suroeste",
+    "Comisaría N°9": "Suroeste",
+    "Comisaría N°15": "Suroeste",
+    "Comisaría N°20": "Suroeste",
+    "Destacamento Villa Rebeca": "Suroeste",
+  };
+}
 
 function obtenerZona(nombreComisaria) {
   if (!nombreComisaria) return "";
@@ -1477,12 +1482,12 @@ function obtenerZona(nombreComisaria) {
          || n.match(/cr[íi]a\.?\s*(\d{1,3})/i);
   if (m) {
     const clave = "Comisaría N°" + m[1];
-    if (ZONAS_COMISARIA[clave]) return ZONAS_COMISARIA[clave];
+    if (window.ZONAS_COMISARIA[clave]) return window.ZONAS_COMISARIA[clave];
   }
-  const claves = Object.keys(ZONAS_COMISARIA).sort((a, b) => b.length - a.length);
+  const claves = Object.keys(window.ZONAS_COMISARIA).sort((a, b) => b.length - a.length);
   for (const clave of claves) {
     if (clave.startsWith("Comisaría N°")) continue;
-    if (n.toLowerCase().includes(clave.toLowerCase())) return ZONAS_COMISARIA[clave];
+    if (n.toLowerCase().includes(clave.toLowerCase())) return window.ZONAS_COMISARIA[clave];
   }
   return "";
 }
@@ -1756,36 +1761,39 @@ document.getElementById('doc-volver').addEventListener('click', () => {
 
 /* ============================================================
    PARSER PARA EL NUEVO DNI ELECTRÓNICO (código QR)
-   Formato:
+   Formato típico:
    NRO_TRAMITE@APELLIDO@NOMBRE@DNI@TIPO_DOC@FECHA_NAC@FECHA_EMISION@JWT
    Ejemplo: 004749670950@SANCHEZ@RAMIRO ERNESTO@25122169@D@26/02/76@21/04/26@eyJ...
+   (versión tolerante: acepta 10-14 dígitos, mayúsc/minúsc, espacios)
    ============================================================ */
 function parsearCodigoDNIQR(texto) {
-  const contenido = String(texto || '').trim();
+  const contenido = String(texto || '').trim().replace(/^\uFEFF/, '');
+  if (!contenido) return null;
 
-  // Detección: el nuevo QR empieza con 12 dígitos + "@" + letras
-  if (!/^\d{12}@[A-ZÁÉÍÓÚÑ]/.test(contenido)) return null;
-
-  const partes = contenido.split('@');
-  if (partes.length < 6) return null;
+  // Acepta 10 a 14 dígitos al inicio, luego @ y una letra
+  const match = contenido.match(
+    /^(\d{10,14})@([^@]+)@([^@]+)@(\d{6,9})@([A-Za-z])@([^@]+?)(?:@([^@]+?))?(?:@(.+))?$/
+  );
+  if (!match) return null;
 
   const [
+    ,
     nroTramite,
     apellido,
     nombre,
     dni,
     tipoDoc,
     fechaNacDMY,
-    fechaEmisionDMY,
-    jwt
-  ] = partes;
+    fechaEmisionDMY
+  ] = match;
 
   if (!/^\d{7,8}$/.test(dni)) return null;
 
-  // Función auxiliar para convertir DD/MM/AA → YYYY-MM-DD
   function convertirFechaDMY(fechaStr) {
-    if (!fechaStr || !/^\d{2}\/\d{2}\/\d{2,4}$/.test(fechaStr)) return '';
-    const [dd, mm, aa] = fechaStr.split('/');
+    if (!fechaStr) return '';
+    const limpio = String(fechaStr).trim();
+    if (!/^\d{2}\/\d{2}\/\d{2,4}$/.test(limpio)) return '';
+    const [dd, mm, aa] = limpio.split('/');
     let anio = aa;
     if (aa.length === 2) {
       anio = parseInt(aa) > 50 ? '19' + aa : '20' + aa;
@@ -1793,25 +1801,16 @@ function parsearCodigoDNIQR(texto) {
     return `${anio}-${mm.padStart(2, '0')}-${dd.padStart(2, '0')}`;
   }
 
-  const fechaISO = convertirFechaDMY(fechaNacDMY);
-  const fechaEmisionISO = convertirFechaDMY(fechaEmisionDMY);
-
-  const tipos = {
-    'D': 'DNI',
-    'C': 'LC',
-    'E': 'LE',
-    'P': 'Pasaporte',
-    'I': 'CI',
-  };
+  const tipos = { 'D': 'DNI', 'C': 'LC', 'E': 'LE', 'P': 'Pasaporte', 'I': 'CI' };
 
   return {
-    nombreCompleto: `${apellido} ${nombre}`.trim(),
-    apellido: apellido,
-    nombre: nombre,
+    nombreCompleto: `${apellido.trim()} ${nombre.trim()}`.trim(),
+    apellido: apellido.trim(),
+    nombre: nombre.trim(),
     dni: dni,
-    tipoDocumento: tipos[tipoDoc] || tipoDoc,
-    fechaNacimientoISO: fechaISO,
-    fechaEmisionISO: fechaEmisionISO,
+    tipoDocumento: tipos[tipoDoc.toUpperCase()] || tipoDoc.toUpperCase(),
+    fechaNacimientoISO: convertirFechaDMY(fechaNacDMY),
+    fechaEmisionISO: convertirFechaDMY(fechaEmisionDMY),
     nroTramite: nroTramite,
     esNuevoDNI: true,
     sexo: ''
@@ -1940,8 +1939,11 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
   let detector = null;
 
   const barcodeDisponible = !!window.BarcodeDetector;
-  if (!barcodeDisponible) {
+  const jsQRDisponible = !!window.jsQR;
+  if (!barcodeDisponible && !jsQRDisponible) {
     escaneoEstado.textContent = 'Escaneo automático no disponible. Se sacará la foto igual.';
+  } else if (!barcodeDisponible && jsQRDisponible) {
+    escaneoEstado.textContent = 'Modo compatibilidad activo (jsQR).';
   }
 
   btnCamara.addEventListener('click', async () => {
@@ -2002,6 +2004,9 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
     setTimeout(escanearFrame, 500);
   }
 
+  // ============================================================
+  // Escaneo con fallback universal (BarcodeDetector + jsQR)
+  // ============================================================
   async function escanearFrame() {
     if (!scannerActivo) return;
     if (!video.srcObject || video.readyState < 2 || !video.videoWidth) return;
@@ -2010,20 +2015,49 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
       const escala = Math.min(1, anchoMax / video.videoWidth);
       canvas.width = Math.round(video.videoWidth * escala);
       canvas.height = Math.round(video.videoHeight * escala);
-      canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+      const ctx = canvas.getContext('2d', { willReadFrequently: true });
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      let rawValue = null;
+
+      // 1) Intentar con BarcodeDetector (nativo, más rápido)
       if (detector) {
-        const codigos = await detector.detect(canvas);
-        if (codigos && codigos.length) {
-          const datos = parsearCodigoDNI(codigos[0].rawValue);
-          if (datos && (datos.dni || datos.nombreCompleto)) { exitoEscaneo(datos, canvas); return; }
+        try {
+          const codigos = await detector.detect(canvas);
+          if (codigos && codigos.length) rawValue = codigos[0].rawValue;
+        } catch (e) { /* seguimos con jsQR */ }
+      }
+
+      // 2) Fallback con jsQR (funciona en Firefox/Safari/iOS)
+      if (!rawValue && window.jsQR) {
+        try {
+          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const qr = window.jsQR(imageData.data, imageData.width, imageData.height, {
+            inversionAttempts: 'dontInvert'
+          });
+          if (qr && qr.data) rawValue = qr.data;
+        } catch (e) { /* silencioso */ }
+      }
+
+      if (rawValue) {
+        console.log('📷 Código detectado:', rawValue.substring(0, 80) + (rawValue.length > 80 ? '…' : ''));
+        const datos = parsearCodigoDNI(rawValue);
+        if (datos && (datos.dni || datos.nombreCompleto)) {
+          console.log('✅ Datos parseados:', datos);
+          exitoEscaneo(datos, canvas);
+          return;
+        } else {
+          console.warn('⚠️ Código detectado pero no parseable:', rawValue.substring(0, 120));
         }
       }
+
       intentosSinDeteccion++;
       if (intentosSinDeteccion === 20) mostrarTimeout();
     } catch (err) { console.warn('Error escaneando frame:', err); }
   }
 
   function exitoEscaneo(datos, canvasFoto) {
+    console.log('🎯 exitoEscaneo — esNuevoDNI:', datos.esNuevoDNI, '— nroTramite:', datos.nroTramite);
     scannerActivo = false;
     if (captura._scanInterval) { clearInterval(captura._scanInterval); captura._scanInterval = null; }
     const dataUrl = canvasFoto.toDataURL('image/jpeg', 0.7);
@@ -2040,7 +2074,7 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
     if (video.srcObject) { video.srcObject.getTracks().forEach(t => t.stop()); video.srcObject = null; }
     trackActual = null;
 
-    if (campos) {
+    if (campos && form) {
       if (datos.nombreCompleto && form.querySelector(`[name="${campos.nombre}"]`))
         form.querySelector(`[name="${campos.nombre}"]`).value = datos.nombreCompleto;
       if (datos.dni && form.querySelector(`[name="${campos.dni}"]`))
@@ -2052,44 +2086,23 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
     }
 
     // ============================================================
-    // NUEVO: Guardar datos extra del DNI nuevo (QR) en campos hidden
+    // Guardar datos extra del DNI nuevo (QR) en campos hidden
     // ============================================================
-    if (datos.esNuevoDNI) {
-      let inputNroTramite = form.querySelector('input[name="nroTramiteDNI"]');
-      if (!inputNroTramite) {
-        inputNroTramite = document.createElement('input');
-        inputNroTramite.type = 'hidden';
-        inputNroTramite.name = 'nroTramiteDNI';
-        form.appendChild(inputNroTramite);
-      }
-      inputNroTramite.value = datos.nroTramite || '';
-
-      let inputTipoDoc = form.querySelector('input[name="tipoDocumentoDNI"]');
-      if (!inputTipoDoc) {
-        inputTipoDoc = document.createElement('input');
-        inputTipoDoc.type = 'hidden';
-        inputTipoDoc.name = 'tipoDocumentoDNI';
-        form.appendChild(inputTipoDoc);
-      }
-      inputTipoDoc.value = datos.tipoDocumento || '';
-
-      let inputFechaEmision = form.querySelector('input[name="fechaEmisionDNI"]');
-      if (!inputFechaEmision) {
-        inputFechaEmision = document.createElement('input');
-        inputFechaEmision.type = 'hidden';
-        inputFechaEmision.name = 'fechaEmisionDNI';
-        form.appendChild(inputFechaEmision);
-      }
-      inputFechaEmision.value = datos.fechaEmisionISO || '';
-
-      let inputEsNuevo = form.querySelector('input[name="esDNINuevo"]');
-      if (!inputEsNuevo) {
-        inputEsNuevo = document.createElement('input');
-        inputEsNuevo.type = 'hidden';
-        inputEsNuevo.name = 'esDNINuevo';
-        form.appendChild(inputEsNuevo);
-      }
-      inputEsNuevo.value = 'true';
+    if (datos.esNuevoDNI && form) {
+      const setHidden = (nombre, valor) => {
+        let input = form.querySelector(`input[name="${nombre}"]`);
+        if (!input) {
+          input = document.createElement('input');
+          input.type = 'hidden';
+          input.name = nombre;
+          form.appendChild(input);
+        }
+        input.value = valor;
+      };
+      setHidden('nroTramiteDNI', datos.nroTramite || '');
+      setHidden('tipoDocumentoDNI', datos.tipoDocumento || '');
+      setHidden('fechaEmisionDNI', datos.fechaEmisionISO || '');
+      setHidden('esDNINuevo', 'true');
     }
 
     const camposBloqueo = camposABloquearParaTarget(captura.dataset.target);
