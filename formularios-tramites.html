@@ -1423,7 +1423,6 @@
 <script>
 /* ============================================================
    ZONAS DE COMISARÍAS (inline, con guardia anti-conflicto)
-   Si comisarias-config.js ya la expone en window, la respetamos.
    ============================================================ */
 if (typeof window.ZONAS_COMISARIA === 'undefined') {
   window.ZONAS_COMISARIA = {
@@ -1493,18 +1492,30 @@ function obtenerZona(nombreComisaria) {
 }
 
 /* ============================================================
-   BARRIOS QUE CAMBIAN DE COMISARÍA SEGÚN LA ZONA ELEGIDA
+   🆕 NORMALIZADOR DE NOMBRES DE BARRIO
+   Unifica variantes: "II" = "2" = "2do" = "2°" = "Segundo"
+   ============================================================ */
+function normalizarBarrio(t) {
+  return String(t || '')
+    .toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[°ºª]/g, ' ')
+    .replace(/\b(ii|2do|2da|2°|2º|dos|segundo|segunda)\b/g, '2')
+    .replace(/\b(iii|3ro|3ra|tres|tercero|tercera)\b/g, '3')
+    .replace(/\b(iv|4to|4ta|cuatro|cuarto|cuarta)\b/g, '4')
+    .replace(/\b(v|5to|5ta|cinco|quinto|quinta)\b/g, '5')
+    .replace(/\b(i|1ro|1ra|uno|primero|primera)\b/g, '1')
+    .replace(/[^\w\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/* ============================================================
+   🆕 BARRIOS QUE CAMBIAN DE COMISARÍA SEGÚN LA ZONA ELEGIDA
+   (claves ya normalizadas)
    ============================================================ */
 const BARRIOS_MULTI_ZONA = {
-  "juan pablo ii": {
-    "Norte": "Comisaría N°11 - 17 de Octubre (DDP 1)",
-    "Sur":   "Comisaría N°7 - El Tribuno (DDP 1)",
-  },
   "juan pablo 2": {
-    "Norte": "Comisaría N°11 - 17 de Octubre (DDP 1)",
-    "Sur":   "Comisaría N°7 - El Tribuno (DDP 1)",
-  },
-  "juan pablo segundo": {
     "Norte": "Comisaría N°11 - 17 de Octubre (DDP 1)",
     "Sur":   "Comisaría N°7 - El Tribuno (DDP 1)",
   },
@@ -1761,16 +1772,11 @@ document.getElementById('doc-volver').addEventListener('click', () => {
 
 /* ============================================================
    PARSER PARA EL NUEVO DNI ELECTRÓNICO (código QR)
-   Formato típico:
-   NRO_TRAMITE@APELLIDO@NOMBRE@DNI@TIPO_DOC@FECHA_NAC@FECHA_EMISION@JWT
-   Ejemplo: 004749670950@SANCHEZ@RAMIRO ERNESTO@25122169@D@26/02/76@21/04/26@eyJ...
-   (versión tolerante: acepta 10-14 dígitos, mayúsc/minúsc, espacios)
    ============================================================ */
 function parsearCodigoDNIQR(texto) {
   const contenido = String(texto || '').trim().replace(/^\uFEFF/, '');
   if (!contenido) return null;
 
-  // Acepta 10 a 14 dígitos al inicio, luego @ y una letra
   const match = contenido.match(
     /^(\d{10,14})@([^@]+)@([^@]+)@(\d{6,9})@([A-Za-z])@([^@]+?)(?:@([^@]+?))?(?:@(.+))?$/
   );
@@ -1818,11 +1824,9 @@ function parsearCodigoDNIQR(texto) {
 }
 
 function parsearCodigoDNI(texto) {
-  // Primero intentamos con el parser del DNI nuevo (QR)
   const datosQR = parsearCodigoDNIQR(texto);
   if (datosQR) return datosQR;
 
-  // Si no es el formato nuevo, seguimos con el parser del DNI viejo (PDF417)
   const contenido = String(texto || "").replace(/[\r\n]+/g, "@");
   const partes = contenido.split("@").map(p => p.trim()).filter(Boolean);
   const dniMatch = contenido.match(/\b\d{7,8}\b/);
@@ -2004,9 +2008,6 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
     setTimeout(escanearFrame, 500);
   }
 
-  // ============================================================
-  // Escaneo con fallback universal (BarcodeDetector + jsQR)
-  // ============================================================
   async function escanearFrame() {
     if (!scannerActivo) return;
     if (!video.srcObject || video.readyState < 2 || !video.videoWidth) return;
@@ -2020,15 +2021,13 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
 
       let rawValue = null;
 
-      // 1) Intentar con BarcodeDetector (nativo, más rápido)
       if (detector) {
         try {
           const codigos = await detector.detect(canvas);
           if (codigos && codigos.length) rawValue = codigos[0].rawValue;
-        } catch (e) { /* seguimos con jsQR */ }
+        } catch (e) { }
       }
 
-      // 2) Fallback con jsQR (funciona en Firefox/Safari/iOS)
       if (!rawValue && window.jsQR) {
         try {
           const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
@@ -2036,7 +2035,7 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
             inversionAttempts: 'dontInvert'
           });
           if (qr && qr.data) rawValue = qr.data;
-        } catch (e) { /* silencioso */ }
+        } catch (e) { }
       }
 
       if (rawValue) {
@@ -2085,9 +2084,6 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
       }
     }
 
-    // ============================================================
-    // Guardar datos extra del DNI nuevo (QR) en campos hidden
-    // ============================================================
     if (datos.esNuevoDNI && form) {
       const setHidden = (nombre, valor) => {
         let input = form.querySelector(`input[name="${nombre}"]`);
@@ -2323,22 +2319,36 @@ async function geocodificarConNominatim(domicilio, localidad) {
   return null;
 }
 
+/* ============================================================
+   🆕 ASIGNACIÓN DE COMISARÍA POR JURISDICCIÓN
+   ============================================================ */
 async function asignarComisariaPorJurisdiccion(domicilio, localidad, zona) {
   if (!domicilio || !localidad) return { error: 'Falta domicilio o localidad' };
 
   // 1) Barrios que cambian de comisaría según la zona elegida
-  const domNorm = domicilio.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-  const barriosMulti = Object.keys(BARRIOS_MULTI_ZONA).sort((a, b) => b.length - a.length);
+  const domNorm = normalizarBarrio(domicilio);
+  const barriosMulti = Object.keys(BARRIOS_MULTI_ZONA);
   for (const barrio of barriosMulti) {
-    const barrioNorm = barrio.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const barrioNorm = normalizarBarrio(barrio);
     if (domNorm.includes(barrioNorm)) {
       const porZona = BARRIOS_MULTI_ZONA[barrio];
       if (zona && porZona[zona]) {
+        let lat = null, lon = null;
+        if (typeof DEPENDENCIAS_POLICIALES !== 'undefined') {
+          const nombreCom = porZona[zona];
+          const dep = DEPENDENCIAS_POLICIALES.find(d => d.nombre === nombreCom)
+                   || DEPENDENCIAS_POLICIALES.find(d =>
+                        d.nombre && nombreCom.toLowerCase().startsWith(d.nombre.toLowerCase())
+                      );
+          if (dep && dep.lat) { lat = dep.lat; lon = dep.lon; }
+        }
         return {
           comisaria: porZona[zona],
           origen: 'multi_zona',
           barrio: barrio,
           zona: zona,
+          lat: lat,
+          lon: lon,
         };
       }
       return {
@@ -2351,10 +2361,10 @@ async function asignarComisariaPorJurisdiccion(domicilio, localidad, zona) {
 
   // 2) Correcciones por barrio (una sola comisaría)
   if (typeof CORRECCIONES_BARRIO !== 'undefined' && CORRECCIONES_BARRIO) {
-    const domicilioNormalizado = domicilio.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const domicilioNormalizado = normalizarBarrio(domicilio);
     const barriosOrdenados = Object.keys(CORRECCIONES_BARRIO).sort((a, b) => b.length - a.length);
     for (const barrio of barriosOrdenados) {
-      const barrioNormalizado = barrio.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      const barrioNormalizado = normalizarBarrio(barrio);
       if (domicilioNormalizado.includes(barrioNormalizado)) {
         const valor = CORRECCIONES_BARRIO[barrio];
         if (Array.isArray(valor)) {
@@ -2511,6 +2521,9 @@ function crearMapaConfirmacion(aviso, form, opciones) {
   }, 50);
 }
 
+/* ============================================================
+   🆕 MOSTRAR AVISO DE COMISARÍA (con soporte multi_zona como modo barrio fijo)
+   ============================================================ */
 async function mostrarAvisoComisaria(form, estado, dato) {
   const aviso = form.querySelector('[data-comisaria-aviso]');
   if (!aviso) return;
@@ -2550,7 +2563,8 @@ async function mostrarAvisoComisaria(form, estado, dato) {
       if (z) selectZona.value = z;
     }
 
-    const esModoBarrio = dato.origen === 'correccion_barrio';
+    // 🆕 multi_zona también se comporta como "modo barrio fijo"
+    const esModoBarrio = dato.origen === 'correccion_barrio' || dato.origen === 'multi_zona';
 
     let centro = { lat: -24.786744, lng: -65.408122 };
     if (dato.lat && dato.lon) {
