@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Consultar mi trámite · Trámites Policiales Salta</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  :root{
+    --azul-fondo:#0a1e3d; --azul-oscuro:#0d2a4d; --azul:#1a3a6b; --azul-claro:#2c5aa0;
+    --dorado:#c9a961; --dorado-claro:#e6c988; --dorado-brilloso:#f0d78c;
+    --verde:#15803d; --rojo:#b91c1c; --amarillo:#ca8a04;
+    --sombra-suave:0 2px 8px rgba(13,42,77,0.08);
+    --sombra-media:0 4px 16px rgba(13,42,77,0.12);
+    --sombra-fuerte:0 8px 32px rgba(13,42,77,0.16);
+  }
+  *{box-sizing:border-box;}
+  html{background:var(--azul-fondo); min-height:100%;}
+  body{font-family:'Segoe UI', -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+    background:var(--azul-fondo);margin:0;color:#fff;position:relative;
+    overflow-x:hidden;min-height:100vh;display:flex;flex-direction:column;}
+  body::before{content:'';position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+    width:100vmin;height:100vmin;background-image:url('logo-policia.png.jpeg');
+    background-size:contain;background-repeat:no-repeat;background-position:center;
+    opacity:0.55;pointer-events:none;z-index:0;}
+  body > *{position:relative; z-index:1;}
+  header{background:linear-gradient(135deg, var(--azul-oscuro) 0%, var(--azul) 100%);
+    color:#fff;padding:28px 24px 26px;position:relative;overflow:hidden;
+    border-bottom:3px solid var(--dorado);box-shadow:var(--sombra-media);text-align:center;}
+  header::after{content:'';position:absolute;top:-50%;right:-10%;width:400px;height:400px;
+    background:radial-gradient(circle, rgba(201,169,97,0.15) 0%, transparent 70%);
+    border-radius:50%;pointer-events:none;}
+  header .header-inner{max-width:760px;margin:0 auto;position:relative;z-index:2;
+    display:flex;align-items:center;justify-content:center;gap:18px;flex-wrap:wrap;}
+  header .header-logo{width:64px;height:64px;background-image:url('logo-policia.png.jpeg');
+    background-size:contain;background-repeat:no-repeat;background-position:center;
+    filter:drop-shadow(0 2px 8px rgba(0,0,0,0.4));flex-shrink:0;}
+  header .header-texto{text-align:left;}
+  header h1{margin:0;font-size:1.6rem;font-weight:700;letter-spacing:-0.02em;
+    color:#fff;text-shadow:0 2px 4px rgba(0,0,0,0.3);}
+  header h1::after{content:'';display:block;width:60px;height:3px;
+    background:linear-gradient(90deg, var(--dorado), var(--dorado-claro));
+    margin:8px 0 0;border-radius:2px;}
+  header p{margin:8px 0 0;font-size:0.92rem;color:var(--dorado-claro);
+    font-weight:500;letter-spacing:0.02em;}
+  header .sub{margin:4px 0 0;font-size:0.78rem;opacity:0.85;color:#e0e7f1;}
+  main{max-width:760px;margin:36px auto;padding:0 16px 40px;width:100%;flex:1;}
+
+  .caja-busqueda{background:rgba(13,42,77,0.6);backdrop-filter:blur(8px);
+    border:1px solid rgba(201,169,97,0.35);border-top:3px solid var(--dorado);
+    border-radius:10px;padding:26px 22px;box-shadow:var(--sombra-suave);
+    margin-bottom:22px;}
+  .caja-busqueda h2{margin:0 0 6px;color:var(--dorado-claro);font-size:1.15rem;
+    text-shadow:0 2px 4px rgba(0,0,0,0.3);}
+  .caja-busqueda .ayuda{font-size:0.85rem;color:rgba(255,255,255,0.7);
+    margin:0 0 20px;line-height:1.5;}
+  .caja-busqueda label{display:block;margin:14px 0 6px;font-size:0.88rem;
+    font-weight:600;color:var(--dorado-claro);}
+  .caja-busqueda input{width:100%;padding:14px 16px;
+    border:1px solid rgba(201,169,97,0.4);border-radius:8px;font-size:1.3rem;
+    font-family:'Courier New', monospace;letter-spacing:0.15em;text-align:center;
+    font-weight:700;background:rgba(0,0,0,0.35);color:#fff;transition:all 0.2s;}
+  .caja-busqueda input::placeholder{color:rgba(255,255,255,0.3);
+    letter-spacing:0.15em;font-weight:400;}
+  .caja-busqueda input:focus{outline:none;border-color:var(--dorado);
+    box-shadow:0 0 0 3px rgba(201,169,97,0.25);background:rgba(0,0,0,0.5);}
+  .caja-busqueda button{margin-top:18px;width:100%;padding:14px;
+    background:linear-gradient(135deg, var(--azul) 0%, var(--azul-claro) 100%);
+    color:#fff;border:1px solid rgba(201,169,97,0.3);border-radius:8px;
+    font-size:0.95rem;font-weight:700;cursor:pointer;transition:all 0.2s;
+    text-transform:uppercase;letter-spacing:0.05em;font-family:inherit;
+    display:flex;align-items:center;justify-content:center;gap:10px;}
+  .caja-busqueda button:hover:not(:disabled){transform:translateY(-1px);
+    box-shadow:0 4px 12px rgba(201,169,97,0.3);}
+  .caja-busqueda button:disabled{opacity:0.6;cursor:not-allowed;}
+
+  .spinner{display:inline-block;width:16px;height:16px;
+    border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;
+    border-radius:50%;animation:girar 0.7s linear infinite;vertical-align:middle;}
+  @keyframes girar{to{transform:rotate(360deg);}}
+
+  #error-busqueda{display:none;margin-top:16px;padding:14px 18px;
+    background:rgba(185,28,28,0.25);border:1px solid rgba(252,165,165,0.5);
+    border-left:4px solid #fca5a5;border-radius:8px;color:#fff;
+    font-size:0.9rem;line-height:1.5;text-align:left;}
+  #error-busqueda.activo{display:block;}
+  #error-busqueda strong{color:#fca5a5;display:block;margin-bottom:4px;}
+
+  #resultado{display:none;}
+  #resultado.activo{display:block;}
+
+  .tarjeta-resultado{background:rgba(13,42,77,0.75);backdrop-filter:blur(10px);
+    border:1px solid rgba(201,169,97,0.4);border-top:3px solid var(--dorado);
+    border-radius:12px;padding:26px;margin-bottom:18px;box-shadow:var(--sombra-media);
+    animation:fadeIn 0.4s ease-out;}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(-8px);}to{opacity:1;transform:translateY(0);}}
+
+  .tarjeta-resultado h3{margin:0 0 4px;color:var(--dorado-claro);font-size:1.15rem;
+    display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .tarjeta-resultado .subt{font-size:0.82rem;color:rgba(255,255,255,0.7);
+    margin-bottom:20px;padding-bottom:14px;border-bottom:1px solid rgba(255,255,255,0.15);}
+
+  .estado-grande{display:flex;align-items:center;gap:14px;padding:18px 20px;
+    border-radius:10px;margin-bottom:22px;}
+  .estado-grande.pendiente{background:rgba(202,138,4,0.15);
+    border:1px solid rgba(252,211,77,0.5);border-left:4px solid #fcd34d;}
+  .estado-grande.procesado{background:rgba(21,128,61,0.15);
+    border:1px solid rgba(134,239,172,0.5);border-left:4px solid #86efac;}
+  .estado-grande.denegado{background:rgba(185,28,28,0.15);
+    border:1px solid rgba(252,165,165,0.5);border-left:4px solid #fca5a5;}
+  .estado-grande .icono{font-size:2.4rem;flex-shrink:0;}
+  .estado-grande .texto{display:flex;flex-direction:column;gap:2px;}
+  .estado-grande .texto .principal{font-size:1.2rem;font-weight:700;color:#fff;line-height:1.2;}
+  .estado-grande .texto .secundario{font-size:0.85rem;color:rgba(255,255,255,0.85);line-height:1.4;}
+  .estado-grande.pendiente .principal{color:#fcd34d;}
+  .estado-grande.procesado .principal{color:#86efac;}
+  .estado-grande.denegado .principal{color:#fca5a5;}
+
+  .info-grid{display:grid;grid-template-columns:repeat(auto-fit, minmax(230px, 1fr));
+    gap:14px;margin-bottom:20px;}
+  .info-item{padding:14px 16px;background:rgba(255,255,255,0.06);
+    border-radius:8px;border-left:3px solid var(--dorado);}
+  .info-item .label{font-size:0.72rem;color:var(--dorado-claro);
+    text-transform:uppercase;letter-spacing:0.04em;font-weight:700;margin-bottom:4px;}
+  .info-item .valor{font-size:0.95rem;color:#fff;font-weight:500;
+    word-break:break-word;line-height:1.4;}
+  .info-item.destacado{background:rgba(201,169,97,0.12);
+    border-left-color:var(--dorado-brilloso);}
+  .info-item.destacado .valor{color:var(--dorado-brilloso);font-weight:700;}
+
+  .aviso-importante{padding:16px 18px;border-radius:10px;margin-top:18px;
+    line-height:1.6;font-size:0.9rem;}
+  .aviso-importante.verde{background:rgba(21,128,61,0.2);
+    border:1px solid rgba(134,239,172,0.5);border-left:4px solid #86efac;}
+  .aviso-importante.rojo{background:rgba(185,28,28,0.2);
+    border:1px solid rgba(252,165,165,0.5);border-left:4px solid #fca5a5;}
+  .aviso-importante.amarillo{background:rgba(202,138,4,0.2);
+    border:1px solid rgba(252,211,77,0.5);border-left:4px solid #fcd34d;}
+  .aviso-importante strong{color:var(--dorado-brilloso);}
+
+  .codigo-grande{background:rgba(201,169,97,0.15);
+    border:2px dashed rgba(201,169,97,0.7);border-radius:12px;
+    padding:20px;text-align:center;margin:20px 0;}
+  .codigo-grande .etiqueta{font-size:0.78rem;color:var(--dorado-claro);
+    text-transform:uppercase;letter-spacing:0.1em;font-weight:700;margin-bottom:10px;}
+  .codigo-grande .valor{font-family:'Courier New',monospace;font-size:2rem;
+    font-weight:700;color:var(--dorado-brilloso);letter-spacing:0.2em;
+    background:rgba(0,0,0,0.3);padding:14px 20px;border-radius:8px;
+    user-select:all;word-break:break-all;display:inline-block;}
+
+  #mapa-comisaria{width:100%;height:260px;border-radius:10px;
+    border:1px solid rgba(201,169,97,0.4);margin-top:14px;z-index:1;}
+  .leaflet-container{background:#0a1e3d !important;}
+  .leaflet-control-attribution{background:rgba(0,0,0,0.5) !important;
+    color:#fff !important;font-size:0.65rem !important;}
+  .leaflet-control-attribution a{color:var(--dorado-claro) !important;}
+  .leaflet-control-zoom a{background:rgba(13,42,77,0.9) !important;
+    color:#fff !important;border-color:rgba(201,169,97,0.4) !important;}
+  .leaflet-control-zoom a:hover{background:var(--azul) !important;}
+
+  .acciones{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px;
+    padding-top:18px;border-top:1px solid rgba(255,255,255,0.15);}
+  .acciones button{padding:11px 20px;border:none;border-radius:8px;
+    font-size:0.9rem;font-weight:600;cursor:pointer;transition:all 0.2s;
+    font-family:inherit;display:inline-flex;align-items:center;gap:6px;}
+  .btn-secundario{background:rgba(255,255,255,0.1);color:#fff;
+    border:1px solid rgba(255,255,255,0.2);}
+  .btn-secundario:hover{background:rgba(255,255,255,0.2);border-color:var(--dorado);}
+  .btn-imprimir{background:linear-gradient(135deg, var(--azul), var(--azul-claro));
+    color:#fff;border:1px solid rgba(201,169,97,0.3);}
+  .btn-imprimir:hover{transform:translateY(-1px);
+    box-shadow:0 4px 12px rgba(201,169,97,0.3);}
+
+  footer.site-footer{background:transparent;color:var(--dorado-claro);
+    padding:28px 20px;margin-top:auto;border-top:1px solid rgba(201,169,97,0.3);
+    text-align:center;font-size:1rem;line-height:1.7;position:relative;z-index:2;}
+  footer.site-footer .footer-inner{max-width:760px;margin:0 auto;}
+  footer.site-footer p{margin:4px 0;color:var(--dorado-brilloso);font-weight:500;
+    text-shadow:0 0 10px rgba(240,215,140,0.4), 0 1px 2px rgba(0,0,0,0.5);}
+  footer.site-footer strong{color:var(--dorado-brilloso);font-weight:700;
+    text-shadow:0 0 10px rgba(240,215,140,0.5), 0 1px 2px rgba(0,0,0,0.5);}
+
+  @media (max-width: 600px){
+    header .header-inner{flex-direction:column;text-align:center;}
+    header .header-texto{text-align:center;}
+    header h1::after{margin:8px auto 0;}
+    header h1{font-size:1.3rem;}
+    header .header-logo{width:56px;height:56px;}
+    header{padding:22px 18px 20px;}
+    main{margin:24px auto;}
+    .caja-busqueda{padding:22px 18px;}
+    .caja-busqueda input{font-size:1.1rem;letter-spacing:0.1em;padding:12px 14px;}
+    .tarjeta-resultado{padding:20px 18px;}
+    .codigo-grande .valor{font-size:1.4rem;letter-spacing:0.15em;}
+    .estado-grande{flex-direction:column;align-items:flex-start;text-align:left;}
+    .acciones button{width:100%;justify-content:center;}
+  }
+  @media print{
+    header,footer.site-footer,.caja-busqueda,.acciones,#mapa-comisaria{display:none !important;}
+    body{background:#fff;color:#000;}
+    body::before{display:none !important;}
+    .tarjeta-resultado{background:#fff;border:1px solid #999;
+      box-shadow:none;backdrop-filter:none;color:#000;}
+    .tarjeta-resultado h3,.tarjeta-resultado .subt,
+    .info-item .label,.codigo-grande .etiqueta{color:#0d2a4d !important;}
+    .info-item{background:#f3f4f6;border-left-color:#c9a961;}
+    .info-item .valor{color:#000;}
+    .estado-grande{background:#f3f4f6;border-color:#999 !important;}
+    .estado-grande .principal{color:#000 !important;}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="header-logo"></div>
+    <div class="header-texto">
+      <h1>Consultar mi trámite</h1>
+      <p>Estado de tu solicitud policial</p>
+      <p class="sub">Policía de Salta · DMI (JP)</p>
+    </div>
+  </div>
+</header>
+
+<main>
+
+  <!-- Caja de búsqueda -->
+  <div class="caja-busqueda">
+    <h2>🔍 Consultá el estado de tu trámite</h2>
+    <p class="ayuda">
+      Ingresá el <strong>código único de 8 dígitos</strong> que te dio el sistema cuando enviaste tu solicitud.
+      Es el número que empieza con un dígito y sigue con otros 7 (ej: <strong>12345678</strong>).
+    </p>
+    <label for="input-codigo">Código de trámite</label>
+    <input type="text" id="input-codigo" maxlength="8" inputmode="numeric"
+           pattern="[0-9]{8}" placeholder="00000000" autocomplete="off">
+    <button id="btn-consultar" type="button">🔎 Consultar estado</button>
+    <div id="error-busqueda"></div>
+  </div>
+
+  <!-- Resultado -->
+  <div id="resultado"></div>
+
+</main>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <p><strong>© 2026 Policía de Salta</strong> · Dirección de Modernización e Innovación Tecnológica (JP)</p>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-config.js"></script>
+<script src="comisarias-config.js"></script>
+<script>
+/* ============================================================
+   ZONAS DE COMISARÍAS (fallback si no está en comisarias-config.js)
+   ============================================================ */
+if (typeof window.ZONAS_COMISARIA === 'undefined') {
+  window.ZONAS_COMISARIA = {
+    "Comisaría N°1": "Centro","Comisaría N°2": "Centro","Comisaría N°3": "Centro",
+    "Comisaría N°5": "Centro","Comisaría N°24": "Centro",
+    "Subcomisaría Villa Asunción": "Centro","Subcomisaría Barrio Policial": "Centro",
+    "Comisaría N°6": "Norte","Comisaría N°11": "Norte","Comisaría N°103": "Norte",
+    "Comisaría N°110": "Norte","Subcomisaría El Huaico": "Norte",
+    "Comisaría N°4": "Sur","Comisaría N°10": "Sur","Comisaría N°12": "Sur",
+    "Comisaría N°17": "Sur","Comisaría N°102": "Sur","Comisaría N°105": "Sur",
+    "Comisaría N°106": "Sur","Comisaría N°111": "Sur","Subcomisaría Villa Mitre": "Sur",
+    "Comisaría N°14": "Este","Comisaría N°16": "Este","Comisaría N°107": "Este",
+    "Subcomisaría Grand Bourg Este": "Este","Subcomisaría Grand Bourg": "Este",
+    "Comisaría N°13": "Oeste","Comisaría N°19": "Oeste",
+    "Subcomisaría Villa Lavalle": "Oeste","Subcomisaría Barrio Docente": "Oeste",
+    "Subcomisaría El Aybal": "Oeste",
+    "Comisaría N°101": "Noreste","Comisaría N°112": "Noreste","Comisaría N°118": "Noreste",
+    "Comisaría N°25": "Noroeste","Comisaría N°100": "Noroeste","Comisaría N°108": "Noroeste",
+    "Comisaría N°8": "Sudeste","Comisaría N°104": "Sudeste","Subcomisaría El Sol": "Sudeste",
+    "Comisaría N°7": "Suroeste","Comisaría N°9": "Suroeste","Comisaría N°15": "Suroeste",
+    "Comisaría N°20": "Suroeste","Destacamento Villa Rebeca": "Suroeste",
+  };
+}
+
+function obtenerZona(nombreComisaria) {
+  if (!nombreComisaria) return "";
+  const n = String(nombreComisaria);
+  const m = n.match(/comisar[íi]a?\s*n?[°º]?\.?\s*(\d{1,3})/i)
+         || n.match(/cr[íi]a\.?\s*(\d{1,3})/i);
+  if (m) {
+    const clave = "Comisaría N°" + m[1];
+    if (window.ZONAS_COMISARIA[clave]) return window.ZONAS_COMISARIA[clave];
+  }
+  const claves = Object.keys(window.ZONAS_COMISARIA).sort((a, b) => b.length - a.length);
+  for (const clave of claves) {
+    if (clave.startsWith("Comisaría N°")) continue;
+    if (n.toLowerCase().includes(clave.toLowerCase())) return window.ZONAS_COMISARIA[clave];
+  }
+  return "";
+}
+
+function claseZona(zona) {
+  if (!zona) return "";
+  return "zona-" + zona.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+
+/* ============================================================
+   HELPERS
+   ============================================================ */
+const DIAS_HABILES_EXPIRACION = 5;
+
+function escapeHtml(valor) {
+  return String(valor == null ? '' : valor)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function formatearFecha(fechaISO) {
+  if (!fechaISO) return '—';
+  return new Date(fechaISO).toLocaleDateString('es-AR', {
+    day: '2-digit', month: '2-digit', year: 'numeric'
+  });
+}
+
+function formatearFechaLarga(fechaISO) {
+  if (!fechaISO) return '—';
+  return new Date(fechaISO).toLocaleDateString('es-AR', {
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+  });
+}
+
+function diasRestantes(fechaISO) {
+  if (!fechaISO) return null;
+  const ahora = new Date();
+  const expira = new Date(fechaISO);
+  return Math.ceil((expira - ahora) / (1000 * 60 * 60 * 24));
+}
+
+/* ============================================================
+   BUSCAR TRÁMITE POR CÓDIGO
+   ============================================================ */
+const inputCodigo = document.getElementById('input-codigo');
+const btnConsultar = document.getElementById('btn-consultar');
+const errorBusqueda = document.getElementById('error-busqueda');
+const resultado = document.getElementById('resultado');
+
+// Solo dígitos en el input
+inputCodigo.addEventListener('input', () => {
+  inputCodigo.value = inputCodigo.value.replace(/\D/g, '').slice(0, 8);
+});
+
+inputCodigo.addEventListener('keypress', (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    consultar();
+  }
+});
+
+btnConsultar.addEventListener('click', consultar);
+
+async function consultar() {
+  const codigo = inputCodigo.value.trim();
+
+  // Limpiar
+  errorBusqueda.classList.remove('activo');
+  errorBusqueda.innerHTML = '';
+  resultado.classList.remove('activo');
+  resultado.innerHTML = '';
+
+  // Validar
+  if (!codigo) {
+    mostrarError('Ingresá el código de tu trámite', 'El código está vacío.');
+    return;
+  }
+  if (codigo.length !== 8) {
+    mostrarError('Código inválido', 'El código debe tener 8 dígitos. Fijate que no falte ninguno.');
+    return;
+  }
+
+  // Cargar
+  btnConsultar.disabled = true;
+  btnConsultar.innerHTML = '<span class="spinner"></span>Buscando...';
+
+  try {
+    const { data, error } = await supabaseClient
+      .from('solicitudes')
+      .select('*')
+      .eq('codigo', codigo)
+      .limit(1)
+      .maybeSingle();
+
+    if (error) {
+      console.error(error);
+      mostrarError('Error al consultar', 'Hubo un problema técnico. Reintentá en un momento.');
+      return;
+    }
+
+    if (!data) {
+      mostrarError(
+        'No encontramos tu trámite',
+        `No existe ninguna solicitud con el código <strong>${escapeHtml(codigo)}</strong>. Verificá que esté bien escrito.`
+      );
+      return;
+    }
+
+    renderizarResultado(data);
+
+  } catch (e) {
+    console.error(e);
+    mostrarError('Error de conexión', 'No pudimos conectarnos. Revisá tu internet e intentá de nuevo.');
+  } finally {
+    btnConsultar.disabled = false;
+    btnConsultar.innerHTML = '🔎 Consultar estado';
+  }
+}
+
+function mostrarError(titulo, mensaje) {
+  errorBusqueda.innerHTML = `<strong>❌ ${escapeHtml(titulo)}</strong>${mensaje}`;
+  errorBusqueda.classList.add('activo');
+}
+
+/* ============================================================
+   RENDERIZAR EL RESULTADO
+   ============================================================ */
+let mapaConsulta = null;
+let marcadorConsulta = null;
+
+function renderizarResultado(s) {
+  const d = s.datos || {};
+  const estado = s.estado || 'pendiente';
+  const codigo = s.codigo || '—';
+  const comisaria = s.comisaria_asignada || 'A asignar';
+  const zona = d.zona || obtenerZona(s.comisaria_asignada);
+  const fechaEnvio = s.created_at ? new Date(s.created_at).toLocaleString('es-AR') : '—';
+  const nombre = d.nombre || d.nombreSolicitante || d.nombreConviviente || d.nombreMenor || '';
+  const dni = d.dni || d.dniSolicitante || d.dniMenor || '';
+  const tramite = s.tramite_titulo || s.tramite || 'Trámite';
+
+  // Estado formateado
+  let estadoIcono = '⏳';
+  let estadoPrincipal = 'En revisión';
+  let estadoSecundario = 'El personal policial está revisando tu trámite.';
+  let estadoClass = 'pendiente';
+
+  if (estado === 'procesado') {
+    estadoIcono = '✅';
+    estadoPrincipal = 'Aprobado';
+    estadoSecundario = '¡Tu certificado está listo! Podés pasar a retirarlo.';
+    estadoClass = 'procesado';
+  } else if (estado === 'denegado') {
+    estadoIcono = '❌';
+    estadoPrincipal = 'Denegado';
+    estadoSecundario = 'El trámite fue rechazado.';
+    estadoClass = 'denegado';
+  }
+
+  // Bloque de la fecha límite (si está aprobado y no retirado)
+  let bloqueFechaLimite = '';
+  if (estado === 'procesado' && !s.retirado && s.fecha_expiracion) {
+    const dias = diasRestantes(s.fecha_expiracion);
+    const fechaLimite = formatearFechaLarga(s.fecha_expiracion);
+    if (dias < 0) {
+      bloqueFechaLimite = `
+        <div class="aviso-importante rojo">
+          <strong>⚠️ Plazo vencido</strong><br>
+          El plazo para retirar tu certificado ya venció. 
+          Si no lo retiraste, el certificado se elimina automáticamente del sistema y tenés que iniciar el trámite de nuevo.
+        </div>
+      `;
+    } else if (dias === 0) {
+      bloqueFechaLimite = `
+        <div class="aviso-importante rojo">
+          <strong>🚨 ¡ÚLTIMO DÍA!</strong><br>
+          Hoy es el último día para retirar tu certificado. <strong>Fecha límite: ${fechaLimite}</strong>
+        </div>
+      `;
+    } else if (dias <= 2) {
+      bloqueFechaLimite = `
+        <div class="aviso-importante rojo">
+          <strong>⏰ ¡Apurate!</strong><br>
+          Te quedan <strong>${dias} día${dias === 1 ? '' : 's'}</strong> para retirar tu certificado.<br>
+          <strong>Fecha límite: ${fechaLimite}</strong>
+        </div>
+      `;
+    } else {
+      bloqueFechaLimite = `
+        <div class="aviso-importante verde">
+          <strong>📅 Fecha límite de retiro: ${fechaLimite}</strong><br>
+          Te quedan <strong>${dias} días</strong> para retirarlo. Pasada esa fecha, se elimina automáticamente.
+        </div>
+      `;
+    }
+  }
+
+  // Bloque si ya fue retirado
+  let bloqueRetirado = '';
+  if (s.retirado) {
+    const fechaRetiro = s.retirado_en ? formatearFechaLarga(s.retirado_en) : '—';
+    bloqueRetirado = `
+      <div class="aviso-importante verde">
+        <strong>📦 Certificado retirado</strong><br>
+        Retiraste este certificado el ${fechaRetiro}. ¡Gracias por usar el sistema!
+      </div>
+    `;
+  }
+
+  // Bloque si fue denegado
+  let bloqueDenegado = '';
+  if (estado === 'denegado') {
+    const motivo = s.motivo_denegacion || 'No especificado';
+    bloqueDenegado = `
+      <div class="aviso-importante rojo">
+        <strong>📋 Motivo de la denegación</strong><br>
+        ${escapeHtml(motivo)}
+      </div>
+      <div class="aviso-importante amarillo">
+        <strong>💡 ¿Qué podés hacer?</strong><br>
+        Podés volver a iniciar el trámite corrigiendo lo que figura en el motivo. 
+        Si creés que fue un error, comunicate con la comisaría asignada.
+      </div>
+    `;
+  }
+
+  // Bloque si está pendiente
+  let bloquePendiente = '';
+  if (estado === 'pendiente') {
+    bloquePendiente = `
+      <div class="aviso-importante amarillo">
+        <strong>⏳ Tu trámite está siendo revisado</strong><br>
+        El personal policial de la comisaría asignada está verificando tu documentación.
+        Te vamos a avisar por email cuando esté listo.
+      </div>
+    `;
+  }
+
+  // Bloque del mapa (solo si tiene coordenadas de la comisaría)
+  const comisariaInfo = DEPENDENCIAS_POLICIALES?.find(x => x.nombre === s.comisaria_asignada);
+  const tieneCoords = comisariaInfo && comisariaInfo.lat && comisariaInfo.lon;
+
+  // HTML completo
+  resultado.innerHTML = `
+    <div class="tarjeta-resultado">
+      <h3>📄 ${escapeHtml(tramite)}</h3>
+      <p class="subt">Consulta realizada el ${new Date().toLocaleString('es-AR')}</p>
+
+      <!-- Estado principal -->
+      <div class="estado-grande ${estadoClass}">
+        <div class="icono">${estadoIcono}</div>
+        <div class="texto">
+          <span class="principal">${estadoPrincipal}</span>
+          <span class="secundario">${estadoSecundario}</span>
+        </div>
+      </div>
+
+      <!-- Datos -->
+      <div class="info-grid">
+        <div class="info-item destacado">
+          <div class="label">🔐 Código único</div>
+          <div class="valor" style="font-family:'Courier New',monospace;letter-spacing:0.1em;">${escapeHtml(codigo)}</div>
+        </div>
+        ${nombre ? `
+        <div class="info-item">
+          <div class="label">👤 Solicitante</div>
+          <div class="valor">${escapeHtml(nombre)}</div>
+        </div>` : ''}
+        ${dni ? `
+        <div class="info-item">
+          <div class="label">🪪 DNI</div>
+          <div class="valor">${escapeHtml(dni)}</div>
+        </div>` : ''}
+        <div class="info-item">
+          <div class="label">🏢 Comisaría asignada</div>
+          <div class="valor">${escapeHtml(comisaria)}</div>
+        </div>
+        ${zona ? `
+        <div class="info-item">
+          <div class="label">📍 Zona</div>
+          <div class="valor">${escapeHtml(zona)}</div>
+        </div>` : ''}
+        <div class="info-item">
+          <div class="label">📅 Fecha de envío</div>
+          <div class="valor">${escapeHtml(fechaEnvio)}</div>
+        </div>
+      </div>
+
+      <!-- Bloques según estado -->
+      ${bloqueFechaLimite}
+      ${bloqueRetirado}
+      ${bloqueDenegado}
+      ${bloquePendiente}
+
+      <!-- Mapa de la comisaría -->
+      ${tieneCoords ? `
+        <div style="margin-top:22px;">
+          <div style="font-size:0.85rem;color:var(--dorado-claro);font-weight:700;
+                      text-transform:uppercase;letter-spacing:0.05em;margin-bottom:10px;">
+            🗺️ Ubicación de la comisaría
+          </div>
+          <div id="mapa-comisaria"></div>
+        </div>
+      ` : ''}
+
+      <!-- Acciones -->
+      <div class="acciones">
+        <button class="btn-imprimir" onclick="window.print()">🖨 Imprimir comprobante</button>
+        <button class="btn-secundario" id="btn-nueva-consulta">🔍 Consultar otro código</button>
+        <a href="formularios-tramites.html" class="btn-secundario" 
+           style="text-decoration:none;padding:11px 20px;border-radius:8px;
+                  display:inline-flex;align-items:center;gap:6px;">
+          🏠 Volver al inicio
+        </a>
+      </div>
+    </div>
+  `;
+
+  resultado.classList.add('activo');
+
+  // Inicializar mapa si corresponde
+  if (tieneCoords) {
+    setTimeout(() => {
+      if (mapaConsulta) { mapaConsulta.remove(); mapaConsulta = null; }
+      const divMapa = document.getElementById('mapa-comisaria');
+      if (!divMapa) return;
+
+      mapaConsulta = L.map(divMapa, {
+        center: [comisariaInfo.lat, comisariaInfo.lon],
+        zoom: 16,
+        zoomControl: true,
+      });
+
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '© OpenStreetMap'
+      }).addTo(mapaConsulta);
+
+      marcadorConsulta = L.marker([comisariaInfo.lat, comisariaInfo.lon])
+        .addTo(mapaConsulta)
+        .bindPopup(`<strong>${escapeHtml(comisariaInfo.nombre)}</strong><br>Comisaría asignada`)
+        .openPopup();
+
+      setTimeout(() => mapaConsulta.invalidateSize(), 200);
+    }, 100);
+  }
+
+  // Botón nueva consulta
+  const btnNueva = document.getElementById('btn-nueva-consulta');
+  if (btnNueva) {
+    btnNueva.addEventListener('click', () => {
+      inputCodigo.value = '';
+      resultado.classList.remove('activo');
+      resultado.innerHTML = '';
+      errorBusqueda.classList.remove('activo');
+      inputCodigo.focus();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
+  // Scroll suave hacia el resultado
+  setTimeout(() => {
+    resultado.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 100);
+}
+
+// Focus inicial
+setTimeout(() => inputCodigo.focus(), 200);
+</script>
+
+</body>
+</html>
