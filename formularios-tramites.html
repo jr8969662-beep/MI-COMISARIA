@@ -26,26 +26,58 @@
     background-size:contain;background-repeat:no-repeat;background-position:center;
     opacity:0.55;pointer-events:none;z-index:0;}
   body > *{position:relative; z-index:1;}
+
+  /* ============================================================
+     HEADER CON BOTÓN DE CONSULTA
+     ============================================================ */
   header{background:linear-gradient(135deg, var(--azul-oscuro) 0%, var(--azul) 100%);
-    color:#fff;padding:28px 24px 26px;position:relative;overflow:hidden;
-    border-bottom:3px solid var(--dorado);box-shadow:var(--sombra-media);text-align:center;}
+    color:#fff;padding:20px 24px;position:relative;overflow:hidden;
+    border-bottom:3px solid var(--dorado);box-shadow:var(--sombra-media);
+    display:flex;justify-content:space-between;align-items:center;gap:16px;
+    flex-wrap:wrap;}
   header::after{content:'';position:absolute;top:-50%;right:-10%;width:400px;height:400px;
     background:radial-gradient(circle, rgba(201,169,97,0.15) 0%, transparent 70%);
     border-radius:50%;pointer-events:none;}
-  header .header-inner{max-width:760px;margin:0 auto;position:relative;z-index:2;
-    display:flex;align-items:center;justify-content:center;gap:18px;flex-wrap:wrap;}
-  header .header-logo{width:64px;height:64px;background-image:url('logo-policia.png.jpeg');
+  header .header-info{display:flex;align-items:center;gap:14px;
+    position:relative;z-index:2;flex-wrap:wrap;}
+  header .header-logo{width:52px;height:52px;background-image:url('logo-policia.png.jpeg');
     background-size:contain;background-repeat:no-repeat;background-position:center;
-    filter:drop-shadow(0 2px 8px rgba(0,0,0,0.4));flex-shrink:0;}
-  header .header-texto{text-align:left;}
-  header h1{margin:0;font-size:1.6rem;font-weight:700;letter-spacing:-0.02em;
-    color:#fff;text-shadow:0 2px 4px rgba(0,0,0,0.3);}
-  header h1::after{content:'';display:block;width:60px;height:3px;
-    background:linear-gradient(90deg, var(--dorado), var(--dorado-claro));
-    margin:8px 0 0;border-radius:2px;}
-  header p{margin:8px 0 0;font-size:0.92rem;color:var(--dorado-claro);
+    filter:drop-shadow(0 2px 6px rgba(0,0,0,0.3));flex-shrink:0;}
+  header .header-texto h1{margin:0;font-size:1.1rem;font-weight:700;color:#fff;
+    text-shadow:0 2px 4px rgba(0,0,0,0.2);letter-spacing:-0.01em;}
+  header .header-texto p{margin:3px 0 0;font-size:0.78rem;color:var(--dorado-claro);
     font-weight:500;letter-spacing:0.02em;}
-  header .sub{margin:4px 0 0;font-size:0.78rem;opacity:0.85;color:#e0e7f1;}
+  header .header-acciones{display:flex;gap:10px;position:relative;z-index:2;
+    flex-wrap:wrap;align-items:center;}
+  header .btn-consulta{
+    background:linear-gradient(135deg, var(--dorado) 0%, var(--dorado-brilloso) 100%);
+    color:var(--azul-oscuro);border:none;padding:10px 18px;border-radius:8px;
+    font-size:0.85rem;font-weight:700;cursor:pointer;font-family:inherit;
+    text-decoration:none;display:inline-flex;align-items:center;gap:8px;
+    transition:all 0.2s;box-shadow:0 4px 12px rgba(201,169,97,0.3);
+    white-space:nowrap;}
+  header .btn-consulta:hover{transform:translateY(-2px);
+    box-shadow:0 6px 20px rgba(201,169,97,0.5);}
+  header .btn-consulta .icono{font-size:1rem;}
+
+  /* Aviso de consulta flotante (mobile) */
+  .aviso-consulta-mobile{display:none;margin:0 16px 16px;
+    background:rgba(201,169,97,0.15);
+    border:1px solid rgba(201,169,97,0.5);
+    border-left:4px solid var(--dorado);
+    border-radius:10px;padding:14px 16px;
+    font-size:0.85rem;line-height:1.5;
+    align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+  .aviso-consulta-mobile.activo{display:flex;}
+  .aviso-consulta-mobile strong{color:var(--dorado-brilloso);}
+  .aviso-consulta-mobile a{
+    background:var(--dorado);color:var(--azul-oscuro);
+    padding:8px 14px;border-radius:6px;text-decoration:none;
+    font-weight:700;font-size:0.82rem;white-space:nowrap;
+    transition:all 0.2s;}
+  .aviso-consulta-mobile a:hover{background:var(--dorado-brilloso);
+    transform:translateY(-1px);}
+
   main{max-width:760px;margin:36px auto;padding:0 16px 40px;width:100%;flex:1;}
   .tarjetas{display:grid;grid-template-columns:repeat(auto-fit, minmax(210px, 1fr));
     gap:18px;margin-bottom:32px;}
@@ -164,7 +196,6 @@
   .comisaria-asignada.cargando strong{color:var(--dorado-claro);}
   .comisaria-asignada.error strong{color:#fca5a5;}
   @keyframes fadeInComisaria{from{opacity:0;transform:translateY(-6px);}to{opacity:1;transform:translateY(0);}}
-  /* 🆕 Banner de ubicación guardada */
   .ubicacion-guardada{
     background:rgba(44,90,160,0.25);
     border:1px solid rgba(147,197,253,0.5);
@@ -201,14 +232,6 @@
     border:1px solid rgba(201,169,97,0.4);z-index:1;}
   .mapa-confirmacion .ayuda{font-size:0.78rem;color:rgba(255,255,255,0.75);margin-top:10px;line-height:1.5;}
   .mapa-confirmacion .coords{font-size:0.72rem;color:rgba(255,255,255,0.5);margin-top:6px;font-family:monospace;}
-  .botones-correccion{margin-top:12px;padding:12px;background:rgba(201,169,97,0.08);
-    border:1px solid rgba(201,169,97,0.3);border-radius:8px;}
-  .botones-correccion .pregunta{font-size:0.85rem;color:var(--dorado-claro);
-    font-weight:600;margin-bottom:10px;}
-  .botones-correccion .botones{display:flex;gap:8px;flex-wrap:wrap;}
-  .botones-correccion button{font-size:0.82rem;padding:8px 14px;}
-  .selector-comisaria{margin-top:10px;display:none;}
-  .selector-comisaria.activo{display:block;}
   .leaflet-container{background:#0a1e3d !important;}
   .leaflet-control-attribution{background:rgba(0,0,0,0.5) !important;color:#fff !important;font-size:0.65rem !important;}
   .leaflet-control-attribution a{color:var(--dorado-claro) !important;}
@@ -233,46 +256,72 @@
     width:30%;text-align:center;min-width:150px;color:rgba(255,255,255,0.8);}
   footer.site-footer{background:transparent;color:var(--dorado-claro);padding:28px 20px;
     margin-top:auto;border-top:1px solid rgba(201,169,97,0.3);text-align:center;
-    font-size:1rem;line-height:1.7;position:relative;z-index:2;}
+    font-size:0.95rem;line-height:1.8;position:relative;z-index:2;}
   footer.site-footer .footer-inner{max-width:760px;margin:0 auto;}
   footer.site-footer p{margin:4px 0;color:var(--dorado-brilloso);font-weight:500;
     text-shadow:0 0 10px rgba(240,215,140,0.4), 0 1px 2px rgba(0,0,0,0.5);}
   footer.site-footer strong{color:var(--dorado-brilloso);font-weight:700;
     text-shadow:0 0 10px rgba(240,215,140,0.5), 0 1px 2px rgba(0,0,0,0.5);}
+  footer.site-footer .footer-link{
+    display:inline-flex;align-items:center;gap:8px;
+    margin-top:14px;padding:10px 18px;border-radius:8px;
+    background:rgba(201,169,97,0.15);
+    border:1px solid rgba(201,169,97,0.5);
+    color:var(--dorado-brilloso);text-decoration:none;
+    font-weight:600;font-size:0.88rem;transition:all 0.2s;
+  }
+  footer.site-footer .footer-link:hover{
+    background:rgba(201,169,97,0.25);
+    border-color:var(--dorado);
+    transform:translateY(-2px);
+  }
   @media print{
-    header,.tarjetas,form,.no-print,footer.site-footer{display:none !important;}
+    header,.tarjetas,form,.no-print,footer.site-footer,
+    .aviso-consulta-mobile{display:none !important;}
     #documento{display:block !important;border:none;box-shadow:none;background:#fff;padding:0;}
     body{background:#fff;color:#000;}
     body::before{display:none !important;}
   }
-  @media (max-width: 600px){
-    header .header-inner{flex-direction:column;text-align:center;}
-    header .header-texto{text-align:center;}
-    header h1::after{margin:8px auto 0;}
-    header h1{font-size:1.3rem;}
-    header .header-logo{width:56px;height:56px;}
-    header{padding:22px 18px 20px;}
+  @media (max-width: 700px){
+    header{padding:16px 18px;flex-direction:column;text-align:center;}
+    header .header-info{justify-content:center;}
+    header .header-acciones{justify-content:center;width:100%;}
+    header .btn-consulta{width:100%;justify-content:center;padding:12px 18px;}
     main{margin:24px auto;}
     .tarjeta{padding:20px 16px;min-height:auto;}
     body::before{width:110vmin;height:110vmin;opacity:0.45;}
     .fila{grid-template-columns:1fr;}
+    .aviso-consulta-mobile.activo{display:flex;}
   }
 </style>
 </head>
 <body>
 
 <header>
-  <div class="header-inner">
+  <div class="header-info">
     <div class="header-logo"></div>
     <div class="header-texto">
       <h1>Trámites Policiales Salta</h1>
-      <p>Trámites policiales en línea</p>
-      <p class="sub">Policía de Salta · DMI (JP)</p>
+      <p>Policía de Salta · DMI (JP)</p>
     </div>
+  </div>
+  <div class="header-acciones">
+    <a href="consultar-tramite.html" class="btn-consulta">
+      <span class="icono">🔍</span>
+      <span>Consultar mi trámite</span>
+    </a>
   </div>
 </header>
 
 <main>
+  <!-- Aviso de consulta visible en mobile -->
+  <div class="aviso-consulta-mobile activo">
+    <div>
+      ¿Ya enviaste un trámite? <strong>Consultá su estado acá</strong>
+    </div>
+    <a href="consultar-tramite.html">Consultar →</a>
+  </div>
+
   <div class="aviso-borrador" id="aviso-borrador">
     📌 Recuperamos las fotos que habías sacado antes.
     <button type="button" id="btn-descartar-borrador">Descartar todo y empezar de nuevo</button>
@@ -1443,7 +1492,11 @@
     <p class="subt">Policía de Salta</p>
     <p class="subt" style="margin-top:-16px;">Tu trámite ya fue enviado a la comisaría correspondiente.</p>
     <dl id="doc-contenido"></dl>
-    <div class="btns no-print" style="margin-top:30px;">
+    <div class="btns no-print" style="margin-top:30px;justify-content:center;">
+      <a href="consultar-tramite.html" class="btn-primario"
+         style="text-decoration:none;display:inline-flex;align-items:center;gap:8px;padding:12px 22px;">
+        🔍 Consultar el estado de mi trámite
+      </a>
       <button class="btn-secundario" id="doc-volver">Volver al inicio</button>
     </div>
   </div>
@@ -1452,6 +1505,10 @@
 <footer class="site-footer">
   <div class="footer-inner">
     <p><strong>© 2026 Policía de Salta</strong> · Dirección de Modernización e Innovación Tecnológica (JP)</p>
+    <a href="consultar-tramite.html" class="footer-link">
+      <span>🔍</span>
+      <span>Consultar el estado de un trámite</span>
+    </a>
   </div>
 </footer>
 
@@ -1545,6 +1602,7 @@ const forms = {
 const tarjetasEl = document.getElementById('tarjetas');
 const documento = document.getElementById('documento');
 const avisoBorrador = document.getElementById('aviso-borrador');
+const avisoConsultaMobile = document.querySelector('.aviso-consulta-mobile');
 
 const BUCKET_FOTOS = 'fotos-tramites';
 
@@ -1566,7 +1624,7 @@ async function generarCodigoUnico() {
   return String(Date.now()).slice(-8);
 }
 
-const etiquetas = { /* ... sin cambios ... */ };
+const etiquetas = {};
 
 const CAMPO_DOMICILIO = {
   residencia: 'domicilio',
@@ -1581,12 +1639,14 @@ const CAMPO_DOMICILIO = {
 };
 
 document.querySelectorAll('.select-localidad').forEach(select => {
-  LOCALIDADES_SALTA.forEach(nombre => {
-    const opt = document.createElement('option');
-    opt.value = nombre;
-    opt.textContent = nombre;
-    select.appendChild(opt);
-  });
+  if (typeof LOCALIDADES_SALTA !== 'undefined') {
+    LOCALIDADES_SALTA.forEach(nombre => {
+      const opt = document.createElement('option');
+      opt.value = nombre;
+      opt.textContent = nombre;
+      select.appendChild(opt);
+    });
+  }
 });
 
 const titulos = {
@@ -1602,7 +1662,7 @@ const titulos = {
 };
 
 /* ============================================================
-   🆕 UBICACIONES GUARDADAS POR CIUDADANO (por DNI)
+   UBICACIONES GUARDADAS POR CIUDADANO
    ============================================================ */
 async function buscarUbicacionGuardada(dni) {
   if (!dni) return null;
@@ -1613,13 +1673,20 @@ async function buscarUbicacionGuardada(dni) {
       .eq('dni', String(dni))
       .maybeSingle();
     if (error) { console.warn('Error buscando ubicación guardada:', error); return null; }
-    return data || null;
+    if (!data) return null;
+    if (data.estado === 'invalidada' || data.estado === 'sospechosa') return null;
+    return data;
   } catch (e) { console.warn('Excepción buscando ubicación:', e); return null; }
 }
 
 async function guardarUbicacionCiudadano({ dni, nombre, lat, lon, comisaria, zona, domicilio, localidad }) {
   if (!dni || lat == null || lon == null) return;
   try {
+    const { data: existente } = await supabaseClient
+      .from('ubicaciones_ciudadanos')
+      .select('rechazos')
+      .eq('dni', String(dni))
+      .maybeSingle();
     const payload = {
       dni: String(dni),
       nombre: nombre || '',
@@ -1630,12 +1697,13 @@ async function guardarUbicacionCiudadano({ dni, nombre, lat, lon, comisaria, zon
       domicilio_texto: domicilio || '',
       localidad: localidad || '',
       actualizado_en: new Date().toISOString(),
+      estado: 'activa',
+      motivo_rechazo: null,
     };
     const { error } = await supabaseClient
       .from('ubicaciones_ciudadanos')
       .upsert(payload, { onConflict: 'dni' });
     if (error) { console.warn('Error guardando ubicación:', error); return false; }
-    console.log('✅ Ubicación guardada para DNI', dni);
     return true;
   } catch (e) { console.warn('Excepción guardando ubicación:', e); return false; }
 }
@@ -1664,8 +1732,8 @@ function mostrarBannerUbicacion(form, ubic) {
     form.dataset.ubicacionComisaria = ubic.comisaria_asignada || '';
     form.dataset.ubicacionZona = ubic.zona || '';
     banner.classList.remove('activo');
-    // Disparar recálculo con las coords guardadas
-    const inputDom = form.querySelector(`[name="${CAMPO_DOMICILIO[form.id.replace('form-','')]}"]`);
+    const tramite = form.id.replace('form-', '');
+    const inputDom = form.querySelector(`[name="${CAMPO_DOMICILIO[tramite]}"]`);
     if (inputDom) inputDom.dispatchEvent(new Event('input', { bubbles: true }));
   });
 
@@ -1674,7 +1742,8 @@ function mostrarBannerUbicacion(form, ubic) {
     delete form.dataset.ubicacionLat;
     delete form.dataset.ubicacionLon;
     banner.classList.remove('activo');
-    const inputDom = form.querySelector(`[name="${CAMPO_DOMICILIO[form.id.replace('form-','')]}"]`);
+    const tramite = form.id.replace('form-', '');
+    const inputDom = form.querySelector(`[name="${CAMPO_DOMICILIO[tramite]}"]`);
     if (inputDom) inputDom.dispatchEvent(new Event('input', { bubbles: true }));
   });
 }
@@ -1768,6 +1837,7 @@ window.addEventListener('DOMContentLoaded', () => {
     Object.values(forms).forEach(f => f.classList.remove('activo'));
     forms[tramiteGuardado].classList.add('activo');
     tarjetasEl.style.display = 'none';
+    if (avisoConsultaMobile) avisoConsultaMobile.classList.remove('activo');
   }
   mostrarAvisoBorrador();
 });
@@ -1779,6 +1849,7 @@ document.getElementById('btn-descartar-borrador').addEventListener('click', () =
   avisoBorrador.classList.remove('activo');
   Object.values(forms).forEach(f => f.classList.remove('activo'));
   tarjetasEl.style.display = 'grid';
+  if (avisoConsultaMobile) avisoConsultaMobile.classList.add('activo');
 });
 
 tarjetas.forEach(t => {
@@ -1789,6 +1860,7 @@ tarjetas.forEach(t => {
     Object.values(forms).forEach(f => f.classList.remove('activo'));
     forms[tramite].classList.add('activo');
     tarjetasEl.style.display = 'none';
+    if (avisoConsultaMobile) avisoConsultaMobile.classList.remove('activo');
     try { localStorage.setItem('tramite_activo', tramite); } catch(e){}
   });
 });
@@ -1797,6 +1869,7 @@ document.querySelectorAll('.volver').forEach(btn => {
   btn.addEventListener('click', () => {
     Object.values(forms).forEach(f => f.classList.remove('activo'));
     tarjetasEl.style.display = 'grid';
+    if (avisoConsultaMobile) avisoConsultaMobile.classList.add('activo');
     try { localStorage.removeItem('tramite_activo'); } catch(e){}
   });
 });
@@ -1804,12 +1877,11 @@ document.querySelectorAll('.volver').forEach(btn => {
 document.getElementById('doc-volver').addEventListener('click', () => {
   documento.classList.remove('activo');
   tarjetasEl.style.display = 'grid';
+  if (avisoConsultaMobile) avisoConsultaMobile.classList.add('activo');
   try { localStorage.removeItem('tramite_activo'); } catch(e){}
 });
 
-/* ============================================================
-   PARSER DNI QR
-   ============================================================ */
+/* PARSER DNI QR */
 function parsearCodigoDNIQR(texto) {
   const contenido = String(texto || '').trim().replace(/^\uFEFF/, '');
   if (!contenido) return null;
@@ -2112,7 +2184,6 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
     estado.classList.remove('error');
     escaneoEstado.textContent = '🔒 Los datos fueron bloqueados para evitar modificaciones.';
 
-    // 🆕 Si es el DNI del SOLICITANTE → buscar ubicación guardada
     const target = captura.dataset.target;
     const esDniSolicitante = target.endsWith('-solicitante') || target === 'aut-progenitor';
     if (esDniSolicitante && datos.dni && form) {
@@ -2124,8 +2195,6 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
         form.dataset.ubicacionLon = ubic.lon;
         form.dataset.ubicacionComisaria = ubic.comisaria_asignada || '';
         form.dataset.ubicacionZona = ubic.zona || '';
-
-        // Pre-cargar domicilio/localidad/zona
         const tramite = form.id.replace('form-', '');
         const campoDom = CAMPO_DOMICILIO[tramite];
         const inputDom = form.querySelector(`[name="${campoDom}"]`);
@@ -2134,9 +2203,7 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
         if (selectLoc && !selectLoc.value && ubic.localidad) selectLoc.value = ubic.localidad;
         const selectZona = form.querySelector('[name="zona"]');
         if (selectZona && !selectZona.value && ubic.zona) selectZona.value = ubic.zona;
-
         mostrarBannerUbicacion(form, ubic);
-        // Disparar el cálculo con las coords guardadas
         if (inputDom) inputDom.dispatchEvent(new Event('input', { bubbles: true }));
       }
     }
@@ -2341,15 +2408,10 @@ async function geocodificarConNominatim(domicilio, localidad) {
   return null;
 }
 
-/* ============================================================
-   🆕 ASIGNACIÓN CON SOPORTE DE UBICACIÓN GUARDADA
-   ============================================================ */
 async function asignarComisariaPorJurisdiccion(domicilio, localidad, zona, opciones = {}) {
   if (!domicilio || !localidad) return { error: 'Falta domicilio o localidad' };
-
   const { latGuardada, lonGuardada } = opciones;
 
-  // 1) Barrios que cambian de comisaría según la zona elegida
   const domNorm = normalizarBarrio(domicilio);
   for (const barrio of Object.keys(BARRIOS_MULTI_ZONA)) {
     if (domNorm.includes(normalizarBarrio(barrio))) {
@@ -2369,7 +2431,6 @@ async function asignarComisariaPorJurisdiccion(domicilio, localidad, zona, opcio
     }
   }
 
-  // 2) Correcciones por barrio
   if (typeof CORRECCIONES_BARRIO !== 'undefined' && CORRECCIONES_BARRIO) {
     const domicilioNormalizado = normalizarBarrio(domicilio);
     const barriosOrdenados = Object.keys(CORRECCIONES_BARRIO).sort((a, b) => b.length - a.length);
@@ -2387,35 +2448,19 @@ async function asignarComisariaPorJurisdiccion(domicilio, localidad, zona, opcio
     }
   }
 
-  // 3) 🆕 Si hay coordenadas guardadas y el usuario aceptó usarlas → usarlas directo
   if (latGuardada != null && lonGuardada != null) {
     if (!poligonosCargados) await cargarTodosLosPoligonos();
     const comisaria = buscarComisariaPorCoordenadas(latGuardada, lonGuardada, zona);
     if (comisaria && comisaria.nombre) {
-      return {
-        comisaria: comisaria.nombre,
-        ddp: comisaria.ddp,
-        lat: latGuardada,
-        lon: lonGuardada,
-        origen: 'ubicacion_guardada',
-        zona,
-      };
+      return { comisaria: comisaria.nombre, ddp: comisaria.ddp, lat: latGuardada, lon: lonGuardada, origen: 'ubicacion_guardada', zona };
     }
-    // Si con la zona no encontró, probar sin filtro
     const sinFiltro = buscarComisariaPorCoordenadas(latGuardada, lonGuardada, null);
     if (sinFiltro) {
-      return {
-        comisaria: sinFiltro.nombre,
-        ddp: sinFiltro.ddp,
-        lat: latGuardada,
-        lon: lonGuardada,
-        origen: 'ubicacion_guardada_sin_zona',
-      };
+      return { comisaria: sinFiltro.nombre, ddp: sinFiltro.ddp, lat: latGuardada, lon: lonGuardada, origen: 'ubicacion_guardada_sin_zona' };
     }
     return { error: 'Las coordenadas guardadas no caen en ninguna jurisdicción conocida', lat: latGuardada, lon: lonGuardada };
   }
 
-  // 4) Polígonos (geocodificación normal)
   if (!poligonosCargados) await cargarTodosLosPoligonos();
   const ubicacion = await geocodificarConNominatim(domicilio, localidad);
   if (!ubicacion) return { error: 'No se pudo ubicar el domicilio' };
@@ -2424,11 +2469,7 @@ async function asignarComisariaPorJurisdiccion(domicilio, localidad, zona, opcio
   if (!comisaria) {
     const comisariaSinFiltro = buscarComisariaPorCoordenadas(ubicacion.lat, ubicacion.lon, null);
     if (comisariaSinFiltro) {
-      return {
-        comisaria: comisariaSinFiltro.nombre, ddp: comisariaSinFiltro.ddp,
-        lat: ubicacion.lat, lon: ubicacion.lon,
-        origen: 'poligono_sin_zona', zonaElegida: zona, zonaReal: null
-      };
+      return { comisaria: comisariaSinFiltro.nombre, ddp: comisariaSinFiltro.ddp, lat: ubicacion.lat, lon: ubicacion.lon, origen: 'poligono_sin_zona', zonaElegida: zona, zonaReal: null };
     }
     return { error: 'El domicilio no está dentro de ninguna jurisdicción conocida', lat: ubicacion.lat, lon: ubicacion.lon };
   }
@@ -2440,20 +2481,14 @@ let marcadorLeafletActivo = null;
 
 function crearMapaConfirmacion(aviso, form, opciones) {
   const { lat, lng, comisariaFija, esMultiple, modoBarrio, texto, nombreEl } = opciones;
-
   const bloqueMapa = document.createElement('div');
   bloqueMapa.className = 'mapa-confirmacion';
-
   const tituloTexto = modoBarrio
     ? '🗺️ Ajustá tu ubicación exacta si hace falta'
     : (esMultiple ? '🗺️ Confirmá tu ubicación exacta en el mapa' : '🗺️ Ubicación verificada automáticamente');
-
   const ayudaTexto = modoBarrio
     ? '👆 <strong>Arrastrá el marcador</strong> si tu casa no está exactamente donde marca. La comisaría asignada por tu barrio no cambia.'
-    : (esMultiple
-        ? '👆 <strong>Tocá o arrastrá el marcador</strong> hasta tu casa. La comisaría se asigna automáticamente según el punto exacto.'
-        : '📍 Esta es la ubicación aproximada. La comisaría se asignó según tu barrio o punto exacto.');
-
+    : (esMultiple ? '👆 <strong>Tocá o arrastrá el marcador</strong> hasta tu casa. La comisaría se asigna automáticamente según el punto exacto.' : '📍 Esta es la ubicación aproximada. La comisaría se asignó según tu barrio o punto exacto.');
   bloqueMapa.innerHTML = `
     <div class="titulo">${tituloTexto}</div>
     <div id="mapa-leaflet"></div>
@@ -2466,32 +2501,25 @@ function crearMapaConfirmacion(aviso, form, opciones) {
     const divMapa = bloqueMapa.querySelector('#mapa-leaflet');
     const coordsEl = bloqueMapa.querySelector('[data-coords]');
     const ayudaEl = bloqueMapa.querySelector('.ayuda');
-
     if (!esMultiple && comisariaFija) {
       ayudaEl.innerHTML = `✅ <strong>${comisariaFija}</strong> — Ubicación confirmada.`;
       ayudaEl.style.color = '#86efac';
     }
-
     mapaLeafletActivo = L.map(divMapa, { center: [lat, lng], zoom: 16, zoomControl: true, dragging: true });
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19, attribution: '© OpenStreetMap'
     }).addTo(mapaLeafletActivo);
-
     marcadorLeafletActivo = L.marker([lat, lng], {
       draggable: true, title: 'Arrastrame a la ubicación exacta de tu casa'
     }).addTo(mapaLeafletActivo);
-
     if (!esMultiple && comisariaFija) {
       marcadorLeafletActivo.bindPopup(`<strong>${comisariaFija}</strong><br>Ubicación aproximada`).openPopup();
     }
-
-    // 🆕 Al mover/clickear → guardar coords en dataset para poder persistirlas
     function registrarCoords(nuevaLat, nuevaLng) {
       form.dataset.ubicacionLat = nuevaLat;
       form.dataset.ubicacionLon = nuevaLng;
       form.dataset.usarUbicacionGuardada = 'true';
     }
-
     async function recalcularConCoordenadas(nuevaLat, nuevaLng) {
       coordsEl.textContent = `📍 Ubicación actual: ${nuevaLat.toFixed(5)}, ${nuevaLng.toFixed(5)}`;
       registrarCoords(nuevaLat, nuevaLng);
@@ -2500,7 +2528,6 @@ function crearMapaConfirmacion(aviso, form, opciones) {
       const comisaria = buscarComisariaPorCoordenadas(nuevaLat, nuevaLng, zonaActual);
       const selZona = form.querySelector('[name="zona"]');
       const origenMulti = form.dataset.origenMultiZona === 'true';
-
       if (comisaria && comisaria.nombre) {
         form.dataset.comisariaAsignada = comisaria.nombre;
         form.dataset.ubicacionComisaria = comisaria.nombre;
@@ -2523,7 +2550,6 @@ function crearMapaConfirmacion(aviso, form, opciones) {
         ayudaEl.style.color = '#fca5a5';
       }
     }
-
     marcadorLeafletActivo.on('dragend', function (e) {
       const pos = e.target.getLatLng();
       if (modoBarrio) {
@@ -2535,7 +2561,6 @@ function crearMapaConfirmacion(aviso, form, opciones) {
         recalcularConCoordenadas(pos.lat, pos.lng);
       }
     });
-
     mapaLeafletActivo.on('click', function (e) {
       marcadorLeafletActivo.setLatLng(e.latlng);
       if (modoBarrio) {
@@ -2547,7 +2572,6 @@ function crearMapaConfirmacion(aviso, form, opciones) {
         recalcularConCoordenadas(e.latlng.lat, e.latlng.lng);
       }
     });
-
     setTimeout(() => { mapaLeafletActivo.invalidateSize(); }, 200);
   }, 50);
 }
@@ -2581,14 +2605,11 @@ async function mostrarAvisoComisaria(form, estado, dato) {
     form.dataset.comisariaAsignada = dato.comisaria;
     form.dataset.ubicacionComisaria = dato.comisaria;
     form.dataset.origenMultiZona = dato.origen === 'multi_zona' ? 'true' : 'false';
-
     if (selectZona && selectZona.dataset.editadaManualmente !== 'true' && dato.origen !== 'multi_zona') {
       const z = obtenerZona(dato.comisaria);
       if (z) selectZona.value = z;
     }
-
     const esModoBarrio = dato.origen === 'correccion_barrio' || dato.origen === 'multi_zona';
-
     let centro = { lat: -24.786744, lng: -65.408122 };
     if (dato.lat && dato.lon) {
       centro = { lat: dato.lat, lng: dato.lon };
@@ -2598,13 +2619,10 @@ async function mostrarAvisoComisaria(form, estado, dato) {
         if (ubic && ubic.lat && ubic.lon) centro = { lat: ubic.lat, lng: ubic.lon };
       } catch (e) { console.warn('No se pudo geocodificar:', e); }
     }
-
-    // Guardar la ubicación usada para el envío
     if (dato.lat && dato.lon) {
       form.dataset.ubicacionLat = dato.lat;
       form.dataset.ubicacionLon = dato.lon;
     }
-
     crearMapaConfirmacion(aviso, form, {
       lat: centro.lat, lng: centro.lng,
       comisariaFija: dato.comisaria,
@@ -2683,15 +2701,12 @@ Object.entries(forms).forEach(([tramite, form]) => {
 
       if (resultado.opciones && resultado.opciones.length > 0) {
         mostrarAvisoComisaria(form, 'multiple', {
-          opciones: resultado.opciones,
-          domicilio, localidad
+          opciones: resultado.opciones, domicilio, localidad
         });
       } else if (resultado.comisaria) {
         mostrarAvisoComisaria(form, 'ok', {
-          comisaria: resultado.comisaria,
-          origen: resultado.origen,
-          lat: resultado.lat || null,
-          lon: resultado.lon || null,
+          comisaria: resultado.comisaria, origen: resultado.origen,
+          lat: resultado.lat || null, lon: resultado.lon || null,
           domicilio, localidad
         });
       } else {
@@ -2728,7 +2743,6 @@ async function subirFotoAStorage(dataUrl, tramite, nombreArchivo) {
 Object.entries(forms).forEach(([tramite, form]) => {
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
-
     const tramitesConTestigos = ['residencia', 'convivencia', 'carencia', 'supervivencia'];
     if (tramitesConTestigos.includes(tramite)) {
       for (const n of [1, 2]) {
@@ -2805,7 +2819,6 @@ Object.entries(forms).forEach(([tramite, form]) => {
         registro._zonaEditadaManualmente = true;
       }
 
-      // 🆕 Guardar coords usadas (del resultado o del dataset)
       const latFinal = asignacion?.lat ?? latG ?? null;
       const lonFinal = asignacion?.lon ?? lonG ?? null;
       if (latFinal != null && lonFinal != null) {
@@ -2824,19 +2837,13 @@ Object.entries(forms).forEach(([tramite, form]) => {
       }]);
       if (error) throw error;
 
-      // 🆕 Guardar la ubicación del ciudadano para la próxima
       const dniSol = form.dataset.dniSolicitante;
       if (dniSol && latFinal != null && lonFinal != null) {
         const nombreSol = registro.nombre || registro.nombreSolicitante || registro.nombreProgenitor || '';
         guardarUbicacionCiudadano({
-          dni: dniSol,
-          nombre: nombreSol,
-          lat: latFinal,
-          lon: lonFinal,
-          comisaria: comisariaAsignada,
-          zona: registro.zona || '',
-          domicilio: registro[campoDomicilio] || '',
-          localidad: registro.localidad || '',
+          dni: dniSol, nombre: nombreSol, lat: latFinal, lon: lonFinal,
+          comisaria: comisariaAsignada, zona: registro.zona || '',
+          domicilio: registro[campoDomicilio] || '', localidad: registro.localidad || '',
         }).catch(err => console.warn('No se pudo guardar ubicación:', err));
       }
 
@@ -2871,15 +2878,29 @@ Object.entries(forms).forEach(([tramite, form]) => {
           </div>
           <p style="margin:14px 0 0;font-size:0.85rem;color:rgba(255,255,255,0.85);line-height:1.5;">
             📌 <strong>Guardá este código.</strong> Lo vas a necesitar para retirar
-            tu certificado en la comisaría.
+            tu certificado y para consultar el estado.
           </p>
+        </div>
+        <div style="background:rgba(44,90,160,0.35);border:2px solid rgba(147,197,253,0.6);
+                    border-radius:12px;padding:20px;margin:20px 0;text-align:center;">
+          <p style="margin:0 0 14px;font-size:0.95rem;color:#fff;line-height:1.5;">
+            🔍 <strong>Consultá el estado de tu trámite cuando quieras</strong><br>
+            <span style="font-size:0.85rem;opacity:0.9;">Con tu código de 8 dígitos podés ver si ya está aprobado,
+            la comisaría asignada y la fecha límite de retiro.</span>
+          </p>
+          <a href="consultar-tramite.html" style="background:linear-gradient(135deg, var(--dorado), var(--dorado-brilloso));
+                                                  color:var(--azul-oscuro);padding:12px 24px;border-radius:8px;
+                                                  font-weight:700;text-decoration:none;display:inline-flex;
+                                                  align-items:center;gap:8px;box-shadow:0 4px 12px rgba(201,169,97,0.3);">
+            🔍 Consultar mi trámite
+          </a>
         </div>
         <div style="background:rgba(185,28,28,0.2);border:1px solid rgba(252,165,165,0.5);
                     border-left:4px solid #fca5a5;border-radius:10px;padding:16px 20px;margin:18px 0;">
           <p style="margin:0;font-size:0.9rem;color:#fff;line-height:1.6;">
             ⏰ <strong>Tenés 5 días hábiles para retirarlo</strong> una vez que el
             personal lo valide. Si no te presentás, el certificado se elimina
-            automáticamente y vas a tener que iniciar el trámite de nuevo.
+            automáticamente.
           </p>
         </div>
         <div style="background:rgba(44,90,160,0.25);border:1px solid rgba(201,169,97,0.4);
@@ -2889,18 +2910,13 @@ Object.entries(forms).forEach(([tramite, form]) => {
             valide tu trámite, te vamos a enviar un correo con tu código y la fecha
             límite para retirarlo.
           </p>
-          <p style="margin:10px 0 0;font-size:0.88rem;color:#fff;line-height:1.6;">
-            🔍 También podés consultar el estado en cualquier momento en:
-            <a href="consultar-tramite.html" style="color:#f0d78c;text-decoration:underline;">
-              Consultar mi trámite
-            </a>
-          </p>
         </div>
       `;
 
       document.getElementById('doc-titulo').textContent = titulos[tramite];
       form.classList.remove('activo');
       documento.classList.add('activo');
+      if (avisoConsultaMobile) avisoConsultaMobile.classList.remove('activo');
 
       form.reset();
       form.querySelectorAll('.captura-foto').forEach(c => resetCaptura(c));
@@ -2922,7 +2938,6 @@ Object.entries(forms).forEach(([tramite, form]) => {
   });
 });
 
-/* Reset del mapa al cerrar form (por si quedó abierto) */
 document.querySelectorAll('.volver').forEach(btn => {
   btn.addEventListener('click', () => {
     if (mapaLeafletActivo) {
@@ -2932,7 +2947,6 @@ document.querySelectorAll('.volver').forEach(btn => {
     }
   });
 });
-
 </script>
 
 </body>
