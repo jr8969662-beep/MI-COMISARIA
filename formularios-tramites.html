@@ -26,10 +26,6 @@
     background-size:contain;background-repeat:no-repeat;background-position:center;
     opacity:0.55;pointer-events:none;z-index:0;}
   body > *{position:relative; z-index:1;}
-
-  /* ============================================================
-     HEADER CON BOTÓN DE CONSULTA
-     ============================================================ */
   header{background:linear-gradient(135deg, var(--azul-oscuro) 0%, var(--azul) 100%);
     color:#fff;padding:20px 24px;position:relative;overflow:hidden;
     border-bottom:3px solid var(--dorado);box-shadow:var(--sombra-media);
@@ -60,7 +56,6 @@
     box-shadow:0 6px 20px rgba(201,169,97,0.5);}
   header .btn-consulta .icono{font-size:1rem;}
 
-  /* Aviso de consulta flotante (mobile) */
   .aviso-consulta-mobile{display:none;margin:0 16px 16px;
     background:rgba(201,169,97,0.15);
     border:1px solid rgba(201,169,97,0.5);
@@ -293,6 +288,38 @@
     .fila{grid-template-columns:1fr;}
     .aviso-consulta-mobile.activo{display:flex;}
   }
+
+  /* ============================================================
+     BLOQUEO HASTA ESCANEAR DNI
+     ============================================================ */
+  .campo-esperando-escaneo{
+    background:rgba(202,138,4,0.12) !important;
+    border-color:rgba(252,211,77,0.5) !important;
+    cursor:not-allowed !important;
+    position:relative;
+  }
+  .campo-esperando-escaneo::placeholder{
+    color:rgba(252,211,77,0.7) !important;
+  }
+  .aviso-escaneo-obligatorio{
+    display:flex;align-items:center;gap:8px;
+    font-size:0.8rem;color:#fcd34d;font-weight:600;
+    background:rgba(202,138,4,0.15);
+    border:1px solid rgba(252,211,77,0.4);
+    border-radius:6px;padding:8px 12px;margin-top:6px;
+    line-height:1.4;
+  }
+  .aviso-escaneo-obligatorio .icono{font-size:1rem;flex-shrink:0;}
+  .link-completar-manual{
+    display:inline-block;margin-top:8px;
+    font-size:0.82rem;color:var(--dorado-claro);
+    cursor:pointer;text-decoration:underline;
+    text-underline-offset:3px;font-weight:600;
+    background:transparent;border:none;padding:0;
+    font-family:inherit;transition:color 0.2s;
+  }
+  .link-completar-manual:hover{color:var(--dorado-brilloso);}
+  .link-completar-manual.oculto{display:none;}
 </style>
 </head>
 <body>
@@ -314,7 +341,6 @@
 </header>
 
 <main>
-  <!-- Aviso de consulta visible en mobile -->
   <div class="aviso-consulta-mobile activo">
     <div>
       ¿Ya enviaste un trámite? <strong>Consultá su estado acá</strong>
@@ -1661,9 +1687,6 @@ const titulos = {
   estadia: 'Certificado de Estadía',
 };
 
-/* ============================================================
-   UBICACIONES GUARDADAS POR CIUDADANO
-   ============================================================ */
 async function buscarUbicacionGuardada(dni) {
   if (!dni) return null;
   try {
@@ -1682,11 +1705,6 @@ async function buscarUbicacionGuardada(dni) {
 async function guardarUbicacionCiudadano({ dni, nombre, lat, lon, comisaria, zona, domicilio, localidad }) {
   if (!dni || lat == null || lon == null) return;
   try {
-    const { data: existente } = await supabaseClient
-      .from('ubicaciones_ciudadanos')
-      .select('rechazos')
-      .eq('dni', String(dni))
-      .maybeSingle();
     const payload = {
       dni: String(dni),
       nombre: nombre || '',
@@ -1748,9 +1766,6 @@ function mostrarBannerUbicacion(form, ubic) {
   });
 }
 
-/* ============================================================
-   Helpers de fotos / borrador
-   ============================================================ */
 function guardarFotoEnStorage(clave, dataUrl) {
   try { localStorage.setItem('foto_' + clave, dataUrl); } catch (e) {}
 }
@@ -2146,6 +2161,11 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
     if (flashEncendido && trackActual) { trackActual.applyConstraints({ advanced: [{ torch: false }] }).catch(()=>{}); flashEncendido = false; }
     if (video.srcObject) { video.srcObject.getTracks().forEach(t => t.stop()); video.srcObject = null; }
     trackActual = null;
+
+    // 🔓 Desbloquear los campos que estaban esperando el escaneo
+    if (window.__desbloquearCamposPorEscaneo && form) {
+      window.__desbloquearCamposPorEscaneo(form);
+    }
 
     if (campos && form) {
       if (datos.nombreCompleto && form.querySelector(`[name="${campos.nombre}"]`))
@@ -2947,6 +2967,110 @@ document.querySelectorAll('.volver').forEach(btn => {
     }
   });
 });
+
+/* ============================================================
+   BLOQUEO DE CAMPOS HASTA ESCANEAR EL DNI
+   ============================================================ */
+(function(){
+  const CAMPOS_HABILITADOS_POR_ESCANEO = {
+    residencia:    ['nombre', 'dni', 'fechaNacimiento'],
+    convivencia:   ['nombreSolicitante', 'dniSolicitante'],
+    carencia:      ['nombre', 'dni'],
+    autorizacion:  ['nombreProgenitor', 'dniProgenitor', 'nombreMenor', 'dniMenor', 'fechaNacimientoMenor'],
+    antecedentes:  ['nombre', 'dni', 'fechaNacimiento'],
+    domicilio:     ['nombre', 'dni'],
+    extravio:      ['nombre', 'dni', 'fechaNacimiento'],
+    supervivencia: ['nombre', 'dni', 'fechaNacimiento'],
+    estadia:       ['nombre', 'dni', 'fechaNacimiento'],
+  };
+
+  const PLACEHOLDER_BLOQUEADO = '🔒 Escaneá tu DNI para completar';
+
+  function bloquearHastaEscanear(input) {
+    if (!input) return;
+    if (input.dataset.escaneoObligatorio === 'false') return;
+    input.readOnly = true;
+    input.tabIndex = -1;
+    input.classList.add('campo-esperando-escaneo');
+    if (!input.value) input.placeholder = PLACEHOLDER_BLOQUEADO;
+    input.title = '🔒 Este campo se completa automáticamente al escanear tu DNI. Si la cámara no funciona, tocá "Completar a mano".';
+  }
+
+  function desbloquearPorEscaneo(input) {
+    if (!input) return;
+    input.readOnly = false;
+    input.tabIndex = 0;
+    input.classList.remove('campo-esperando-escaneo');
+    input.title = '';
+  }
+
+  function desbloquearCompletarManual(form) {
+    const tramite = form.id.replace('form-', '');
+    const campos = CAMPOS_HABILITADOS_POR_ESCANEO[tramite] || [];
+    campos.forEach(nombre => {
+      const input = form.querySelector(`[name="${nombre}"]`);
+      if (!input) return;
+      input.dataset.escaneoObligatorio = 'false';
+      input.readOnly = false;
+      input.tabIndex = 0;
+      input.classList.remove('campo-esperando-escaneo');
+      if (input.placeholder === PLACEHOLDER_BLOQUEADO) input.placeholder = '';
+      input.title = '';
+    });
+    form.querySelectorAll('.aviso-escaneo-obligatorio').forEach(a => a.remove());
+    form.querySelectorAll('.link-completar-manual').forEach(l => l.classList.add('oculto'));
+  }
+
+  function inicializarBloqueo() {
+    Object.entries(CAMPOS_HABILITADOS_POR_ESCANEO).forEach(([tramite, campos]) => {
+      const form = document.getElementById('form-' + tramite);
+      if (!form) return;
+
+      campos.forEach(nombre => {
+        const input = form.querySelector(`[name="${nombre}"]`);
+        bloquearHastaEscanear(input);
+      });
+
+      const primerInput = form.querySelector(`[name="${campos[0]}"]`);
+      if (!primerInput) return;
+
+      if (primerInput.nextElementSibling &&
+          primerInput.nextElementSibling.classList.contains('aviso-escaneo-obligatorio')) return;
+
+      const aviso = document.createElement('div');
+      aviso.className = 'aviso-escaneo-obligatorio';
+      aviso.innerHTML = `
+        <span class="icono">📸</span>
+        <span>Escaneá tu DNI arriba para completar estos datos automáticamente.</span>
+      `;
+      primerInput.parentNode.insertBefore(aviso, primerInput.nextSibling);
+
+      const linkManual = document.createElement('button');
+      linkManual.type = 'button';
+      linkManual.className = 'link-completar-manual';
+      linkManual.textContent = '🔓 No puedo escanear, completar a mano';
+      linkManual.addEventListener('click', () => desbloquearCompletarManual(form));
+      aviso.parentNode.insertBefore(linkManual, aviso.nextSibling);
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', inicializarBloqueo);
+  } else {
+    inicializarBloqueo();
+  }
+
+  window.__desbloquearCamposPorEscaneo = function(form) {
+    const tramite = form.id.replace('form-', '');
+    const campos = CAMPOS_HABILITADOS_POR_ESCANEO[tramite] || [];
+    campos.forEach(nombre => {
+      const input = form.querySelector(`[name="${nombre}"]`);
+      desbloquearPorEscaneo(input);
+    });
+    form.querySelectorAll('.aviso-escaneo-obligatorio').forEach(a => a.remove());
+    form.querySelectorAll('.link-completar-manual').forEach(l => l.classList.add('oculto'));
+  };
+})();
 </script>
 
 </body>
