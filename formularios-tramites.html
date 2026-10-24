@@ -2346,19 +2346,24 @@ async function asignarComisariaPorJurisdiccion(domicilio, localidad, zona, opcio
   }
 
   // 3) Geocodificar domicilio y ubicar en el polígono
-  const ubic = await geocodificarDomicilio(domicilio, localidad);
+  const ubic = await geocodificarDomicilio(domicilio, localidad, zona);
   if (!ubic) return { requiereMapa: true, motivo: 'No encontramos el domicilio. Marcá tu casa en el mapa.' };
+  if (ubic.opciones) return { elegir: ubic.opciones };
   if (ubic.precision === 'localidad') {
     return { requiereMapa: true, lat: ubic.lat, lon: ubic.lon,
              motivo: 'Encontramos la localidad pero no tu calle o barrio. Marcá tu casa en el mapa para asignar la comisaría exacta.' };
   }
   const r = jurisdiccionDePunto(ubic.lat, ubic.lon);
   if (!r) return { requiereMapa: true, lat: ubic.lat, lon: ubic.lon, motivo: 'La dirección encontrada no cae en ninguna jurisdicción. Marcá tu casa en el mapa.' };
+  if (ubic.precision === 'calle') {
+    return { requiereMapa: true, lat: ubic.lat, lon: ubic.lon, sugerida: r.nombre,
+             motivo: 'Encontramos la calle pero no la altura. Agregá el número o el barrio, o marcá tu casa en el mapa.' };
+  }
   if (r.cercaDelLimite || r.aproximada) {
     return { requiereMapa: true, lat: ubic.lat, lon: ubic.lon, sugerida: r.nombre, vecina: r.vecina,
              motivo: 'Tu domicilio está justo en el límite entre dos comisarías. Confirmá tu casa en el mapa.' };
   }
-  return { comisaria: r.nombre, lat: ubic.lat, lon: ubic.lon, origen: ubic.precision === 'calle' ? 'poligono_calle' : 'poligono_barrio', detalle: r };
+  return { comisaria: r.nombre, lat: ubic.lat, lon: ubic.lon, origen: 'poligono_' + ubic.precision, detalle: r, descripcion: ubic.descripcion };
 }
 
 let mapaLeafletActivo = null;
@@ -2470,8 +2475,7 @@ function crearMapaConfirmacion(aviso, form, { lat, lng, nombre, pedirPunto, zoom
 
 function _limpiarAviso(aviso) {
   aviso.classList.remove('activo', 'cargando', 'error');
-  const mapaViejo = aviso.querySelector('.mapa-confirmacion');
-  if (mapaViejo) mapaViejo.remove();
+  aviso.querySelectorAll('.mapa-confirmacion').forEach(el => el.remove());
   if (mapaLeafletActivo) { mapaLeafletActivo.remove(); mapaLeafletActivo = null; marcadorLeafletActivo = null; capaJurisdiccion = null; }
   const sub = aviso.querySelector('.sub-aviso'); if (sub) sub.textContent = '';
 }
@@ -2492,7 +2496,9 @@ async function mostrarAvisoComisaria(form, estado, dato) {
   } else if (estado === 'ok') {
     const extra = dato.origen === 'barrio_confirmado' ? 'Asignada por tu barrio.'
       : dato.origen === 'punto_exacto' ? 'Según la ubicación exacta marcada.'
-      : dato.origen === 'poligono_barrio' ? 'Ubicamos tu barrio. Verificá en el mapa que el marcador esté en tu casa.'
+      : dato.origen === 'poligono_barrio' ? `Ubicamos tu barrio (${dato.descripcion || ''}). Verificá en el mapa que el marcador esté en tu casa.`
+      : dato.origen === 'poligono_manzana' ? `Ubicamos tu manzana (${dato.descripcion || ''}).`
+      : dato.origen === 'poligono_numero' ? `Ubicamos la dirección exacta (${dato.descripcion || ''}).`
       : 'Según la dirección ingresada. Verificá en el mapa que el marcador esté en tu casa.';
     _fijarResultado(form, aviso, dato.comisaria, extra);
     if (dato.lat != null && dato.lon != null) {
@@ -2515,6 +2521,25 @@ async function mostrarAvisoComisaria(form, estado, dato) {
       lat: dato.lat ?? CENTRO_SALTA.lat, lng: dato.lon ?? CENTRO_SALTA.lng,
       nombre: dato.sugerida || null, pedirPunto: true, zoom: dato.lat == null ? 13 : (dato.sugerida ? 17 : 14)
     });
+  } else if (estado === 'elegir') {
+    _sinResultado(form, aviso, 'Hay más de un barrio con ese nombre. Tocá el tuyo:');
+    const caja = document.createElement('div');
+    caja.className = 'mapa-confirmacion elegir-barrio';
+    dato.opciones.forEach(op => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.style.cssText = 'display:block;width:100%;text-align:left;margin:6px 0;padding:10px 12px;border-radius:6px;border:1px solid rgba(255,255,255,0.25);background:rgba(255,255,255,0.06);color:inherit;cursor:pointer;line-height:1.4;';
+      b.innerHTML = `<strong>${op.nombre}</strong>${op.zona ? ' — ' + op.zona : ''}<br><small>Comisaría: ${nombreLegibleJurisdiccion(op.jurisdiccion)}</small>`;
+      b.addEventListener('click', () => {
+        form.dataset.ubicacionLat = op.lat;
+        form.dataset.ubicacionLon = op.lon;
+        form.dataset.usarUbicacionGuardada = 'true';
+        form.dataset.ubicacionFuente = 'mapa';
+        mostrarAvisoComisaria(form, 'ok', { comisaria: op.jurisdiccion, lat: op.lat, lon: op.lon, origen: 'poligono_barrio', descripcion: `${op.nombre}${op.zona ? ', ' + op.zona : ''}` });
+      });
+      caja.appendChild(b);
+    });
+    aviso.appendChild(caja);
   } else if (estado === 'error') {
     aviso.classList.add('activo', 'error');
     texto.textContent = '⚠️ No se pudo calcular la comisaría (revisá tu conexión).';
@@ -2567,6 +2592,7 @@ Object.entries(forms).forEach(([tramite, form]) => {
       const r = await asignarComisariaPorJurisdiccion(domicilio, localidad, zona, { latGuardada: latG, lonGuardada: lonG });
       if (consulta !== ultimaConsulta) return; // llegó una consulta más nueva
       if (r.comisaria) mostrarAvisoComisaria(form, 'ok', { ...r, domicilio, localidad });
+      else if (r.elegir) mostrarAvisoComisaria(form, 'elegir', { opciones: r.elegir });
       else if (r.requiereMapa || r.error) mostrarAvisoComisaria(form, 'mapa', { motivo: r.motivo || r.error, lat: r.lat, lon: r.lon, sugerida: r.sugerida, vecina: r.vecina });
       else mostrarAvisoComisaria(form, 'error');
     } catch (err) { console.error(err); mostrarAvisoComisaria(form, 'error'); }
