@@ -28,6 +28,7 @@ const BARRIOS_CONFIRMADOS = [
     claves: ['juan pablo 2'],
     jurisdiccion: 'DUR1-S3-Cría 11° (Ex-cria 103)',
     requiereSi: ['norte'],
+    lat: -24.72326, lon: -65.39837, // centro del barrio (Plaza Juan Pablo II)
     nota: 'Juan Pablo II de zona norte (hay otro Juan Pablo II en zona sur) - Comisaría 17 de Octubre'
   },
 ];

@@ -1541,7 +1541,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-config.js"></script>
 <script src="comisarias-config.js"></script>
-<script src="jurisdicciones.js?v=5"></script>
+<script src="jurisdicciones.js?v=6"></script>
 <script>
 /* ============================================================
    ZONAS DE COMISARÍAS
@@ -2336,13 +2336,25 @@ async function asignarComisariaPorJurisdiccion(domicilio, localidad, zona, opcio
     return { error: 'El punto marcado no está dentro de ninguna jurisdicción', lat: latGuardada, lon: lonGuardada };
   }
 
-  // 2) Barrio confirmado manualmente
+  // 2) Barrio confirmado manualmente: el marcador va en el barrio correcto, nunca en otro
   const regla = buscarBarrioConfirmado(domicilio, zona);
   if (regla) {
-    const ubic = await geocodificarDomicilio(domicilio, localidad).catch(() => null);
-    const ok = ubic && ubic.precision !== 'localidad';
-    return { comisaria: regla.jurisdiccion, origen: 'barrio_confirmado',
-             lat: ok ? ubic.lat : null, lon: ok ? ubic.lon : null, detalle: { nota: regla.nota } };
+    let lat = regla.lat ?? null, lon = regla.lon ?? null, precision = 'barrio';
+    try {
+      const ubic = await geocodificarDomicilio(domicilio, localidad, zona);
+      let cand = null;
+      if (ubic && ubic.opciones) cand = ubic.opciones.find(o => o.jurisdiccion === regla.jurisdiccion) || null;
+      else if (ubic && ubic.precision && ubic.precision !== 'localidad' && ubic.precision !== 'calle') cand = ubic;
+      // solo se usa lo encontrado si cae en la misma jurisdicción confirmada
+      if (cand) {
+        const rj = jurisdiccionDePunto(cand.lat, cand.lon);
+        if (rj && rj.nombre === regla.jurisdiccion) {
+          // para manzana/número usar el punto fino; para el barrio, quedarse con el centro confirmado
+          if (ubic.precision === 'manzana' || ubic.precision === 'numero' || lat == null) { lat = cand.lat; lon = cand.lon; precision = ubic.precision || 'barrio'; }
+        }
+      }
+    } catch (e) { console.warn('Geocodificación opcional falló', e); }
+    return { comisaria: regla.jurisdiccion, origen: 'barrio_confirmado', lat, lon, detalle: { nota: regla.nota } };
   }
 
   // 3) Geocodificar domicilio y ubicar en el polígono
