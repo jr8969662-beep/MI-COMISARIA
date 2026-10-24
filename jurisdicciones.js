@@ -211,10 +211,10 @@ function buscarBarrioConfirmado(domicilio, zona) {
 const _cacheGeo = new Map();
 const CENTRO_CAPITAL = { lat: -24.7883, lon: -65.4106 };
 
-async function _getJSON(url) {
+async function _getJSON(url, ms) {
   if (_cacheGeo.has(url)) return _cacheGeo.get(url);
   const ctrl = new AbortController();
-  const to = setTimeout(() => ctrl.abort(), 9000);
+  const to = setTimeout(() => ctrl.abort(), ms || 9000);
   try {
     const r = await fetch(url, { signal: ctrl.signal, headers: { 'Accept-Language': 'es' } });
     if (!r.ok) return null;
@@ -225,10 +225,12 @@ async function _getJSON(url) {
   finally { clearTimeout(to); }
 }
 
+let _photonCaido = false;
 async function _photon(q) {
+  if (_photonCaido) return [];
   const v = SALTA_VIEWBOX;
-  const j = await _getJSON(`https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&bbox=${v.oeste},${v.sur},${v.este},${v.norte}&limit=15&lang=default`);
-  if (!j || !j.features) return [];
+  const j = await _getJSON(`https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&bbox=${v.oeste},${v.sur},${v.este},${v.norte}&limit=15&lang=default`, 4000);
+  if (!j || !j.features) { if (j === null) _photonCaido = true; return []; }
   return j.features.map(f => ({
     nombre: f.properties.name || '', calle: f.properties.street || '', numero: f.properties.housenumber || '',
     tipo: `${f.properties.osm_key}=${f.properties.osm_value}`, tipoPhoton: f.properties.type || '',
@@ -237,8 +239,17 @@ async function _photon(q) {
   }));
 }
 
+// Nominatim pide como máximo 1 consulta por segundo
+let _ultimaNominatim = 0;
 async function _nominatim(q) {
   const v = SALTA_VIEWBOX;
+  const url = 'https://nominatim.openstreetmap.org/search?format=jsonv2&limit=10&countrycodes=ar&addressdetails=1'
+    + `&viewbox=${v.oeste},${v.norte},${v.este},${v.sur}&bounded=1&q=${encodeURIComponent(q)}`;
+  if (!_cacheGeo.has(url)) {
+    const espera = _ultimaNominatim + 1100 - Date.now();
+    if (espera > 0) await new Promise(r => setTimeout(r, espera));
+    _ultimaNominatim = Date.now();
+  }
   const j = await _getJSON('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=10&countrycodes=ar&addressdetails=1'
     + `&viewbox=${v.oeste},${v.norte},${v.este},${v.sur}&bounded=1&q=${encodeURIComponent(q)}`);
   if (!Array.isArray(j)) return [];
@@ -265,6 +276,13 @@ function _enLocalidad(c, localidad) {
   if (ciu.includes(loc)) return true;
   if ((loc === 'salta' || loc === 'salta capital' || loc === 'capital') && /\b(salta|capital)\b/.test(ciu)) return true;
   return false;
+}
+
+// Busca primero en Nominatim (funciona desde cualquier página); si no hay nada útil, prueba Photon
+async function _buscar(q) {
+  const n = await _nominatim(q);
+  if (n.length) return n;
+  return _photon(q);
 }
 
 // Separa el domicilio en partes útiles
@@ -328,7 +346,7 @@ async function geocodificarDomicilio(domicilio, localidad, zonaElegida) {
 
   // 1) Calle + número (lo más preciso)
   if (a.calle && a.numero) {
-    let res = await _photon(`${a.calle} ${a.numero}, ${loc}`);
+    let res = await _buscar(`${a.calle} ${a.numero}, ${loc}`);
     let ok = res.filter(c => c.numero === a.numero && _norm(c.calle || c.nombre).includes(_norm(a.calle).split(' ').pop()) && _enLocalidad(c, loc));
     if (!ok.length) {
       res = await _nominatim(`${a.calle} ${a.numero}, ${loc}, Salta, Argentina`);
@@ -348,7 +366,7 @@ async function geocodificarDomicilio(domicilio, localidad, zonaElegida) {
       const n = _norm(c.nombre);
       return nbClave.every(w => (' ' + n + ' ').includes(' ' + w + ' ') || n.includes(w));
     };
-    let res = [...await _photon(`barrio ${a.barrio} ${loc}`), ...await _photon(`${a.barrio} ${loc}`)];
+    let res = [...await _buscar(`barrio ${a.barrio} ${loc}`), ...await _buscar(`${a.barrio} ${loc}`)];
     let barrios = res.filter(c => _TIPOS_BARRIO.test(c.tipo) && !/city_block/.test(c.tipo) && coincide(c) && _enLocalidad(c, loc));
     if (!barrios.length) {
       res = await _nominatim(`Barrio ${a.barrio}, ${loc}, Salta, Argentina`);
@@ -371,7 +389,7 @@ async function geocodificarDomicilio(domicilio, localidad, zonaElegida) {
 
     // Manzana: precisión de cuadra
     if (a.manzana && grupos.length >= 1) {
-      const resM = await _photon(`${a.barrio} manzana ${a.manzana}`);
+      const resM = await _buscar(`${a.barrio} manzana ${a.manzana}`);
       const mz = resM.filter(c => /city_block/.test(c.tipo) && coincide({ nombre: c.nombre + ' ' + c.ciudad })
         && new RegExp('\\b(mza|manzana|mz)\\.?\\s*' + a.manzana.replace(/([A-Z])$/, '\\s*["\']?\\s*$1') + '\\b', 'i').test(c.nombre));
       const gm = _agruparPorJurisdiccion(mz);
@@ -385,12 +403,12 @@ async function geocodificarDomicilio(domicilio, localidad, zonaElegida) {
 
   // 3) Calle sola (sin número): poco preciso, se pide confirmar en el mapa
   if (a.calle) {
-    const res = (await _photon(`${a.calle}, ${loc}`)).filter(c => /^highway=/.test(c.tipo) && _enLocalidad(c, loc));
+    const res = (await _buscar(`${a.calle}, ${loc}`)).filter(c => /^highway=/.test(c.tipo) && _enLocalidad(c, loc));
     if (res.length) return { lat: res[0].lat, lon: res[0].lon, precision: 'calle', descripcion: res[0].nombre };
   }
 
   // 4) Solo la localidad
-  const resL = (await _photon(`${loc}, Salta`)).filter(c => /^place=(city|town|village|hamlet)$/.test(c.tipo));
+  const resL = (await _buscar(`${loc}, Salta`)).filter(c => /^place=(city|town|village|hamlet)$/.test(c.tipo));
   if (resL.length) return { lat: resL[0].lat, lon: resL[0].lon, precision: 'localidad' };
   const resN = await _nominatim(`${loc}, Salta, Argentina`);
   if (resN.length) return { lat: resN[0].lat, lon: resN[0].lon, precision: 'localidad' };
