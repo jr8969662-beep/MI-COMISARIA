@@ -1684,14 +1684,12 @@ const titulos = {
   estadia: 'Certificado de Estadía',
 };
 
+// La tabla de ubicaciones NO es pública: se accede solo por estas dos funciones de Supabase
+// (buscar_ubicacion / guardar_ubicacion), que devuelven y validan lo mínimo.
 async function buscarUbicacionGuardada(dni) {
   if (!dni) return null;
   try {
-    const { data, error } = await supabaseClient
-      .from('ubicaciones_ciudadanos')
-      .select('*')
-      .eq('dni', String(dni))
-      .maybeSingle();
+    const { data, error } = await supabaseClient.rpc('buscar_ubicacion', { p_dni: String(dni) });
     if (error) { console.warn('Error buscando ubicación guardada:', error); return null; }
     if (!data) return null;
     if (data.estado === 'invalidada' || data.estado === 'sospechosa') return null;
@@ -1702,24 +1700,18 @@ async function buscarUbicacionGuardada(dni) {
 async function guardarUbicacionCiudadano({ dni, nombre, lat, lon, comisaria, zona, domicilio, localidad }) {
   if (!dni || lat == null || lon == null) return;
   try {
-    const payload = {
-      dni: String(dni),
-      nombre: nombre || '',
-      lat: parseFloat(lat),
-      lon: parseFloat(lon),
-      comisaria_asignada: comisaria || '',
-      zona: zona || '',
-      domicilio_texto: domicilio || '',
-      localidad: localidad || '',
-      actualizado_en: new Date().toISOString(),
-      estado: 'activa',
-      motivo_rechazo: null,
-    };
-    const { error } = await supabaseClient
-      .from('ubicaciones_ciudadanos')
-      .upsert(payload, { onConflict: 'dni' });
+    const { data, error } = await supabaseClient.rpc('guardar_ubicacion', {
+      p_dni: String(dni),
+      p_nombre: nombre || '',
+      p_lat: parseFloat(lat),
+      p_lon: parseFloat(lon),
+      p_comisaria: comisaria || '',
+      p_zona: zona || '',
+      p_domicilio: domicilio || '',
+      p_localidad: localidad || '',
+    });
     if (error) { console.warn('Error guardando ubicación:', error); return false; }
-    return true;
+    return data === true;
   } catch (e) { console.warn('Excepción guardando ubicación:', e); return false; }
 }
 
