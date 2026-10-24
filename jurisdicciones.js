@@ -52,7 +52,7 @@ function _bbox(anillo) {
 function cargarJurisdicciones() {
   if (JURIS.cargado) return Promise.resolve(JURIS.lista);
   if (JURIS.promesa) return JURIS.promesa;
-  JURIS.promesa = fetch('jurisdicciones.json')
+  JURIS.promesa = fetch('jurisdicciones.json?v=3')
     .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
     .then(data => {
       JURIS.lista = (data.jurisdicciones || []).map(j => {
