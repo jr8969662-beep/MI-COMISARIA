@@ -178,6 +178,8 @@
   .aviso-borrador.activo{display:block;}
   .aviso-borrador button{background:transparent;color:#ffd54f;text-decoration:underline;
     padding:0;font-size:0.85rem;margin-left:6px;border:none;cursor:pointer;}
+  input[type=text], textarea{text-transform:uppercase;}
+  input[type=text]::placeholder, textarea::placeholder{text-transform:none;}
   .comisaria-asignada{margin-top:16px;padding:14px 18px;background:rgba(21,128,61,0.25);
     border:1px solid rgba(134,239,172,0.5);border-left:4px solid #86efac;
     border-radius:8px;color:#fff;font-size:0.92rem;line-height:1.5;
@@ -2635,6 +2637,25 @@ async function subirFotoAStorage(dataUrl, tramite, nombreArchivo) {
   return ruta;
 }
 
+/* ===== Todo el texto en MAYÚSCULAS ===== */
+function _campoDeTexto(el) {
+  return el && ((el.tagName === 'INPUT' && el.type === 'text') || el.tagName === 'TEXTAREA');
+}
+function pasarAMayusculas(el) {
+  if (!_campoDeTexto(el) || !el.value) return;
+  const m = el.value.toLocaleUpperCase('es-AR');
+  if (m === el.value) return;
+  let a = null, b = null;
+  try { a = el.selectionStart; b = el.selectionEnd; } catch (e) {}
+  el.value = m;
+  try { if (a !== null) el.setSelectionRange(a, b); } catch (e) {}
+}
+document.addEventListener('input', e => pasarAMayusculas(e.target), true);
+document.addEventListener('change', e => pasarAMayusculas(e.target), true);
+function mayusculasEnFormulario(form) {
+  form.querySelectorAll('input[type="text"], textarea').forEach(pasarAMayusculas);
+}
+
 Object.entries(forms).forEach(([tramite, form]) => {
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -2653,6 +2674,7 @@ Object.entries(forms).forEach(([tramite, form]) => {
     const textoOriginal = btnEnviar.textContent;
     btnEnviar.disabled = true;
     btnEnviar.textContent = 'Enviando...';
+    mayusculasEnFormulario(form);
     const datos = new FormData(form);
     const registro = {};
     const contenido = document.getElementById('doc-contenido');
