@@ -2850,7 +2850,7 @@ document.querySelectorAll('.volver').forEach(btn => {
     input.tabIndex = -1;
     input.classList.add('campo-esperando-escaneo');
     if (!input.value) input.placeholder = PLACEHOLDER_BLOQUEADO;
-    input.title = '🔒 Este campo se completa automáticamente al escanear tu DNI. Si la cámara no funciona, tocá "Completar a mano".';
+    input.title = '🔒 Este campo se completa automáticamente al escanear tu DNI.';
   }
 
   function desbloquearPorEscaneo(input) {
@@ -2901,13 +2901,6 @@ document.querySelectorAll('.volver').forEach(btn => {
         <span>Escaneá tu DNI arriba para completar estos datos automáticamente.</span>
       `;
       primerInput.parentNode.insertBefore(aviso, primerInput.nextSibling);
-
-      const linkManual = document.createElement('button');
-      linkManual.type = 'button';
-      linkManual.className = 'link-completar-manual';
-      linkManual.textContent = '🔓 No puedo escanear, completar a mano';
-      linkManual.addEventListener('click', () => desbloquearCompletarManual(form));
-      aviso.parentNode.insertBefore(linkManual, aviso.nextSibling);
     });
   }
 
