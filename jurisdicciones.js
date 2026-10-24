@@ -171,7 +171,7 @@ function nombreLegibleJurisdiccion(nombre) {
     .replace(/^\s*Comisar[íi]a\.?\s*/i, 'Comisaría ')
     .replace(/^\s*Sub[-\s]?cr[íi]a\.?\s*/i, 'Subcomisaría ')
     .replace(/^\s*Dsto\.?\s*/i, 'Destacamento ')
-    .replace(/^\s*Dest\.?\s*/i, 'Destacamento ')
+    .replace(/^\s*Dest\.(?!acamento)\s*/i, 'Destacamento ')
     .replace(/^\s*Pto\.?\s*Pol\.?\s*/i, 'Puesto Policial ')
     .replace(/\s+/g, ' ').trim();
   return m ? `${resto} — DUR ${m[1]}` : resto;
