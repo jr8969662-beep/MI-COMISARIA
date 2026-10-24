@@ -1541,6 +1541,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-config.js"></script>
 <script src="comisarias-config.js"></script>
+<script src="jurisdicciones.js"></script>
 <script>
 /* ============================================================
    ZONAS DE COMISARÍAS
@@ -1600,12 +1601,6 @@ function normalizarBarrio(t) {
     .trim();
 }
 
-const BARRIOS_MULTI_ZONA = {
-  "juan pablo 2": {
-    "Norte": "Comisaría N°11 - 17 de Octubre (DDP 1)",
-    "Sur":   "Comisaría N°7 - El Tribuno (DDP 1)",
-  },
-};
 
 document.querySelectorAll('.select-zona').forEach(select => {
   select.addEventListener('change', () => {
@@ -1749,6 +1744,8 @@ function mostrarBannerUbicacion(form, ubic) {
     form.dataset.ubicacionLon = ubic.lon;
     form.dataset.ubicacionComisaria = ubic.comisaria_asignada || '';
     form.dataset.ubicacionZona = ubic.zona || '';
+    form.dataset.ubicacionFuente = 'guardada';
+    form.dataset.ubicacionDomicilio = ubic.domicilio_texto || '';
     banner.classList.remove('activo');
     const tramite = form.id.replace('form-', '');
     const inputDom = form.querySelector(`[name="${CAMPO_DOMICILIO[tramite]}"]`);
@@ -2215,6 +2212,8 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
         form.dataset.ubicacionLon = ubic.lon;
         form.dataset.ubicacionComisaria = ubic.comisaria_asignada || '';
         form.dataset.ubicacionZona = ubic.zona || '';
+    form.dataset.ubicacionFuente = 'guardada';
+    form.dataset.ubicacionDomicilio = ubic.domicilio_texto || '';
         const tramite = form.id.replace('form-', '');
         const campoDom = CAMPO_DOMICILIO[tramite];
         const inputDom = form.querySelector(`[name="${campoDom}"]`);
@@ -2307,373 +2306,221 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
-const POLIGONOS_DDP = {};
+/* ===== Asignación de comisaría: usa jurisdicciones.js (polígonos oficiales) ===== */
 let poligonosCargados = false;
-let cargandoPoligonos = false;
-
 async function cargarTodosLosPoligonos() {
-  if (poligonosCargados || cargandoPoligonos) return;
-  cargandoPoligonos = true;
-  const promesas = [];
-  for (let i = 1; i <= 14; i++) {
-    promesas.push(
-      fetch(`DDP-${i}.json`)
-        .then(r => r.json())
-        .then(data => { POLIGONOS_DDP[i] = data.poligonos || []; })
-        .catch(err => { console.warn(`No se pudo cargar DDP-${i}.json:`, err); POLIGONOS_DDP[i] = []; })
-    );
-  }
-  try {
-    await Promise.all(promesas);
-    poligonosCargados = true;
-  } catch (e) { console.warn('Error cargando polígonos:', e); }
-  finally { cargandoPoligonos = false; }
+  try { await cargarJurisdicciones(); poligonosCargados = true; }
+  catch (e) { console.warn('Error cargando jurisdicciones:', e); }
 }
-
 window.addEventListener('DOMContentLoaded', () => { cargarTodosLosPoligonos(); });
 
-function puntoEnPoligono(lat, lon, coordenadas) {
-  let dentro = false;
-  const n = coordenadas.length;
-  for (let i = 0, j = n - 1; i < n; j = i++) {
-    const [xi, yi] = coordenadas[i];
-    const [xj, yj] = coordenadas[j];
-    const intersecta = ((yi > lat) !== (yj > lat)) &&
-      (lon < (xj - xi) * (lat - yi) / (yj - yi) + xi);
-    if (intersecta) dentro = !dentro;
-  }
-  return dentro;
-}
-
-function buscarComisariaPorCoordenadas(lat, lon, zonaFiltro) {
-  let nombresPermitidos = null;
-  if (zonaFiltro && typeof DEPENDENCIAS_POLICIALES !== 'undefined') {
-    nombresPermitidos = new Set(
-      DEPENDENCIAS_POLICIALES.filter(d => d.zona === zonaFiltro).map(d => d.nombre)
-    );
-    if (nombresPermitidos.size === 0) nombresPermitidos = null;
-  }
-  for (const [numDDP, poligonos] of Object.entries(POLIGONOS_DDP)) {
-    for (const poligono of poligonos) {
-      if (nombresPermitidos && !nombresPermitidos.has(poligono.n)) continue;
-      if (puntoEnPoligono(lat, lon, poligono.c)) {
-        return { ddp: parseInt(numDDP), nombre: poligono.n, lat: lat, lon: lon };
-      }
-    }
-  }
-  return null;
-}
-
-async function consultarNominatim(consulta) {
-  const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=ar&q=${encodeURIComponent(consulta)}`;
-  try {
-    const resp = await fetch(url, { headers: { 'Accept-Language': 'es' } });
-    const data = await resp.json();
-    if (data && data.length > 0) {
-      return { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon), direccionEncontrada: data[0].display_name };
-    }
-    return null;
-  } catch (err) { console.error('Error consultando Nominatim:', err); return null; }
-}
-
-function convertirRomanoAArabigo(texto) {
-  const romanos = { 'VIII': '8', 'VII': '7', 'VI': '6', 'IV': '4', 'IX': '9', 'III': '3', 'II': '2', 'V': '5', 'X': '10', 'I': '1' };
-  let resultado = texto;
-  for (const [romano, arabigo] of Object.entries(romanos)) {
-    const regex = new RegExp(`\\b${romano}\\b`, 'gi');
-    resultado = resultado.replace(regex, arabigo);
-  }
-  return resultado;
-}
-
-function convertirArabigoARomano(texto) {
-  const arabigos = { '10': 'X', '9': 'IX', '8': 'VIII', '7': 'VII', '6': 'VI', '5': 'V', '4': 'IV', '3': 'III', '2': 'II', '1': 'I' };
-  let resultado = texto;
-  for (const [arabigo, romano] of Object.entries(arabigos)) {
-    const regex = new RegExp(`\\b${arabigo}\\b`, 'g');
-    resultado = resultado.replace(regex, romano);
-  }
-  return resultado;
+// Compatibilidad: devuelve { nombre, ... } o null. Ya no se filtra por zona.
+function buscarComisariaPorCoordenadas(lat, lon) {
+  const r = jurisdiccionDePunto(lat, lon);
+  return r ? { ...r, lat, lon } : null;
 }
 
 async function geocodificarConNominatim(domicilio, localidad) {
-  const localidadLimpia = (localidad || '').replace(/\s*\(.*?\)\s*/g, ' ').trim();
-  const domicilioRomano = convertirRomanoAArabigo(domicilio);
-  const domicilioArabigo = convertirArabigoARomano(domicilio);
-  const intentos = [
-    { desc: 'tal cual', texto: `${domicilio}, ${localidadLimpia}, Salta, Argentina` },
-    { desc: 'romano→arábigo', texto: domicilioRomano !== domicilio ? `${domicilioRomano}, ${localidadLimpia}, Salta, Argentina` : null },
-    { desc: 'arábigo→romano', texto: domicilioArabigo !== domicilio ? `${domicilioArabigo}, ${localidadLimpia}, Salta, Argentina` : null },
-  ].filter(i => i.texto);
-  for (const intento of intentos) {
-    const resultado = await consultarNominatim(intento.texto);
-    if (resultado) return resultado;
-  }
-  const domiciliosVariantes = [domicilio, domicilioRomano, domicilioArabigo];
-  const barriosProbados = new Set();
-  for (const dom of domiciliosVariantes) {
-    const matchBarrio = dom.match(/\b(?:barrio|b°|bº|b\.)\s*([a-záéíóúñ\s]+\s*\d*)/i);
-    if (matchBarrio) {
-      const nombreBarrio = matchBarrio[1].trim();
-      if (barriosProbados.has(nombreBarrio)) continue;
-      barriosProbados.add(nombreBarrio);
-      let resultado = await consultarNominatim(`Barrio ${nombreBarrio}, ${localidadLimpia}, Salta, Argentina`);
-      if (resultado) return resultado;
-      resultado = await consultarNominatim(`${nombreBarrio}, ${localidadLimpia}, Salta, Argentina`);
-      if (resultado) return resultado;
-    }
-  }
-  const resultadoFinal = await consultarNominatim(`${localidadLimpia}, Salta, Argentina`);
-  if (resultadoFinal) return resultadoFinal;
-  return null;
+  return geocodificarDomicilio(domicilio, localidad);
 }
 
 async function asignarComisariaPorJurisdiccion(domicilio, localidad, zona, opciones = {}) {
   if (!domicilio || !localidad) return { error: 'Falta domicilio o localidad' };
   const { latGuardada, lonGuardada } = opciones;
-
-  const domNorm = normalizarBarrio(domicilio);
-  for (const barrio of Object.keys(BARRIOS_MULTI_ZONA)) {
-    if (domNorm.includes(normalizarBarrio(barrio))) {
-      const porZona = BARRIOS_MULTI_ZONA[barrio];
-      if (zona && porZona[zona]) {
-        let lat = latGuardada ?? null, lon = lonGuardada ?? null;
-        if ((lat == null || lon == null) && typeof DEPENDENCIAS_POLICIALES !== 'undefined') {
-          const nombreCom = porZona[zona];
-          const dep = DEPENDENCIAS_POLICIALES.find(d => d.nombre === nombreCom)
-                   || DEPENDENCIAS_POLICIALES.find(d =>
-                        d.nombre && nombreCom.toLowerCase().startsWith(d.nombre.toLowerCase()));
-          if (dep && dep.lat) { lat = dep.lat; lon = dep.lon; }
-        }
-        return { comisaria: porZona[zona], origen: 'multi_zona', barrio, zona, lat, lon };
-      }
-      return { requiereZona: true, barrio, zonasDisponibles: Object.keys(porZona) };
-    }
-  }
-
-  if (typeof CORRECCIONES_BARRIO !== 'undefined' && CORRECCIONES_BARRIO) {
-    const domicilioNormalizado = normalizarBarrio(domicilio);
-    const barriosOrdenados = Object.keys(CORRECCIONES_BARRIO).sort((a, b) => b.length - a.length);
-    for (const barrio of barriosOrdenados) {
-      if (domicilioNormalizado.includes(normalizarBarrio(barrio))) {
-        const valor = CORRECCIONES_BARRIO[barrio];
-        if (Array.isArray(valor)) return { opciones: valor, origen: 'correccion_barrio_multiple', barrio };
-        if (valor && typeof valor === 'object')
-          return { comisaria: valor.comisaria, lat: valor.lat || null, lon: valor.lon || null, origen: 'correccion_barrio', barrio };
-        let lat = latGuardada ?? null, lon = lonGuardada ?? null;
-        const dep = DEPENDENCIAS_POLICIALES.find(d => d.nombre === valor);
-        if ((lat == null || lon == null) && dep && dep.lat) { lat = dep.lat; lon = dep.lon; }
-        return { comisaria: valor, origen: 'correccion_barrio', barrio, lat, lon, zona };
-      }
-    }
-  }
-
-  if (latGuardada != null && lonGuardada != null) {
-    if (!poligonosCargados) await cargarTodosLosPoligonos();
-    const comisaria = buscarComisariaPorCoordenadas(latGuardada, lonGuardada, zona);
-    if (comisaria && comisaria.nombre) {
-      return { comisaria: comisaria.nombre, ddp: comisaria.ddp, lat: latGuardada, lon: lonGuardada, origen: 'ubicacion_guardada', zona };
-    }
-    const sinFiltro = buscarComisariaPorCoordenadas(latGuardada, lonGuardada, null);
-    if (sinFiltro) {
-      return { comisaria: sinFiltro.nombre, ddp: sinFiltro.ddp, lat: latGuardada, lon: lonGuardada, origen: 'ubicacion_guardada_sin_zona' };
-    }
-    return { error: 'Las coordenadas guardadas no caen en ninguna jurisdicción conocida', lat: latGuardada, lon: lonGuardada };
-  }
-
   if (!poligonosCargados) await cargarTodosLosPoligonos();
-  const ubicacion = await geocodificarConNominatim(domicilio, localidad);
-  if (!ubicacion) return { error: 'No se pudo ubicar el domicilio' };
 
-  const comisaria = buscarComisariaPorCoordenadas(ubicacion.lat, ubicacion.lon, zona);
-  if (!comisaria) {
-    const comisariaSinFiltro = buscarComisariaPorCoordenadas(ubicacion.lat, ubicacion.lon, null);
-    if (comisariaSinFiltro) {
-      return { comisaria: comisariaSinFiltro.nombre, ddp: comisariaSinFiltro.ddp, lat: ubicacion.lat, lon: ubicacion.lon, origen: 'poligono_sin_zona', zonaElegida: zona, zonaReal: null };
-    }
-    return { error: 'El domicilio no está dentro de ninguna jurisdicción conocida', lat: ubicacion.lat, lon: ubicacion.lon };
+  // 1) Punto exacto marcado por la persona (mapa o GPS): es lo más preciso.
+  if (latGuardada != null && lonGuardada != null && !isNaN(latGuardada)) {
+    const r = jurisdiccionDePunto(latGuardada, lonGuardada);
+    if (r) return { comisaria: r.nombre, lat: latGuardada, lon: lonGuardada, origen: 'punto_exacto', detalle: r };
+    return { error: 'El punto marcado no está dentro de ninguna jurisdicción', lat: latGuardada, lon: lonGuardada };
   }
-  return { comisaria: comisaria.nombre, ddp: comisaria.ddp, lat: ubicacion.lat, lon: ubicacion.lon, origen: 'poligono', zona };
+
+  // 2) Barrio confirmado manualmente
+  const regla = buscarBarrioConfirmado(domicilio, zona);
+  if (regla) {
+    const ubic = await geocodificarDomicilio(domicilio, localidad).catch(() => null);
+    const ok = ubic && ubic.precision !== 'localidad';
+    return { comisaria: regla.jurisdiccion, origen: 'barrio_confirmado',
+             lat: ok ? ubic.lat : null, lon: ok ? ubic.lon : null, detalle: { nota: regla.nota } };
+  }
+
+  // 3) Geocodificar domicilio y ubicar en el polígono
+  const ubic = await geocodificarDomicilio(domicilio, localidad);
+  if (!ubic) return { requiereMapa: true, motivo: 'No encontramos el domicilio. Marcá tu casa en el mapa.' };
+  if (ubic.precision === 'localidad') {
+    return { requiereMapa: true, lat: ubic.lat, lon: ubic.lon,
+             motivo: 'Encontramos la localidad pero no tu calle o barrio. Marcá tu casa en el mapa para asignar la comisaría exacta.' };
+  }
+  const r = jurisdiccionDePunto(ubic.lat, ubic.lon);
+  if (!r) return { requiereMapa: true, lat: ubic.lat, lon: ubic.lon, motivo: 'La dirección encontrada no cae en ninguna jurisdicción. Marcá tu casa en el mapa.' };
+  if (r.cercaDelLimite || r.aproximada) {
+    return { requiereMapa: true, lat: ubic.lat, lon: ubic.lon, sugerida: r.nombre, vecina: r.vecina,
+             motivo: 'Tu domicilio está justo en el límite entre dos comisarías. Confirmá tu casa en el mapa.' };
+  }
+  return { comisaria: r.nombre, lat: ubic.lat, lon: ubic.lon, origen: ubic.precision === 'calle' ? 'poligono_calle' : 'poligono_barrio', detalle: r };
 }
 
 let mapaLeafletActivo = null;
 let marcadorLeafletActivo = null;
+let capaJurisdiccion = null;
 
-function crearMapaConfirmacion(aviso, form, opciones) {
-  const { lat, lng, comisariaFija, esMultiple, modoBarrio, texto, nombreEl } = opciones;
+function _pintarJurisdiccion(nombre) {
+  if (!mapaLeafletActivo) return;
+  if (capaJurisdiccion) { mapaLeafletActivo.removeLayer(capaJurisdiccion); capaJurisdiccion = null; }
+  if (!nombre) return;
+  const polys = poligonosDeJurisdiccion(nombre);
+  if (!polys.length) return;
+  capaJurisdiccion = L.polygon(polys, { color: '#16a34a', weight: 2, fillColor: '#22c55e', fillOpacity: 0.12 })
+    .addTo(mapaLeafletActivo);
+}
+
+function _fijarResultado(form, aviso, nombre, extraTexto) {
+  const texto = aviso.querySelector('.texto');
+  const nombreEl = aviso.querySelector('.nombre');
+  aviso.classList.remove('cargando', 'error');
+  aviso.classList.add('activo');
+  form.dataset.comisariaAsignada = nombre;
+  form.dataset.ubicacionComisaria = nombre;
+  texto.textContent = '📍 Comisaría que te corresponde:';
+  nombreEl.textContent = nombreLegibleJurisdiccion(nombre);
+  nombreEl.title = nombre;
+  nombreEl.style.display = '';
+  let sub = aviso.querySelector('.sub-aviso');
+  if (!sub) { sub = document.createElement('div'); sub.className = 'sub-aviso'; sub.style.cssText = 'font-size:0.78rem;margin-top:6px;opacity:0.85;'; nombreEl.after(sub); }
+  sub.textContent = extraTexto || '';
+}
+
+function _sinResultado(form, aviso, mensaje) {
+  const texto = aviso.querySelector('.texto');
+  const nombreEl = aviso.querySelector('.nombre');
+  aviso.classList.remove('error');
+  aviso.classList.add('activo', 'cargando');
+  form.dataset.comisariaAsignada = '';
+  texto.textContent = '👇 ' + mensaje;
+  nombreEl.textContent = '';
+  const sub = aviso.querySelector('.sub-aviso'); if (sub) sub.textContent = '';
+}
+
+function crearMapaConfirmacion(aviso, form, { lat, lng, nombre, pedirPunto, zoom }) {
   const bloqueMapa = document.createElement('div');
   bloqueMapa.className = 'mapa-confirmacion';
-  const tituloTexto = modoBarrio
-    ? '🗺️ Ajustá tu ubicación exacta si hace falta'
-    : (esMultiple ? '🗺️ Confirmá tu ubicación exacta en el mapa' : '🗺️ Ubicación verificada automáticamente');
-  const ayudaTexto = modoBarrio
-    ? '👆 <strong>Arrastrá el marcador</strong> si tu casa no está exactamente donde marca. La comisaría asignada por tu barrio no cambia.'
-    : (esMultiple ? '👆 <strong>Tocá o arrastrá el marcador</strong> hasta tu casa. La comisaría se asigna automáticamente según el punto exacto.' : '📍 Esta es la ubicación aproximada. La comisaría se asignó según tu barrio o punto exacto.');
   bloqueMapa.innerHTML = `
-    <div class="titulo">${tituloTexto}</div>
+    <div class="titulo">${pedirPunto ? '🗺️ Marcá tu casa en el mapa' : '🗺️ Verificá que el marcador esté en tu casa'}</div>
     <div id="mapa-leaflet"></div>
-    <div class="ayuda">${ayudaTexto}</div>
-    <div class="coords" data-coords>📍 Ubicación actual: ${lat.toFixed(5)}, ${lng.toFixed(5)}</div>
+    <button type="button" class="btn-gps" style="margin-top:10px;width:100%;padding:10px;border-radius:6px;border:1px solid var(--dorado-claro,#d4af37);background:transparent;color:inherit;font-weight:600;cursor:pointer;">📡 Estoy en mi casa: usar mi ubicación actual</button>
+    <div class="ayuda">👆 Tocá el mapa o arrastrá el marcador hasta tu casa. La zona verde es la jurisdicción de la comisaría asignada; si el marcador sale de ella, la comisaría cambia sola.</div>
+    <div class="coords" data-coords></div>
   `;
   aviso.appendChild(bloqueMapa);
 
-  setTimeout(async () => {
+  setTimeout(() => {
     const divMapa = bloqueMapa.querySelector('#mapa-leaflet');
     const coordsEl = bloqueMapa.querySelector('[data-coords]');
     const ayudaEl = bloqueMapa.querySelector('.ayuda');
-    if (!esMultiple && comisariaFija) {
-      ayudaEl.innerHTML = `✅ <strong>${comisariaFija}</strong> — Ubicación confirmada.`;
-      ayudaEl.style.color = '#86efac';
-    }
-    mapaLeafletActivo = L.map(divMapa, { center: [lat, lng], zoom: 16, zoomControl: true, dragging: true });
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19, attribution: '© OpenStreetMap'
-    }).addTo(mapaLeafletActivo);
-    marcadorLeafletActivo = L.marker([lat, lng], {
-      draggable: true, title: 'Arrastrame a la ubicación exacta de tu casa'
-    }).addTo(mapaLeafletActivo);
-    if (!esMultiple && comisariaFija) {
-      marcadorLeafletActivo.bindPopup(`<strong>${comisariaFija}</strong><br>Ubicación aproximada`).openPopup();
-    }
-    function registrarCoords(nuevaLat, nuevaLng) {
-      form.dataset.ubicacionLat = nuevaLat;
-      form.dataset.ubicacionLon = nuevaLng;
+    mapaLeafletActivo = L.map(divMapa, { center: [lat, lng], zoom: zoom || 16 });
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(mapaLeafletActivo);
+    marcadorLeafletActivo = L.marker([lat, lng], { draggable: true, title: 'Arrastrame a tu casa' }).addTo(mapaLeafletActivo);
+    coordsEl.textContent = `📍 ${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+    if (nombre) _pintarJurisdiccion(nombre);
+
+    async function moverA(nLat, nLng, fuente) {
+      marcadorLeafletActivo.setLatLng([nLat, nLng]);
+      coordsEl.textContent = `📍 ${nLat.toFixed(5)}, ${nLng.toFixed(5)}`;
+      form.dataset.ubicacionLat = nLat;
+      form.dataset.ubicacionLon = nLng;
       form.dataset.usarUbicacionGuardada = 'true';
-    }
-    async function recalcularConCoordenadas(nuevaLat, nuevaLng) {
-      coordsEl.textContent = `📍 Ubicación actual: ${nuevaLat.toFixed(5)}, ${nuevaLng.toFixed(5)}`;
-      registrarCoords(nuevaLat, nuevaLng);
+      form.dataset.ubicacionFuente = 'mapa';
       if (!poligonosCargados) await cargarTodosLosPoligonos();
-      const zonaActual = form.querySelector('[name="zona"]')?.value || null;
-      const comisaria = buscarComisariaPorCoordenadas(nuevaLat, nuevaLng, zonaActual);
-      const selZona = form.querySelector('[name="zona"]');
-      const origenMulti = form.dataset.origenMultiZona === 'true';
-      if (comisaria && comisaria.nombre) {
-        form.dataset.comisariaAsignada = comisaria.nombre;
-        form.dataset.ubicacionComisaria = comisaria.nombre;
-        if (selZona && selZona.dataset.editadaManualmente !== 'true' && !origenMulti) {
-          const z = obtenerZona(comisaria.nombre);
-          if (z) selZona.value = z;
-        }
-        aviso.classList.remove('cargando');
-        texto.textContent = '✅ Comisaría asignada:';
-        nombreEl.textContent = comisaria.nombre;
-        nombreEl.style.display = '';
-        ayudaEl.innerHTML = `✅ <strong>${comisaria.nombre}</strong> — ¡Listo, podés continuar!`;
+      const r = jurisdiccionDePunto(nLat, nLng);
+      if (r) {
+        _fijarResultado(form, aviso, r.nombre,
+          r.aproximada ? `Tu casa quedó a ${r.fueraPorMetros} m del borde del mapa oficial; el personal lo verificará.`
+            : (r.cercaDelLimite ? 'Tu casa está muy cerca del límite con otra comisaría. Asegurate de que el marcador esté exactamente sobre tu casa.'
+              : (fuente === 'gps' ? 'Ubicación tomada del GPS de tu celular.' : 'Ubicación marcada por vos en el mapa.')));
+        _pintarJurisdiccion(r.nombre);
         ayudaEl.style.color = '#86efac';
       } else {
-        form.dataset.comisariaAsignada = '';
-        texto.textContent = '⚠️ Este punto no cae en ninguna jurisdicción conocida.';
-        nombreEl.textContent = 'Se asignará manualmente';
-        nombreEl.style.display = '';
-        ayudaEl.innerHTML = '⚠️ Movés el marcador a otro punto.';
+        _sinResultado(form, aviso, 'Ese punto está fuera de las jurisdicciones de Salta. Mové el marcador a tu casa.');
+        _pintarJurisdiccion(null);
         ayudaEl.style.color = '#fca5a5';
       }
     }
-    marcadorLeafletActivo.on('dragend', function (e) {
-      const pos = e.target.getLatLng();
-      if (modoBarrio) {
-        registrarCoords(pos.lat, pos.lng);
-        coordsEl.textContent = `📍 Ubicación ajustada: ${pos.lat.toFixed(5)}, ${pos.lng.toFixed(5)}`;
-        ayudaEl.innerHTML = `✅ <strong>${comisariaFija}</strong> — Ubicación ajustada. La comisaría sigue siendo la misma.`;
-        ayudaEl.style.color = '#86efac';
-      } else {
-        recalcularConCoordenadas(pos.lat, pos.lng);
-      }
+    marcadorLeafletActivo.on('dragend', e => { const p = e.target.getLatLng(); moverA(p.lat, p.lng, 'mapa'); });
+    mapaLeafletActivo.on('click', e => moverA(e.latlng.lat, e.latlng.lng, 'mapa'));
+    bloqueMapa.querySelector('.btn-gps').addEventListener('click', ev => {
+      const btn = ev.currentTarget;
+      if (!navigator.geolocation) { alert('Tu dispositivo no permite obtener la ubicación.'); return; }
+      btn.textContent = '⏳ Obteniendo ubicación...';
+      navigator.geolocation.getCurrentPosition(pos => {
+        btn.textContent = '📡 Estoy en mi casa: usar mi ubicación actual';
+        if (pos.coords.accuracy > 150) {
+          alert(`La precisión del GPS es baja (±${Math.round(pos.coords.accuracy)} m). Revisá que el marcador quede sobre tu casa.`);
+        }
+        mapaLeafletActivo.setView([pos.coords.latitude, pos.coords.longitude], 17);
+        moverA(pos.coords.latitude, pos.coords.longitude, 'gps');
+      }, () => {
+        btn.textContent = '📡 Estoy en mi casa: usar mi ubicación actual';
+        alert('No se pudo obtener tu ubicación. Activá el GPS y dale permiso al navegador, o marcá tu casa a mano en el mapa.');
+      }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
     });
-    mapaLeafletActivo.on('click', function (e) {
-      marcadorLeafletActivo.setLatLng(e.latlng);
-      if (modoBarrio) {
-        registrarCoords(e.latlng.lat, e.latlng.lng);
-        coordsEl.textContent = `📍 Ubicación ajustada: ${e.latlng.lat.toFixed(5)}, ${e.latlng.lng.toFixed(5)}`;
-        ayudaEl.innerHTML = `✅ <strong>${comisariaFija}</strong> — Ubicación ajustada. La comisaría sigue siendo la misma.`;
-        ayudaEl.style.color = '#86efac';
-      } else {
-        recalcularConCoordenadas(e.latlng.lat, e.latlng.lng);
-      }
-    });
-    setTimeout(() => { mapaLeafletActivo.invalidateSize(); }, 200);
+    setTimeout(() => mapaLeafletActivo && mapaLeafletActivo.invalidateSize(), 200);
   }, 50);
 }
+
+function _limpiarAviso(aviso) {
+  aviso.classList.remove('activo', 'cargando', 'error');
+  const mapaViejo = aviso.querySelector('.mapa-confirmacion');
+  if (mapaViejo) mapaViejo.remove();
+  if (mapaLeafletActivo) { mapaLeafletActivo.remove(); mapaLeafletActivo = null; marcadorLeafletActivo = null; capaJurisdiccion = null; }
+  const sub = aviso.querySelector('.sub-aviso'); if (sub) sub.textContent = '';
+}
+
+const CENTRO_SALTA = { lat: -24.7883, lng: -65.4106 };
 
 async function mostrarAvisoComisaria(form, estado, dato) {
   const aviso = form.querySelector('[data-comisaria-aviso]');
   if (!aviso) return;
-  const selectZona = form.querySelector('[name="zona"]');
-  aviso.classList.remove('activo', 'cargando', 'error');
+  _limpiarAviso(aviso);
   const texto = aviso.querySelector('.texto');
   const nombreEl = aviso.querySelector('.nombre');
-  const selectViejo = aviso.querySelector('.seleccion-comisaria');
-  if (selectViejo) selectViejo.remove();
-  const mapaViejo = aviso.querySelector('.mapa-confirmacion');
-  if (mapaViejo) mapaViejo.remove();
-  if (mapaLeafletActivo) {
-    mapaLeafletActivo.remove();
-    mapaLeafletActivo = null;
-    marcadorLeafletActivo = null;
-  }
-  nombreEl.style.display = '';
 
   if (estado === 'cargando') {
     aviso.classList.add('activo', 'cargando');
-    texto.textContent = '⏳ Calculando comisaría...';
+    texto.textContent = '⏳ Buscando tu domicilio y la comisaría que corresponde...';
     nombreEl.textContent = '';
   } else if (estado === 'ok') {
-    aviso.classList.add('activo');
-    texto.textContent = '📍 Comisaría asignada:';
-    nombreEl.textContent = dato.comisaria;
-    form.dataset.comisariaAsignada = dato.comisaria;
-    form.dataset.ubicacionComisaria = dato.comisaria;
-    form.dataset.origenMultiZona = dato.origen === 'multi_zona' ? 'true' : 'false';
-    if (selectZona && selectZona.dataset.editadaManualmente !== 'true' && dato.origen !== 'multi_zona') {
-      const z = obtenerZona(dato.comisaria);
-      if (z) selectZona.value = z;
-    }
-    const esModoBarrio = dato.origen === 'correccion_barrio' || dato.origen === 'multi_zona';
-    let centro = { lat: -24.786744, lng: -65.408122 };
-    if (dato.lat && dato.lon) {
-      centro = { lat: dato.lat, lng: dato.lon };
-    } else if (dato.domicilio && dato.localidad) {
-      try {
-        const ubic = await geocodificarConNominatim(dato.domicilio, dato.localidad);
-        if (ubic && ubic.lat && ubic.lon) centro = { lat: ubic.lat, lng: ubic.lon };
-      } catch (e) { console.warn('No se pudo geocodificar:', e); }
-    }
-    if (dato.lat && dato.lon) {
+    const extra = dato.origen === 'barrio_confirmado' ? 'Asignada por tu barrio.'
+      : dato.origen === 'punto_exacto' ? 'Según la ubicación exacta marcada.'
+      : dato.origen === 'poligono_barrio' ? 'Ubicamos tu barrio. Verificá en el mapa que el marcador esté en tu casa.'
+      : 'Según la dirección ingresada. Verificá en el mapa que el marcador esté en tu casa.';
+    _fijarResultado(form, aviso, dato.comisaria, extra);
+    if (dato.lat != null && dato.lon != null) {
       form.dataset.ubicacionLat = dato.lat;
       form.dataset.ubicacionLon = dato.lon;
     }
     crearMapaConfirmacion(aviso, form, {
-      lat: centro.lat, lng: centro.lng,
-      comisariaFija: dato.comisaria,
-      esMultiple: false, modoBarrio: esModoBarrio,
-      texto, nombreEl
+      lat: dato.lat ?? CENTRO_SALTA.lat, lng: dato.lon ?? CENTRO_SALTA.lng,
+      nombre: dato.comisaria, pedirPunto: dato.lat == null, zoom: dato.lat == null ? 14 : 16
     });
-  } else if (estado === 'multiple') {
-    aviso.classList.add('activo', 'cargando');
-    texto.textContent = '📍 Hay varias comisarías posibles. Confirmá tu ubicación en el mapa:';
-    nombreEl.textContent = '';
-    form.dataset.comisariaAsignada = '';
-    let centro = { lat: -24.786744, lng: -65.408122 };
-    if (dato.domicilio && dato.localidad) {
-      try {
-        const ubic = await geocodificarConNominatim(dato.domicilio, dato.localidad);
-        if (ubic && ubic.lat && ubic.lon) centro = { lat: ubic.lat, lng: ubic.lon };
-      } catch (e) { console.warn('No se pudo geocodificar:', e); }
+  } else if (estado === 'mapa') {
+    _sinResultado(form, aviso, dato.motivo || 'Marcá tu casa en el mapa para asignar la comisaría exacta.');
+    if (dato.sugerida) {
+      const sub = document.createElement('div'); sub.className = 'sub-aviso';
+      sub.style.cssText = 'font-size:0.78rem;margin-top:6px;opacity:0.85;';
+      sub.textContent = `Posibles: ${nombreLegibleJurisdiccion(dato.sugerida)}${dato.vecina ? ' o ' + nombreLegibleJurisdiccion(dato.vecina) : ''}.`;
+      nombreEl.after(sub);
     }
     crearMapaConfirmacion(aviso, form, {
-      lat: centro.lat, lng: centro.lng,
-      comisariaFija: null,
-      esMultiple: true, modoBarrio: false,
-      texto, nombreEl
+      lat: dato.lat ?? CENTRO_SALTA.lat, lng: dato.lon ?? CENTRO_SALTA.lng,
+      nombre: dato.sugerida || null, pedirPunto: true, zoom: dato.lat == null ? 13 : (dato.sugerida ? 17 : 14)
     });
   } else if (estado === 'error') {
     aviso.classList.add('activo', 'error');
-    texto.textContent = '⚠️ No se pudo determinar la comisaría';
-    nombreEl.textContent = 'Se asignará manualmente';
+    texto.textContent = '⚠️ No se pudo calcular la comisaría (revisá tu conexión).';
+    nombreEl.textContent = 'Si no se resuelve, el personal la asignará';
     form.dataset.comisariaAsignada = '';
   } else {
-    aviso.classList.remove('activo');
     form.dataset.comisariaAsignada = '';
   }
 }
@@ -2687,6 +2534,7 @@ Object.entries(forms).forEach(([tramite, form]) => {
 
   let timeoutId = null;
   let ultimaConsulta = '';
+  let ultimoDomicilio = '';
 
   async function calcularComisaria() {
     const domicilio = inputDomicilio.value.trim();
@@ -2696,6 +2544,18 @@ Object.entries(forms).forEach(([tramite, form]) => {
       mostrarAvisoComisaria(form, 'oculto');
       return;
     }
+    // Si la persona cambió el domicilio, el punto marcado antes ya no vale.
+    const domNorm = normalizarTextoDomicilio(domicilio + '|' + localidad);
+    if (ultimoDomicilio && ultimoDomicilio !== domNorm && form.dataset.ubicacionFuente === 'mapa') {
+      form.dataset.usarUbicacionGuardada = 'false';
+      form.dataset.ubicacionFuente = '';
+    }
+    if (form.dataset.ubicacionFuente === 'guardada' && form.dataset.ubicacionDomicilio
+        && normalizarTextoDomicilio(form.dataset.ubicacionDomicilio) !== normalizarTextoDomicilio(domicilio)) {
+      form.dataset.usarUbicacionGuardada = 'false';
+      form.dataset.ubicacionFuente = '';
+    }
+    ultimoDomicilio = domNorm;
     const usarGuardada = form.dataset.usarUbicacionGuardada === 'true';
     const latG = usarGuardada ? parseFloat(form.dataset.ubicacionLat) : null;
     const lonG = usarGuardada ? parseFloat(form.dataset.ubicacionLon) : null;
@@ -2704,34 +2564,11 @@ Object.entries(forms).forEach(([tramite, form]) => {
     ultimaConsulta = consulta;
     mostrarAvisoComisaria(form, 'cargando');
     try {
-      const resultado = await asignarComisariaPorJurisdiccion(domicilio, localidad, zona, {
-        latGuardada: latG, lonGuardada: lonG
-      });
-
-      if (resultado.requiereZona) {
-        const aviso = form.querySelector('[data-comisaria-aviso]');
-        if (aviso) {
-          aviso.classList.add('activo', 'cargando');
-          aviso.querySelector('.texto').textContent = '⚠️ Este barrio tiene dos zonas. Elegí la correcta arriba:';
-          aviso.querySelector('.nombre').textContent = resultado.zonasDisponibles.join(' o ');
-        }
-        form.dataset.comisariaAsignada = '';
-        return;
-      }
-
-      if (resultado.opciones && resultado.opciones.length > 0) {
-        mostrarAvisoComisaria(form, 'multiple', {
-          opciones: resultado.opciones, domicilio, localidad
-        });
-      } else if (resultado.comisaria) {
-        mostrarAvisoComisaria(form, 'ok', {
-          comisaria: resultado.comisaria, origen: resultado.origen,
-          lat: resultado.lat || null, lon: resultado.lon || null,
-          domicilio, localidad
-        });
-      } else {
-        mostrarAvisoComisaria(form, 'error');
-      }
+      const r = await asignarComisariaPorJurisdiccion(domicilio, localidad, zona, { latGuardada: latG, lonGuardada: lonG });
+      if (consulta !== ultimaConsulta) return; // llegó una consulta más nueva
+      if (r.comisaria) mostrarAvisoComisaria(form, 'ok', { ...r, domicilio, localidad });
+      else if (r.requiereMapa || r.error) mostrarAvisoComisaria(form, 'mapa', { motivo: r.motivo || r.error, lat: r.lat, lon: r.lon, sugerida: r.sugerida, vecina: r.vecina });
+      else mostrarAvisoComisaria(form, 'error');
     } catch (err) { console.error(err); mostrarAvisoComisaria(form, 'error'); }
   }
 
@@ -2815,19 +2652,13 @@ Object.entries(forms).forEach(([tramite, form]) => {
         { latGuardada: latG, lonGuardada: lonG }
       );
 
-      let comisariaAsignada;
-      if (asignacion && asignacion.opciones && asignacion.opciones.length > 0) {
-        comisariaAsignada = form.dataset.comisariaAsignada;
-        if (!comisariaAsignada) {
-          alert('Por favor, confirmá tu ubicación en el mapa antes de enviar.');
-          btnEnviar.disabled = false;
-          btnEnviar.textContent = textoOriginal;
-          return;
-        }
-      } else if (asignacion && asignacion.comisaria) {
-        comisariaAsignada = asignacion.comisaria;
-      } else {
-        comisariaAsignada = form.dataset.comisariaAsignada || 'No se pudo determinar automáticamente (a asignar por el personal)';
+      let comisariaAsignada = form.dataset.comisariaAsignada || (asignacion && asignacion.comisaria) || '';
+      if (!comisariaAsignada) {
+        alert('Falta ubicar tu domicilio: marcá tu casa en el mapa (o usá el botón de ubicación actual) para asignar la comisaría que te corresponde.');
+        const av = form.querySelector('[data-comisaria-aviso]'); if (av) av.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        btnEnviar.disabled = false;
+        btnEnviar.textContent = textoOriginal;
+        return;
       }
 
       btnEnviar.textContent = 'Generando código...';
