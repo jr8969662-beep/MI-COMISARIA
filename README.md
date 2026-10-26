@@ -10,7 +10,7 @@ que le corresponde según el mapa oficial de jurisdicciones.
 | Archivo | Para qué sirve |
 |---|---|
 | `index.html`, `styles.css`, `script.js` | Portada |
-| `formularios-tramites.html` | Formularios de trámites (escaneo de DNI, mapa, envío) |
+| `index.html` | Formularios de trámites (página principal) (escaneo de DNI, mapa, envío) |
 | `consultar-tramite.html` | La persona consulta el estado de su trámite con el código |
 | `jurisdicciones.js` + `jurisdicciones.json` | Motor que asigna la comisaría por polígono oficial |
 | `comisarias-config.js` | Datos auxiliares de comisarías |

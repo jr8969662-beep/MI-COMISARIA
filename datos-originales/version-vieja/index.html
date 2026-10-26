@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mi Comisaría | Trámites Policiales - Salta</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="container header-inner">
+      <div class="brand">
+        <div class="police-logo" aria-label="Policía de Salta">
+          <img src="policia-salta.png.jpg" alt="Escudo de la Policía de Salta">
+        </div>
+        <div>
+          <h1>Mi Comisaría</h1>
+          <p>Trámites de la Policía de Salta, en línea</p>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ===================== VISTA: INICIO ===================== -->
+  <main id="view-home" class="view">
+    <section class="hero container">
+      <h2>¿Qué trámite necesitás hacer hoy?</h2>
+      <p>Elegí una opción, completá el formulario y generá tu certificado en formato policial.</p>
+    </section>
+
+    <section class="cards container" aria-label="Selección de trámite">
+      <button class="card" data-tramite="residencia">
+        <span class="card-icon">🏠</span>
+        <h3>Certificado de Residencia</h3>
+        <p>Acredita el domicilio donde vivís actualmente.</p>
+        <span class="card-cta">Iniciar trámite →</span>
+      </button>
+
+      <button class="card" data-tramite="convivencia">
+        <span class="card-icon">🤝</span>
+        <h3>Certificado de Convivencia</h3>
+        <p>Acredita que dos personas conviven en un mismo domicilio.</p>
+        <span class="card-cta">Iniciar trámite →</span>
+      </button>
+
+      <button class="card" data-tramite="carencia">
+        <span class="card-icon">📋</span>
+        <h3>Certificado de Carencia de Recursos</h3>
+        <p>Acredita la falta de ingresos o recursos suficientes.</p>
+        <span class="card-cta">Iniciar trámite →</span>
+      </button>
+
+      <button class="card" data-tramite="autorizacion">
+        <span class="card-icon">✍️</span>
+        <h3>Certificado de Autorización</h3>
+        <p>Deja constancia de una autorización para realizar una gestión determinada.</p>
+        <span class="card-cta">Iniciar trámite →</span>
+      </button>
+    </section>
+  </main>
+
+  <!-- ===================== VISTA: FORMULARIO ===================== -->
+  <main id="view-form" class="view hidden">
+    <section class="container form-wrapper">
+      <button id="btn-back" class="btn-link">← Volver a los trámites</button>
+      <h2 id="form-title">Formulario</h2>
+      <p id="form-subtitle" class="muted"></p>
+
+      <form id="tramite-form" novalidate>
+        <div id="form-fields"></div>
+
+        <label class="checkbox-row">
+          <input type="checkbox" id="declaracion-jurada" required>
+          Declaro que los datos consignados son correctos y verdaderos (declaración jurada).
+        </label>
+
+        <div class="form-actions">
+          <button type="submit" class="btn-primary">Generar certificado (PDF)</button>
+        </div>
+      </form>
+    </section>
+  </main>
+
+  <!-- ===================== VISTA: CONFIRMACIÓN ===================== -->
+  <main id="view-done" class="view hidden">
+    <section class="container done-wrapper">
+      <div class="done-icon">✅</div>
+      <h2>¡Trámite enviado!</h2>
+      <p>Tu certificado se descargó en formato PDF y tus datos fueron enviados a la comisaría para su procesamiento.</p>
+      <button id="btn-new" class="btn-primary">Iniciar otro trámite</button>
+    </section>
+  </main>
+
+  <div id="document-camera-modal" class="scanner-modal hidden" role="dialog" aria-modal="true" aria-labelledby="document-camera-title">
+    <div class="scanner-panel">
+      <div class="scanner-header">
+        <div>
+          <p class="scanner-kicker">Documentación</p>
+          <h2 id="document-camera-title">Fotografiar DNI</h2>
+        </div>
+        <button id="document-camera-close" class="btn-link" type="button" aria-label="Cerrar cámara">Cerrar</button>
+      </div>
+      <div class="scanner-video-wrap">
+        <video id="document-camera-video" autoplay muted playsinline></video>
+        <div class="scanner-frame" aria-hidden="true"></div>
+      </div>
+      <p id="document-camera-step" class="camera-step">Paso 1 de 2: frente del DNI</p>
+      <p id="document-camera-status" class="muted">Activá la cámara y ubicá el DNI completo dentro del marco.</p>
+      <div class="camera-actions">
+        <button id="document-camera-flash" class="btn-secondary" type="button" disabled>Flash: no disponible</button>
+        <button id="document-camera-capture" class="btn-primary" type="button" disabled>Tomar foto del frente</button>
+      </div>
+      <div id="document-camera-preview" class="camera-preview hidden">
+        <img id="document-camera-image" alt="Vista previa de la foto del DNI">
+        <div class="camera-actions">
+          <button id="document-camera-retake" class="btn-secondary" type="button">Repetir foto</button>
+          <button id="document-camera-continue" class="btn-primary" type="button">Continuar con el dorso</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="site-footer">
+    <div class="container">
+      <p>Mi Comisaría — Policía de Salta. Este es un formulario de solicitud; el certificado final debe ser validado y sellado por la dependencia policial correspondiente.</p>
+    </div>
+  </footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>

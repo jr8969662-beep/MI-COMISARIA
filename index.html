@@ -2,132 +2,2952 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mi Comisaría | Trámites Policiales - Salta</title>
-<link rel="stylesheet" href="styles.css">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Trámites Policiales Salta</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+<style>
+  :root{
+    --azul-fondo:#0a1e3d; --azul-oscuro:#0d2a4d; --azul:#1a3a6b; --azul-claro:#2c5aa0;
+    --dorado:#c9a961; --dorado-claro:#e6c988; --dorado-brilloso:#f0d78c;
+    --verde:#15803d; --rojo:#b91c1c; --amarillo:#ca8a04;
+    --sombra-suave:0 2px 8px rgba(13,42,77,0.08);
+    --sombra-media:0 4px 16px rgba(13,42,77,0.12);
+    --sombra-fuerte:0 8px 32px rgba(13,42,77,0.16);
+  }
+  *{box-sizing:border-box;}
+  html{background:var(--azul-fondo); min-height:100%;}
+  body{font-family:'Segoe UI', -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+    background:var(--azul-fondo);margin:0;color:#fff;position:relative;
+    overflow-x:hidden;min-height:100vh;display:flex;flex-direction:column;}
+  body::before{content:'';position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+    width:100vmin;height:100vmin;background-image:url('logo-policia.png.jpeg');
+    background-size:contain;background-repeat:no-repeat;background-position:center;
+    opacity:0.55;pointer-events:none;z-index:0;}
+  body > *{position:relative; z-index:1;}
+  header{background:linear-gradient(135deg, var(--azul-oscuro) 0%, var(--azul) 100%);
+    color:#fff;padding:20px 24px;position:relative;overflow:hidden;
+    border-bottom:3px solid var(--dorado);box-shadow:var(--sombra-media);
+    display:flex;justify-content:space-between;align-items:center;gap:16px;
+    flex-wrap:wrap;}
+  header::after{content:'';position:absolute;top:-50%;right:-10%;width:400px;height:400px;
+    background:radial-gradient(circle, rgba(201,169,97,0.15) 0%, transparent 70%);
+    border-radius:50%;pointer-events:none;}
+  header .header-info{display:flex;align-items:center;gap:14px;
+    position:relative;z-index:2;flex-wrap:wrap;}
+  header .header-logo{width:52px;height:52px;background-image:url('logo-policia.png.jpeg');
+    background-size:contain;background-repeat:no-repeat;background-position:center;
+    filter:drop-shadow(0 2px 6px rgba(0,0,0,0.3));flex-shrink:0;}
+  header .header-texto h1{margin:0;font-size:1.1rem;font-weight:700;color:#fff;
+    text-shadow:0 2px 4px rgba(0,0,0,0.2);letter-spacing:-0.01em;}
+  header .header-texto p{margin:3px 0 0;font-size:0.78rem;color:var(--dorado-claro);
+    font-weight:500;letter-spacing:0.02em;}
+  header .header-acciones{display:flex;gap:10px;position:relative;z-index:2;
+    flex-wrap:wrap;align-items:center;}
+  header .btn-consulta{
+    background:linear-gradient(135deg, var(--dorado) 0%, var(--dorado-brilloso) 100%);
+    color:var(--azul-oscuro);border:none;padding:10px 18px;border-radius:8px;
+    font-size:0.85rem;font-weight:700;cursor:pointer;font-family:inherit;
+    text-decoration:none;display:inline-flex;align-items:center;gap:8px;
+    transition:all 0.2s;box-shadow:0 4px 12px rgba(201,169,97,0.3);
+    white-space:nowrap;}
+  header .btn-consulta:hover{transform:translateY(-2px);
+    box-shadow:0 6px 20px rgba(201,169,97,0.5);}
+  header .btn-consulta .icono{font-size:1rem;}
+
+  .aviso-consulta-mobile{display:none;margin:0 16px 16px;
+    background:rgba(201,169,97,0.15);
+    border:1px solid rgba(201,169,97,0.5);
+    border-left:4px solid var(--dorado);
+    border-radius:10px;padding:14px 16px;
+    font-size:0.85rem;line-height:1.5;
+    align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+  .aviso-consulta-mobile.activo{display:flex;}
+  .aviso-consulta-mobile strong{color:var(--dorado-brilloso);}
+  .aviso-consulta-mobile a{
+    background:var(--dorado);color:var(--azul-oscuro);
+    padding:8px 14px;border-radius:6px;text-decoration:none;
+    font-weight:700;font-size:0.82rem;white-space:nowrap;
+    transition:all 0.2s;}
+  .aviso-consulta-mobile a:hover{background:var(--dorado-brilloso);
+    transform:translateY(-1px);}
+
+  main{max-width:760px;margin:36px auto;padding:0 16px 40px;width:100%;flex:1;}
+  .tarjetas{display:grid;grid-template-columns:repeat(auto-fit, minmax(210px, 1fr));
+    gap:18px;margin-bottom:32px;}
+  .tarjeta{background:rgba(13,42,77,0.6);backdrop-filter:blur(8px);
+    border:1px solid rgba(201,169,97,0.4);border-top:3px solid var(--dorado);
+    border-radius:12px;padding:24px 20px 20px;cursor:pointer;text-align:left;
+    font-size:0.95rem;font-family:inherit;color:#fff;
+    transition:all 0.25s cubic-bezier(0.4, 0, 0.2, 1);box-shadow:var(--sombra-suave);
+    position:relative;overflow:hidden;display:flex;flex-direction:column;min-height:200px;}
+  .tarjeta::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;
+    background:linear-gradient(90deg, var(--dorado), var(--dorado-claro));
+    opacity:0;transition:opacity 0.25s;}
+  .tarjeta:hover{border-color:var(--dorado);box-shadow:0 8px 32px rgba(201,169,97,0.3);
+    transform:translateY(-4px);background:rgba(13,42,77,0.75);}
+  .tarjeta:hover::before{opacity:1;}
+  .tarjeta.activa{border-color:var(--dorado);background:rgba(26,58,107,0.85);box-shadow:var(--sombra-media);}
+  .tarjeta .tarjeta-icono{font-size:2rem;margin-bottom:12px;display:block;line-height:1;}
+  .tarjeta b{display:block;margin-bottom:10px;color:var(--dorado-claro);
+    font-size:1.02rem;font-weight:700;line-height:1.3;text-shadow:0 2px 4px rgba(0,0,0,0.3);}
+  .tarjeta .tarjeta-desc{color:rgba(255,255,255,0.85);font-size:0.86rem;line-height:1.5;flex:1;}
+  .tarjeta .tarjeta-cta{display:inline-flex;align-items:center;gap:6px;margin-top:14px;
+    color:var(--dorado);font-weight:600;font-size:0.85rem;transition:gap 0.2s;}
+  .tarjeta:hover .tarjeta-cta{gap:10px;color:var(--dorado-brilloso);}
+  form{background:rgba(13,42,77,0.6);backdrop-filter:blur(8px);
+    border:1px solid rgba(201,169,97,0.35);border-top:3px solid var(--dorado);
+    border-radius:10px;padding:22px;display:none;box-shadow:var(--sombra-suave);}
+  form.activo{display:block;}
+  form h2{margin-top:0;color:var(--dorado-claro);font-size:1.1rem;text-shadow:0 2px 4px rgba(0,0,0,0.3);}
+  form h3.seccion{font-size:0.85rem;color:var(--dorado);text-transform:uppercase;
+    letter-spacing:.05em;margin:24px 0 4px;border-top:1px solid rgba(201,169,97,0.3);
+    padding-top:16px;font-weight:700;}
+  label{display:block;margin:14px 0 6px;font-size:0.88rem;font-weight:600;color:var(--dorado-claro);}
+  input, select, textarea{width:100%;padding:10px 12px;
+    border:1px solid rgba(201,169,97,0.35);border-radius:6px;font-size:0.9rem;
+    font-family:inherit;background:rgba(0,0,0,0.35);color:#fff;transition:all 0.2s;}
+  input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.4);}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--dorado);
+    box-shadow:0 0 0 3px rgba(201,169,97,0.2);background:rgba(0,0,0,0.5);}
+  input:disabled{opacity:0.4;cursor:not-allowed;}
+  input[readonly]{background:rgba(21,128,61,0.15) !important;
+    border-color:rgba(134,239,172,0.4) !important;cursor:not-allowed;}
+  input[readonly]:focus{box-shadow:0 0 0 3px rgba(134,239,172,0.2);border-color:rgba(134,239,172,0.6);}
+  select option{background:var(--azul-oscuro);color:#fff;}
+  select optgroup{background:var(--azul-oscuro);color:var(--dorado-claro);font-weight:700;}
+  textarea{resize:vertical;min-height:70px;}
+  .fila{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  .btns{margin-top:20px;display:flex;gap:10px;flex-wrap:wrap;}
+  button{padding:11px 20px;border:none;border-radius:6px;font-size:0.9rem;
+    font-family:inherit;cursor:pointer;font-weight:600;transition:all 0.2s;}
+  .btn-primario{background:linear-gradient(135deg, var(--azul) 0%, var(--azul-claro) 100%);
+    color:#fff;border:1px solid rgba(201,169,97,0.3);}
+  .btn-primario:hover{background:linear-gradient(135deg, var(--azul-claro) 0%, var(--azul) 100%);
+    transform:translateY(-1px);box-shadow:0 4px 12px rgba(201,169,97,0.3);}
+  .btn-secundario{background:rgba(255,255,255,0.1);color:#fff;border:1px solid rgba(255,255,255,0.2);}
+  .btn-secundario:hover{background:rgba(255,255,255,0.2);border-color:var(--dorado);}
+  .nota{font-size:0.78rem;color:rgba(255,255,255,0.6);margin-top:10px;line-height:1.5;}
+  .captura-foto{border:1px dashed rgba(201,169,97,0.4);border-radius:8px;
+    padding:14px;margin-top:8px;background:rgba(0,0,0,0.2);}
+  .captura-foto.destacada{border:2px solid rgba(201,169,97,0.6);
+    background:rgba(201,169,97,0.08);margin-bottom:20px;
+    box-shadow:0 0 20px rgba(201,169,97,0.15);}
+  .captura-visor{position:relative;width:100%;max-width:340px;margin:0 auto;}
+  .captura-visor video,.captura-visor img{width:100%;border-radius:6px;background:#000;display:block;}
+  .captura-visor video[hidden],.captura-visor img[hidden]{display:none;}
+  .marco-dni{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:92%;
+    aspect-ratio: 1.586 / 1;border:2px dashed rgba(255,255,255,0.85);border-radius:8px;
+    box-shadow:0 0 0 9999px rgba(0,0,0,0.35);pointer-events:none;display:none;}
+  .marco-dni.activo{display:block;}
+  .marco-dni::before,.marco-dni::after{content:'';position:absolute;width:24px;height:24px;border:3px solid #4ade80;}
+  .marco-dni::before{top:-3px;left:-3px;border-right:none;border-bottom:none;border-top-left-radius:8px;}
+  .marco-dni::after{bottom:-3px;right:-3px;border-left:none;border-top:none;border-bottom-right-radius:8px;}
+  .marco-dni-texto{position:absolute;top:-32px;left:0;right:0;text-align:center;color:#fff;
+    font-size:0.78rem;font-weight:600;text-shadow:0 1px 3px rgba(0,0,0,0.8);}
+  .scan-indicador{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);
+    background:rgba(0,0,0,0.75);color:#fff;padding:6px 14px;border-radius:20px;
+    font-size:0.78rem;display:none;align-items:center;gap:6px;}
+  .scan-indicador.activo{display:flex;}
+  .scan-dot{width:6px;height:6px;background:#4ade80;border-radius:50%;animation:scanPulse 1.2s infinite;}
+  .scan-dot:nth-child(2){animation-delay:0.2s;}
+  .scan-dot:nth-child(3){animation-delay:0.4s;}
+  @keyframes scanPulse{0%,60%,100%{opacity:0.3;transform:scale(1);}30%{opacity:1;transform:scale(1.3);}}
+  .btn-flash{position:absolute;top:8px;right:8px;background:rgba(0,0,0,0.55);color:#fff;
+    border:1px solid rgba(255,255,255,0.4);border-radius:50%;width:40px;height:40px;
+    font-size:1.1rem;cursor:pointer;display:none;align-items:center;justify-content:center;padding:0;}
+  .btn-flash.activo{display:flex;}
+  .btn-flash.encendido{background:rgba(250,204,21,0.9);color:#1f2937;}
+  .aviso-foto{background:rgba(138,100,0,0.3);border:1px solid rgba(255,224,130,0.5);
+    color:#ffd54f;padding:10px 14px;border-radius:8px;font-size:0.85rem;margin-top:10px;display:none;}
+  .aviso-foto.activo{display:block;}
+  .aviso-foto .acciones{margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;}
+  .aviso-foto .acciones button{padding:6px 12px;font-size:0.8rem;border-radius:6px;border:none;cursor:pointer;}
+  .aviso-foto .btn-repetir-aviso{background:#8a6400;color:#fff;}
+  .aviso-foto .btn-usar-igual{background:rgba(255,255,255,0.2);color:#fff;}
+  .captura-botones{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;justify-content:center;}
+  .captura-botones button{padding:7px 12px;font-size:0.82rem;}
+  .captura-estado{font-size:0.78rem;color:rgba(255,255,255,0.7);margin-top:6px;text-align:center;}
+  .captura-estado.ok{color:#86efac;font-weight:600;}
+  .captura-estado.error{color:#fca5a5;font-weight:600;}
+  .escaneo-estado{font-size:0.78rem;color:var(--dorado-claro);margin-top:4px;font-weight:600;text-align:center;}
+  .aviso-borrador{background:rgba(138,100,0,0.3);border:1px solid rgba(255,224,130,0.5);
+    color:#ffd54f;padding:10px 14px;border-radius:8px;font-size:0.85rem;
+    margin-bottom:16px;display:none;}
+  .aviso-borrador.activo{display:block;}
+  .aviso-borrador button{background:transparent;color:#ffd54f;text-decoration:underline;
+    padding:0;font-size:0.85rem;margin-left:6px;border:none;cursor:pointer;}
+  input[type=text], textarea{text-transform:uppercase;}
+  input[type=text]::placeholder, textarea::placeholder{text-transform:none;}
+  .comisaria-asignada{margin-top:16px;padding:14px 18px;background:rgba(21,128,61,0.25);
+    border:1px solid rgba(134,239,172,0.5);border-left:4px solid #86efac;
+    border-radius:8px;color:#fff;font-size:0.92rem;line-height:1.5;
+    display:none;animation:fadeInComisaria 0.4s ease-out;}
+  .comisaria-asignada.activo{display:block;}
+  .comisaria-asignada.cargando{background:rgba(44,90,160,0.25);
+    border-color:rgba(201,169,97,0.5);border-left-color:var(--dorado);}
+  .comisaria-asignada.error{background:rgba(185,28,28,0.25);
+    border-color:rgba(252,165,165,0.5);border-left-color:#fca5a5;}
+  .comisaria-asignada strong{color:#86efac;font-weight:700;display:block;margin-top:4px;font-size:1rem;}
+  .comisaria-asignada.cargando strong{color:var(--dorado-claro);}
+  .comisaria-asignada.error strong{color:#fca5a5;}
+  @keyframes fadeInComisaria{from{opacity:0;transform:translateY(-6px);}to{opacity:1;transform:translateY(0);}}
+  .ubicacion-guardada{
+    background:rgba(44,90,160,0.25);
+    border:1px solid rgba(147,197,253,0.5);
+    border-left:4px solid #93c5fd;
+    border-radius:8px;padding:14px 18px;margin-top:14px;
+    display:none;animation:fadeInComisaria 0.4s ease-out;
+  }
+  .ubicacion-guardada.activo{display:block;}
+  .ubicacion-guardada .titulo{
+    font-size:0.9rem;color:#93c5fd;font-weight:700;
+    margin-bottom:8px;display:flex;align-items:center;gap:8px;
+  }
+  .ubicacion-guardada .direccion{
+    font-size:0.85rem;color:#fff;margin-bottom:12px;line-height:1.5;
+  }
+  .ubicacion-guardada .direccion strong{color:#86efac;}
+  .ubicacion-guardada .acciones{display:flex;gap:8px;flex-wrap:wrap;}
+  .ubicacion-guardada .acciones button{
+    padding:8px 14px;font-size:0.82rem;border:none;border-radius:6px;
+    cursor:pointer;font-weight:600;font-family:inherit;
+  }
+  .ubicacion-guardada .btn-usar-ubicacion{background:#15803d;color:#fff;}
+  .ubicacion-guardada .btn-usar-ubicacion:hover{background:#166534;}
+  .ubicacion-guardada .btn-actualizar-ubicacion{
+    background:rgba(255,255,255,0.15);color:#fff;
+    border:1px solid rgba(255,255,255,0.3);
+  }
+  .ubicacion-guardada .btn-actualizar-ubicacion:hover{background:rgba(255,255,255,0.25);}
+  .mapa-confirmacion{margin-top:14px;padding:12px;background:rgba(0,0,0,0.35);
+    border:1px solid rgba(201,169,97,0.5);border-radius:8px;}
+  .mapa-confirmacion .titulo{font-size:0.85rem;color:var(--dorado-claro);
+    font-weight:600;margin-bottom:10px;display:flex;align-items:center;gap:6px;}
+  .mapa-confirmacion #mapa-leaflet{width:100%;height:260px;border-radius:6px;
+    border:1px solid rgba(201,169,97,0.4);z-index:1;}
+  .mapa-confirmacion .ayuda{font-size:0.78rem;color:rgba(255,255,255,0.75);margin-top:10px;line-height:1.5;}
+  .mapa-confirmacion .coords{font-size:0.72rem;color:rgba(255,255,255,0.5);margin-top:6px;font-family:monospace;}
+  .leaflet-container{background:#0a1e3d !important;}
+  .leaflet-control-attribution{background:rgba(0,0,0,0.5) !important;color:#fff !important;font-size:0.65rem !important;}
+  .leaflet-control-attribution a{color:var(--dorado-claro) !important;}
+  .leaflet-control-zoom a{background:rgba(13,42,77,0.9) !important;color:#fff !important;
+    border-color:rgba(201,169,97,0.4) !important;}
+  .leaflet-control-zoom a:hover{background:var(--azul) !important;}
+  #documento{display:none;background:rgba(13,42,77,0.75);backdrop-filter:blur(10px);
+    border:1px solid rgba(201,169,97,0.4);border-top:3px solid var(--dorado);
+    border-radius:10px;padding:30px;}
+  #documento.activo{display:block;}
+  #documento h2{text-align:center;color:var(--dorado-claro);font-size:1.05rem;margin-bottom:4px;}
+  #documento .subt{text-align:center;font-size:0.8rem;color:rgba(255,255,255,0.7);margin-bottom:24px;}
+  #documento dl{margin:0;}
+  #documento dt{font-size:0.78rem;color:var(--dorado-claro);margin-top:12px;
+    font-weight:700;text-transform:uppercase;letter-spacing:0.03em;}
+  #documento dd{margin:2px 0 0;font-size:0.95rem;color:#fff;}
+  #documento dd img{max-width:220px;border:1px solid rgba(255,255,255,0.3);
+    border-radius:6px;display:block;margin-top:4px;}
+  #documento .firma{margin-top:50px;display:flex;justify-content:space-between;
+    font-size:0.8rem;flex-wrap:wrap;gap:16px;}
+  #documento .firma div{border-top:1px solid rgba(255,255,255,0.4);padding-top:6px;
+    width:30%;text-align:center;min-width:150px;color:rgba(255,255,255,0.8);}
+  footer.site-footer{background:transparent;color:var(--dorado-claro);padding:28px 20px;
+    margin-top:auto;border-top:1px solid rgba(201,169,97,0.3);text-align:center;
+    font-size:0.95rem;line-height:1.8;position:relative;z-index:2;}
+  footer.site-footer .footer-inner{max-width:760px;margin:0 auto;}
+  footer.site-footer p{margin:4px 0;color:var(--dorado-brilloso);font-weight:500;
+    text-shadow:0 0 10px rgba(240,215,140,0.4), 0 1px 2px rgba(0,0,0,0.5);}
+  footer.site-footer strong{color:var(--dorado-brilloso);font-weight:700;
+    text-shadow:0 0 10px rgba(240,215,140,0.5), 0 1px 2px rgba(0,0,0,0.5);}
+  footer.site-footer .footer-link{
+    display:inline-flex;align-items:center;gap:8px;
+    margin-top:14px;padding:10px 18px;border-radius:8px;
+    background:rgba(201,169,97,0.15);
+    border:1px solid rgba(201,169,97,0.5);
+    color:var(--dorado-brilloso);text-decoration:none;
+    font-weight:600;font-size:0.88rem;transition:all 0.2s;
+  }
+  footer.site-footer .footer-link:hover{
+    background:rgba(201,169,97,0.25);
+    border-color:var(--dorado);
+    transform:translateY(-2px);
+  }
+  @media print{
+    header,.tarjetas,form,.no-print,footer.site-footer,
+    .aviso-consulta-mobile{display:none !important;}
+    #documento{display:block !important;border:none;box-shadow:none;background:#fff;padding:0;}
+    body{background:#fff;color:#000;}
+    body::before{display:none !important;}
+  }
+  @media (max-width: 700px){
+    header{padding:16px 18px;flex-direction:column;text-align:center;}
+    header .header-info{justify-content:center;}
+    header .header-acciones{justify-content:center;width:100%;}
+    header .btn-consulta{width:100%;justify-content:center;padding:12px 18px;}
+    main{margin:24px auto;}
+    .tarjeta{padding:20px 16px;min-height:auto;}
+    body::before{width:110vmin;height:110vmin;opacity:0.45;}
+    .fila{grid-template-columns:1fr;}
+    .aviso-consulta-mobile.activo{display:flex;}
+  }
+
+  /* ============================================================
+     BLOQUEO HASTA ESCANEAR DNI
+     ============================================================ */
+  .campo-esperando-escaneo{
+    background:rgba(202,138,4,0.12) !important;
+    border-color:rgba(252,211,77,0.5) !important;
+    cursor:not-allowed !important;
+    position:relative;
+  }
+  .campo-esperando-escaneo::placeholder{
+    color:rgba(252,211,77,0.7) !important;
+  }
+  .aviso-escaneo-obligatorio{
+    display:flex;align-items:center;gap:8px;
+    font-size:0.8rem;color:#fcd34d;font-weight:600;
+    background:rgba(202,138,4,0.15);
+    border:1px solid rgba(252,211,77,0.4);
+    border-radius:6px;padding:8px 12px;margin-top:6px;
+    line-height:1.4;
+  }
+  .aviso-escaneo-obligatorio .icono{font-size:1rem;flex-shrink:0;}
+  .link-completar-manual{
+    display:inline-block;margin-top:8px;
+    font-size:0.82rem;color:var(--dorado-claro);
+    cursor:pointer;text-decoration:underline;
+    text-underline-offset:3px;font-weight:600;
+    background:transparent;border:none;padding:0;
+    font-family:inherit;transition:color 0.2s;
+  }
+  .link-completar-manual:hover{color:var(--dorado-brilloso);}
+  .link-completar-manual.oculto{display:none;}
+</style>
 </head>
 <body>
 
-  <header class="site-header">
-    <div class="container header-inner">
-      <div class="brand">
-        <div class="police-logo" aria-label="Policía de Salta">
-          <img src="policia-salta.png.jpg" alt="Escudo de la Policía de Salta">
-        </div>
-        <div>
-          <h1>Mi Comisaría</h1>
-          <p>Trámites de la Policía de Salta, en línea</p>
-        </div>
-      </div>
-    </div>
-  </header>
-
-  <!-- ===================== VISTA: INICIO ===================== -->
-  <main id="view-home" class="view">
-    <section class="hero container">
-      <h2>¿Qué trámite necesitás hacer hoy?</h2>
-      <p>Elegí una opción, completá el formulario y generá tu certificado en formato policial.</p>
-    </section>
-
-    <section class="cards container" aria-label="Selección de trámite">
-      <button class="card" data-tramite="residencia">
-        <span class="card-icon">🏠</span>
-        <h3>Certificado de Residencia</h3>
-        <p>Acredita el domicilio donde vivís actualmente.</p>
-        <span class="card-cta">Iniciar trámite →</span>
-      </button>
-
-      <button class="card" data-tramite="convivencia">
-        <span class="card-icon">🤝</span>
-        <h3>Certificado de Convivencia</h3>
-        <p>Acredita que dos personas conviven en un mismo domicilio.</p>
-        <span class="card-cta">Iniciar trámite →</span>
-      </button>
-
-      <button class="card" data-tramite="carencia">
-        <span class="card-icon">📋</span>
-        <h3>Certificado de Carencia de Recursos</h3>
-        <p>Acredita la falta de ingresos o recursos suficientes.</p>
-        <span class="card-cta">Iniciar trámite →</span>
-      </button>
-
-      <button class="card" data-tramite="autorizacion">
-        <span class="card-icon">✍️</span>
-        <h3>Certificado de Autorización</h3>
-        <p>Deja constancia de una autorización para realizar una gestión determinada.</p>
-        <span class="card-cta">Iniciar trámite →</span>
-      </button>
-    </section>
-  </main>
-
-  <!-- ===================== VISTA: FORMULARIO ===================== -->
-  <main id="view-form" class="view hidden">
-    <section class="container form-wrapper">
-      <button id="btn-back" class="btn-link">← Volver a los trámites</button>
-      <h2 id="form-title">Formulario</h2>
-      <p id="form-subtitle" class="muted"></p>
-
-      <form id="tramite-form" novalidate>
-        <div id="form-fields"></div>
-
-        <label class="checkbox-row">
-          <input type="checkbox" id="declaracion-jurada" required>
-          Declaro que los datos consignados son correctos y verdaderos (declaración jurada).
-        </label>
-
-        <div class="form-actions">
-          <button type="submit" class="btn-primary">Generar certificado (PDF)</button>
-        </div>
-      </form>
-    </section>
-  </main>
-
-  <!-- ===================== VISTA: CONFIRMACIÓN ===================== -->
-  <main id="view-done" class="view hidden">
-    <section class="container done-wrapper">
-      <div class="done-icon">✅</div>
-      <h2>¡Trámite enviado!</h2>
-      <p>Tu certificado se descargó en formato PDF y tus datos fueron enviados a la comisaría para su procesamiento.</p>
-      <button id="btn-new" class="btn-primary">Iniciar otro trámite</button>
-    </section>
-  </main>
-
-  <div id="document-camera-modal" class="scanner-modal hidden" role="dialog" aria-modal="true" aria-labelledby="document-camera-title">
-    <div class="scanner-panel">
-      <div class="scanner-header">
-        <div>
-          <p class="scanner-kicker">Documentación</p>
-          <h2 id="document-camera-title">Fotografiar DNI</h2>
-        </div>
-        <button id="document-camera-close" class="btn-link" type="button" aria-label="Cerrar cámara">Cerrar</button>
-      </div>
-      <div class="scanner-video-wrap">
-        <video id="document-camera-video" autoplay muted playsinline></video>
-        <div class="scanner-frame" aria-hidden="true"></div>
-      </div>
-      <p id="document-camera-step" class="camera-step">Paso 1 de 2: frente del DNI</p>
-      <p id="document-camera-status" class="muted">Activá la cámara y ubicá el DNI completo dentro del marco.</p>
-      <div class="camera-actions">
-        <button id="document-camera-flash" class="btn-secondary" type="button" disabled>Flash: no disponible</button>
-        <button id="document-camera-capture" class="btn-primary" type="button" disabled>Tomar foto del frente</button>
-      </div>
-      <div id="document-camera-preview" class="camera-preview hidden">
-        <img id="document-camera-image" alt="Vista previa de la foto del DNI">
-        <div class="camera-actions">
-          <button id="document-camera-retake" class="btn-secondary" type="button">Repetir foto</button>
-          <button id="document-camera-continue" class="btn-primary" type="button">Continuar con el dorso</button>
-        </div>
-      </div>
+<header>
+  <div class="header-info">
+    <div class="header-logo"></div>
+    <div class="header-texto">
+      <h1>Trámites Policiales Salta</h1>
+      <p>Policía de Salta · DMI (JP)</p>
     </div>
   </div>
+  <div class="header-acciones">
+    <a href="consultar-tramite.html" class="btn-consulta">
+      <span class="icono">🔍</span>
+      <span>Consultar mi trámite</span>
+    </a>
+  </div>
+</header>
 
-  <footer class="site-footer">
-    <div class="container">
-      <p>Mi Comisaría — Policía de Salta. Este es un formulario de solicitud; el certificado final debe ser validado y sellado por la dependencia policial correspondiente.</p>
+<main>
+  <div class="aviso-consulta-mobile activo">
+    <div>
+      ¿Ya enviaste un trámite? <strong>Consultá su estado acá</strong>
     </div>
-  </footer>
+    <a href="consultar-tramite.html">Consultar →</a>
+  </div>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="script.js"></script>
+  <div class="aviso-borrador" id="aviso-borrador">
+    📌 Recuperamos las fotos que habías sacado antes.
+    <button type="button" id="btn-descartar-borrador">Descartar todo y empezar de nuevo</button>
+  </div>
+
+  <div class="tarjetas" id="tarjetas">
+    <button class="tarjeta" data-tramite="residencia">
+      <span class="tarjeta-icono">🏠</span>
+      <b>Certificado de Residencia</b>
+      <span class="tarjeta-desc">Acredita el domicilio donde vive la persona solicitante.</span>
+      <span class="tarjeta-cta">Iniciar trámite →</span>
+    </button>
+    <button class="tarjeta" data-tramite="convivencia">
+      <span class="tarjeta-icono">🤝</span>
+      <b>Certificado de Convivencia</b>
+      <span class="tarjeta-desc">Acredita que dos o más personas conviven en un mismo domicilio.</span>
+      <span class="tarjeta-cta">Iniciar trámite →</span>
+    </button>
+    <button class="tarjeta" data-tramite="carencia">
+      <span class="tarjeta-icono">📋</span>
+      <b>Certificado de Carencia de Recursos</b>
+      <span class="tarjeta-desc">Acredita la situación de falta de recursos económicos.</span>
+      <span class="tarjeta-cta">Iniciar trámite →</span>
+    </button>
+    <button class="tarjeta" data-tramite="autorizacion">
+      <span class="tarjeta-icono">🧒</span>
+      <b>Autorización de Viaje de Menor</b>
+      <span class="tarjeta-desc">Genera el acta de autorización para que un menor pueda viajar.</span>
+      <span class="tarjeta-cta">Iniciar trámite →</span>
+    </button>
+    <button class="tarjeta" data-tramite="antecedentes">
+      <span class="tarjeta-icono">📜</span>
+      <b>Antecedentes Penales</b>
+      <span class="tarjeta-desc">Solicita tu certificado de antecedentes penales provincial o nacional.</span>
+      <span class="tarjeta-cta">Iniciar trámite →</span>
+    </button>
+    <button class="tarjeta" data-tramite="domicilio">
+      <span class="tarjeta-icono">📄</span>
+      <b>Certificado de Domicilio</b>
+      <span class="tarjeta-desc">Constancia simple del domicilio declarado por el ciudadano.</span>
+      <span class="tarjeta-cta">Iniciar trámite →</span>
+    </button>
+    <button class="tarjeta" data-tramite="extravio">
+      <span class="tarjeta-icono">🔍</span>
+      <b>Extravío de Documentos</b>
+      <span class="tarjeta-desc">Denunciá la pérdida o robo de tus documentos personales.</span>
+      <span class="tarjeta-cta">Iniciar trámite →</span>
+    </button>
+    <button class="tarjeta" data-tramite="supervivencia">
+      <span class="tarjeta-icono">🩺</span>
+      <b>Certificado de Supervivencia</b>
+      <span class="tarjeta-desc">Acredita tu existencia y domicilio para cobrar jubilaciones o pensiones.</span>
+      <span class="tarjeta-cta">Iniciar trámite →</span>
+    </button>
+    <button class="tarjeta" data-tramite="estadia">
+      <span class="tarjeta-icono">🏨</span>
+      <b>Certificado de Estadía</b>
+      <span class="tarjeta-desc">Acredita que residís temporalmente en un domicilio.</span>
+      <span class="tarjeta-cta">Iniciar trámite →</span>
+    </button>
+  </div>
+
+  <!-- Formulario: Residencia -->
+  <form id="form-residencia">
+    <h2>Certificado de Residencia</h2>
+    <h3 class="seccion" style="border-top:none;margin-top:0;padding-top:0;">📸 Escaneá tu DNI</h3>
+    <div class="captura-foto captura-solicitante destacada" data-target="res-solicitante">
+      <div class="captura-visor">
+        <video autoplay playsinline muted></video>
+        <div class="marco-dni"><div class="marco-dni-texto">Encuadrá el DNI dentro del marco</div></div>
+        <div class="scan-indicador"><span>Buscando código</span><span class="scan-dot"></span><span class="scan-dot"></span><span class="scan-dot"></span></div>
+        <button type="button" class="btn-flash" title="Activar/desactivar flash">🔦</button>
+        <img hidden alt="Foto del DNI capturada">
+      </div>
+      <canvas hidden></canvas>
+      <input type="hidden" name="foto_solicitante" value="">
+      <div class="aviso-foto">
+        ⚠️ <span class="motivo-texto">No pudimos leer el código del DNI.</span>
+        <div class="acciones">
+          <button type="button" class="btn-repetir-aviso">Reintentar</button>
+          <button type="button" class="btn-usar-igual">Tomar foto igual</button>
+        </div>
+      </div>
+      <div class="captura-botones">
+        <button type="button" class="btn-secundario btn-camara">Activar cámara</button>
+        <button type="button" class="btn-secundario btn-cancelar" hidden>Cancelar</button>
+      </div>
+      <p class="captura-estado">Sin foto capturada</p>
+      <p class="escaneo-estado"></p>
+    </div>
+    <h3 class="seccion">Datos del Solicitante</h3>
+    <label>Nombre completo</label>
+    <input type="text" name="nombre" required>
+    <div class="fila">
+      <div><label>DNI</label><input type="text" name="dni" pattern="[0-9]{7,8}" required></div>
+      <div><label>Fecha de nacimiento</label><input type="date" name="fechaNacimiento" required></div>
+    </div>
+    <label>Email (para avisarte cuando esté listo)</label>
+    <input type="email" name="email" placeholder="tucorreo@ejemplo.com" required>
+    <label>Domicilio actual (calle, número, barrio)</label>
+    <input type="text" name="domicilio" required>
+    <label>Localidad</label>
+    <select name="localidad" class="select-localidad" required><option value="">Seleccionar</option></select>
+    <label>Zona</label>
+    <select name="zona" class="select-zona" required>
+      <option value="">Se completa automáticamente</option>
+      <optgroup label="Salta Capital">
+        <option value="Centro">Centro</option>
+        <option value="Norte">Norte</option>
+        <option value="Sur">Sur</option>
+        <option value="Este">Este</option>
+        <option value="Oeste">Oeste</option>
+        <option value="Noreste">Noreste</option>
+        <option value="Noroeste">Noroeste</option>
+        <option value="Sudeste">Sudeste</option>
+        <option value="Suroeste">Suroeste</option>
+      </optgroup>
+      <optgroup label="Interior de la provincia">
+        <option value="Norte de la provincia">Norte de la provincia</option>
+        <option value="Este de la provincia">Este de la provincia</option>
+        <option value="Oeste / Valles Calchaquíes">Oeste / Valles Calchaquíes</option>
+        <option value="Sur de la provincia">Sur de la provincia</option>
+        <option value="Centro-Oeste">Centro-Oeste</option>
+      </optgroup>
+    </select>
+    <div class="comisaria-asignada" data-comisaria-aviso>
+      <span class="texto">📍 Calculando comisaría...</span>
+      <strong class="nombre"></strong>
+    </div>
+    <div class="ubicacion-guardada" data-ubicacion-guardada></div>
+    <label>Motivo del trámite</label>
+    <textarea name="motivo" required></textarea>
+    <h3 class="seccion">Testigos (obligatorios: 2)</h3>
+    <div class="bloque-testigo" data-testigo="1" data-activo="true">
+      <div class="fila campos-testigo">
+        <div><label>Nombre del testigo 1</label><input type="text" name="testigo1Nombre" required></div>
+        <div><label>DNI del testigo 1</label><input type="text" name="testigo1Dni" pattern="[0-9]{7,8}" required></div>
+      </div>
+      <label class="campos-testigo">Foto del DNI (testigo 1)</label>
+      <div class="captura-foto campos-testigo" data-target="res-testigo1">
+        <div class="captura-visor">
+          <video autoplay playsinline muted></video>
+          <div class="marco-dni"><div class="marco-dni-texto">Encuadrá el DNI dentro del marco</div></div>
+          <div class="scan-indicador"><span>Buscando código</span><span class="scan-dot"></span><span class="scan-dot"></span><span class="scan-dot"></span></div>
+          <button type="button" class="btn-flash" title="Activar/desactivar flash">🔦</button>
+          <img hidden alt="Foto del DNI capturada">
+        </div>
+        <canvas hidden></canvas>
+        <input type="hidden" name="foto_testigo1" value="">
+        <div class="aviso-foto">
+          ⚠️ <span class="motivo-texto">No pudimos leer el código del DNI.</span>
+          <div class="acciones">
+            <button type="button" class="btn-repetir-aviso">Reintentar</button>
+            <button type="button" class="btn-usar-igual">Tomar foto igual</button>
+          </div>
+        </div>
+        <div class="captura-botones">
+          <button type="button" class="btn-secundario btn-camara">Activar cámara</button>
+          <button type="button" class="btn-secundario btn-cancelar" hidden>Cancelar</button>
+        </div>
+        <p class="captura-estado">Sin foto capturada</p>
+        <p class="escaneo-estado"></p>
+      </div>
+    </div>
+    <div class="bloque-testigo" data-testigo="2" data-activo="true">
+      <div class="fila campos-testigo">
+        <div><label>Nombre del testigo 2</label><input type="text" name="testigo2Nombre" required></div>
+        <div><label>DNI del testigo 2</label><input type="text" name="testigo2Dni" pattern="[0-9]{7,8}" required></div>
+      </div>
+      <label class="campos-testigo">Foto del DNI (testigo 2)</label>
+      <div class="captura-foto campos-testigo" data-target="res-testigo2">
+        <div class="captura-visor">
+          <video autoplay playsinline muted></video>
+          <div class="marco-dni"><div class="marco-dni-texto">Encuadrá el DNI dentro del marco</div></div>
+          <div class="scan-indicador"><span>Buscando código</span><span class="scan-dot"></span><span class="scan-dot"></span><span class="scan-dot"></span></div>
+          <button type="button" class="btn-flash" title="Activar/desactivar flash">🔦</button>
+          <img hidden alt="Foto del DNI capturada">
+        </div>
+        <canvas hidden></canvas>
+        <input type="hidden" name="foto_testigo2" value="">
+        <div class="aviso-foto">
+          ⚠️ <span class="motivo-texto">No pudimos leer el código del DNI.</span>
+          <div class="acciones">
+            <button type="button" class="btn-repetir-aviso">Reintentar</button>
+            <button type="button" class="btn-usar-igual">Tomar foto igual</button>
+          </div>
+        </div>
+        <div class="captura-botones">
+          <button type="button" class="btn-secundario btn-camara">Activar cámara</button>
+          <button type="button" class="btn-secundario btn-cancelar" hidden>Cancelar</button>
+        </div>
+        <p class="captura-estado">Sin foto capturada</p>
+        <p class="escaneo-estado"></p>
+      </div>
+    </div>
+    <div class="btns">
+      <button type="submit" class="btn-primario">Generar certificado</button>
+      <button type="button" class="btn-secundario volver">Volver</button>
+    </div>
+    <p class="nota">Las fotos se envían a la comisaría correspondiente a través de un servidor seguro (Supabase) y se usan solo para generar este documento.</p>
+  </form>
+
+  <!-- Formulario: Convivencia -->
+  <form id="form-convivencia">
+    <h2>Certificado de Convivencia</h2>
+    <h3 class="seccion" style="border-top:none;margin-top:0;padding-top:0;">📸 Escaneá tu DNI</h3>
+    <div class="captura-foto captura-solicitante destacada" data-target="con-solicitante">
+      <div class="captura-visor">
+        <video autoplay playsinline muted></video>
+        <div class="marco-dni"><div class="marco-dni-texto">Encuadrá el DNI dentro del marco</div></div>
+        <div class="scan-indicador"><span>Buscando código</span><span class="scan-dot"></span><span class="scan-dot"></span><span class="scan-dot"></span></div>
+        <button type="button" class="btn-flash" title="Activar/desactivar flash">🔦</button>
+        <img hidden alt="Foto del DNI capturada">
+      </div>
+      <canvas hidden></canvas>
+      <input type="hidden" name="foto_solicitante" value="">
+      <div class="aviso-foto">
+        ⚠️ <span class="motivo-texto">No pudimos leer el código del DNI.</span>
+        <div class="acciones">
+          <button type="button" class="btn-repetir-aviso">Reintentar</button>
+          <button type="button" class="btn-usar-igual">Tomar foto igual</button>
+        </div>
+      </div>
+      <div class="captura-botones">
+        <button type="button" class="btn-secundario btn-camara">Activar cámara</button>
+        <button type="button" class="btn-secundario btn-cancelar" hidden>Cancelar</button>
+      </div>
+      <p class="captura-estado">Sin foto capturada</p>
+      <p class="escaneo-estado"></p>
+    </div>
+    <h3 class="seccion">Datos del Solicitante</h3>
+    <div class="fila">
+      <div><label>Nombre completo</label><input type="text" name="nombreSolicitante" required></div>
+      <div><label>DNI</label><input type="text" name="dniSolicitante" pattern="[0-9]{7,8}" required></div>
+    </div>
+    <label>Email (para avisarte cuando esté listo)</label>
+    <input type="email" name="email" placeholder="tucorreo@ejemplo.com" required>
+    <h3 class="seccion">Conviviente</h3>
+    <div class="fila">
+      <div><label>Nombre completo</label><input type="text" name="nombreConviviente" required></div>
+      <div><label>DNI</label><input type="text" name="dniConviviente" pattern="[0-9]{7,8}" required></div>
+    </div>
+    <label>Parentesco con el conviviente</label>
+    <select name="parentesco" required>
+      <option value="">Seleccionar</option>
+      <option>Cónyuge</option><option>Concubino/a</option><option>Pareja</option>
+      <option>Hijo/a</option><option>Padre</option><option>Madre</option>
+      <option>Hermano/a</option><option>Abuelo/a</option><option>Nieto/a</option>
+      <option>Tío/a</option><option>Sobrino/a</option><option>Primo/a</option>
+      <option>Suegro/a</option><option>Cuñado/a</option><option>Yerno</option>
+      <option>Nuera</option><option>Padrastro</option><option>Madrastra</option>
+      <option>Hijastro/a</option><option>Otro</option>
+    </select>
+    <label>Domicilio en común (calle, número, barrio)</label>
+    <input type="text" name="domicilioComun" required>
+    <label>Localidad</label>
+    <select name="localidad" class="select-localidad" required><option value="">Seleccionar</option></select>
+    <label>Zona</label>
+    <select name="zona" class="select-zona" required>
+      <option value="">Se completa automáticamente</option>
+      <optgroup label="Salta Capital">
+        <option value="Centro">Centro</option>
+        <option value="Norte">Norte</option>
+        <option value="Sur">Sur</option>
+        <option value="Este">Este</option>
+        <option value="Oeste">Oeste</option>
+        <option value="Noreste">Noreste</option>
+        <option value="Noroeste">Noroeste</option>
+        <option value="Sudeste">Sudeste</option>
+        <option value="Suroeste">Suroeste</option>
+      </optgroup>
+      <optgroup label="Interior de la provincia">
+        <option value="Norte de la provincia">Norte de la provincia</option>
+        <option value="Este de la provincia">Este de la provincia</option>
+        <option value="Oeste / Valles Calchaquíes">Oeste / Valles Calchaquíes</option>
+        <option value="Sur de la provincia">Sur de la provincia</option>
+        <option value="Centro-Oeste">Centro-Oeste</option>
+      </optgroup>
+    </select>
+    <div class="comisaria-asignada" data-comisaria-aviso>
+      <span class="texto">📍 Calculando comisaría...</span>
+      <strong class="nombre"></strong>
+    </div>
+    <div class="ubicacion-guardada" data-ubicacion-guardada></div>
+    <label>Motivo del trámite</label>
+    <textarea name="motivo" required></textarea>
+    <h3 class="seccion">Testigos (obligatorios: 2)</h3>
+    <div class="bloque-testigo" data-testigo="1" data-activo="true">
+      <div class="fila campos-testigo">
+        <div><label>Nombre del testigo 1</label><input type="text" name="testigo1Nombre" required></div>
+        <div><label>DNI del testigo 1</label><input type="text" name="testigo1Dni" pattern="[0-9]{7,8}" required></div>
+      </div>
+      <label class="campos-testigo">Foto del DNI (testigo 1)</label>
+      <div class="captura-foto campos-testigo" data-target="con-testigo1">
+        <div class="captura-visor">
+          <video autoplay playsinline muted></video>
+          <div class="marco-dni"><div class="marco-dni-texto">Encuadrá el DNI dentro del marco</div></div>
+          <div class="scan-indicador"><span>Buscando código</span><span class="scan-dot"></span><span class="scan-dot"></span><span class="scan-dot"></span></div>
+          <button type="button" class="btn-flash" title="Activar/desactivar flash">🔦</button>
+          <img hidden alt="Foto del DNI capturada">
+        </div>
+        <canvas hidden></canvas>
+        <input type="hidden" name="foto_testigo1" value="">
+        <div class="aviso-foto">
+          ⚠️ <span class="motivo-texto">No pudimos leer el código del DNI.</span>
+          <div class="acciones">
+            <button type="button" class="btn-repetir-aviso">Reintentar</button>
+            <button type="button" class="btn-usar-igual">Tomar foto igual</button>
+          </div>
+        </div>
+        <div class="captura-botones">
+          <button type="button" class="btn-secundario btn-camara">Activar cámara</button>
+          <button type="button" class="btn-secundario btn-cancelar" hidden>Cancelar</button>
+        </div>
+        <p class="captura-estado">Sin foto capturada</p>
+        <p class="escaneo-estado"></p>
+      </div>
+    </div>
+    <div class="bloque-testigo" data-testigo="2" data-activo="true">
+      <div class="fila campos-testigo">
+        <div><label>Nombre del testigo 2</label><input type="text" name="testigo2Nombre" required></div>
+        <div><label>DNI del testigo 2</label><input type="text" name="testigo2Dni" pattern="[0-9]{7,8}" required></div>
+      </div>
+      <label class="campos-testigo">Foto del DNI (testigo 2)</label>
+      <div class="captura-foto campos-testigo" data-target="con-testigo2">
+        <div class="captura-visor">
+          <video autoplay playsinline muted></video>
+          <div class="marco-dni"><div class="marco-dni-texto">Encuadrá el DNI dentro del marco</div></div>
+          <div class="scan-indicador"><span>Buscando código</span><span class="scan-dot"></span><span class="scan-dot"></span><span class="scan-dot"></span></div>
+          <button type="button" class="btn-flash" title="Activar/desactivar flash">🔦</button>
+          <img hidden alt="Foto del DNI capturada">
+        </div>
+        <canvas hidden></canvas>
+        <input type="hidden" name="foto_testigo2" value="">
+        <div class="aviso-foto">
+          ⚠️ <span class="motivo-texto">No pudimos leer el código del DNI.</span>
+          <div class="acciones">
+            <button type="button" class="btn-repetir-aviso">Reintentar</button>
+            <button type="button" class="btn-usar-igual">Tomar foto igual</button>
+          </div>
+        </div>
+        <div class="captura-botones">
+          <button type="button" class="btn-secundario btn-camara">Activar cámara</button>
+          <button type="button" class="btn-secundario btn-cancelar" hidden>Cancelar</button>
+        </div>
+        <p class="captura-estado">Sin foto capturada</p>
+        <p class="escaneo-estado"></p>
+      </div>
+    </div>
+    <div class="btns">
+      <button type="submit" class="btn-primario">Generar certificado</button>
+      <button type="button" class="btn-secundario volver">Volver</button>
+    </div>
+    <p class="nota">Las fotos se envían a la comisaría correspondiente a través de un servidor seguro (Supabase) y se usan solo para generar este documento.</p>
+  </form>
+
+  <!-- Formulario: Carencia de recursos -->
+  <form id="form-carencia">
+    <h2>Certificado de Carencia de Recursos</h2>
+    <h3 class="seccion" style="border-top:none;margin-top:0;padding-top:0;">📸 Escaneá tu DNI</h3>
+    <div class="captura-foto captura-solicitante destacada" data-target="car-solicitante">
+      <div class="captura-visor">
+        <video autoplay playsinline muted></video>
+        <div class="marco-dni"><div class="marco-dni-texto">Encuadrá el DNI dentro del marco</div></div>
+        <div class="scan-indicador"><span>Buscando código</span><span class="scan-dot"></span><span class="scan-dot"></span><span class="scan-dot"></span></div>
+        <button type="button" class="btn-flash" title="Activar/desactivar flash">🔦</button>
+        <img hidden alt="Foto del DNI capturada">
+      </div>
+      <canvas hidden></canvas>
+      <input type="hidden" name="foto_solicitante" value="">
+      <div class="aviso-foto">
+        ⚠️ <span class="motivo-texto">No pudimos leer el código del DNI.</span>
+        <div class="acciones">
+          <button type="button" class="btn-repetir-aviso">Reintentar</button>
+          <button type="button" class="btn-usar-igual">Tomar foto igual</button>
+        </div>
+      </div>
+      <div class="captura-botones">
+        <button type="button" class="btn-secundario btn-camara">Activar cámara</button>
+        <button type="button" class="btn-secundario btn-cancelar" hidden>Cancelar</button>
+      </div>
+      <p class="captura-estado">Sin foto capturada</p>
+      <p class="escaneo-estado"></p>
+    </div>
+    <h3 class="seccion">Datos del Solicitante</h3>
+    <label>Nombre completo</label>
+    <input type="text" name="nombre" required>
+    <div class="fila">
+      <div><label>DNI</label><input type="text" name="dni" pattern="[0-9]{7,8}" required></div>
+      <div>
+        <label>Estado civil</label>
+        <select name="estadoCivil" required>
+          <option value="">Seleccionar</option>
+          <option>Soltero/a</option><option>Casado/a</option><option>Divorciado/a</option>
+          <option>Viudo/a</option><option>Unión convivencial</option>
+        </select>
+      </div>
+    </div>
+    <label>Email (para avisarte cuando esté listo)</label>
+    <input type="email" name="email" placeholder="tucorreo@ejemplo.com" required>
+    <label>Domicilio (calle, número, barrio)</label>
+    <input type="text" name="domicilio" required>
+    <label>Localidad</label>
+    <select name="localidad" class="select-localidad" required><option value="">Seleccionar</option></select>
+    <label>Zona</label>
+    <select name="zona" class="select-zona" required>
+      <option value="">Se completa automáticamente</option>
+      <optgroup label="Salta Capital">
+        <option value="Centro">Centro</option>
+        <option value="Norte">Norte</option>
+        <option value="Sur">Sur</option>
+        <option value="Este">Este</option>
+        <option value="Oeste">Oeste</option>
+        <option value="Noreste">Noreste</option>
+        <option value="Noroeste">Noroeste</option>
+        <option value="Sudeste">Sudeste</option>
+        <option value="Suroeste">Suroeste</option>
+      </optgroup>
+      <optgroup label="Interior de la provincia">
+        <option value="Norte de la provincia">Norte de la provincia</option>
+        <option value="Este de la provincia">Este de la provincia</option>
+        <option value="Oeste / Valles Calchaquíes">Oeste / Valles Calchaquíes</option>
+        <option value="Sur de la provincia">Sur de la provincia</option>
+        <option value="Centro-Oeste">Centro-Oeste</option>
+      </optgroup>
+    </select>
+    <div class="comisaria-asignada" data-comisaria-aviso>
+      <span class="texto">📍 Calculando comisaría...</span>
+      <strong class="nombre"></strong>
+    </div>
+    <div class="ubicacion-guardada" data-ubicacion-guardada></div>
+    <div class="fila">
+      <div>
+        <label>Situación laboral actual</label>
+        <select name="situacionLaboral" required>
+          <option value="">Seleccionar</option>
+          <option>Desempleado/a</option><option>Changas / trabajo informal</option>
+          <option>Empleado/a</option><option>Jubilado/a - pensionado/a</option>
+        </select>
+      </div>
+      <div><label>Personas a cargo</label><input type="number" name="personasACargo" min="0" value="0" required></div>
+    </div>
+    <label>Motivo del trámite</label>
+    <textarea name="motivo" required></textarea>
+    <h3 class="seccion">Testigos (obligatorios: 2)</h3>
+    <div class="bloque-testigo" data-testigo="1" data-activo="true">
+      <div class="fila campos-testigo">
+        <div><label>Nombre del testigo 1</label><input type="text" name="testigo1Nombre" required></div>
+        <div><label>DNI del testigo 1</label><input type="text" name="testigo1Dni" pattern="[0-9]{7,8}" required></div>
+      </div>
+      <label class="campos-testigo">Foto del DNI (testigo 1)</label>
+      <div class="captura-foto campos-testigo" data-target="car-testigo1">
+        <div class="captura-visor">
+          <video autoplay playsinline muted></video>
+          <div class="marco-dni"><div class="marco-dni-texto">Encuadrá el DNI dentro del marco</div></div>
+          <div class="scan-indicador"><span>Buscando código</span><span class="scan-dot"></span><span class="scan-dot"></span><span class="scan-dot"></span></div>
+          <button type="button" class="btn-flash" title="Activar/desactivar flash">🔦</button>
+          <img hidden alt="Foto del DNI capturada">
+        </div>
+        <canvas hidden></canvas>
+        <input type="hidden" name="foto_testigo1" value="">
+        <div class="aviso-foto">
+          ⚠️ <span class="motivo-texto">No pudimos leer el código del DNI.</span>
+          <div class="acciones">
+            <button type="button" class="btn-repetir-aviso">Reintentar</button>
+            <button type="button" class="btn-usar-igual">Tomar foto igual</button>
+          </div>
+        </div>
+        <div class="captura-botones">
+          <button type="button" class="btn-secundario btn-camara">Activar cámara</button>
+          <button type="button" class="btn-secundario btn-cancelar" hidden>Cancelar</button>
+        </div>
+        <p class="captura-estado">Sin foto capturada</p>
+        <p class="escaneo-estado"></p>
+      </div>
+    </div>
+    <div class="bloque-testigo" data-testigo="2" data-activo="true">
+      <div class="fila campos-testigo">
+        <div><label>Nombre del testigo 2</label><input type="text" name="testigo2Nombre" required></div>
+        <div><label>DNI del testigo 2</label><input type="text" name="testigo2Dni" pattern="[0-9]{7,8}" required></div>
+      </div>
+      <label class="campos-testigo">Foto del DNI (testigo 2)</label>
+      <div class="captura-foto campos-testigo" data-target="car-testigo2">
+        <div class="captura-visor">
+          <video autoplay playsinline muted></video>
+          <div class="marco-dni"><div class="marco-dni-texto">Encuadrá el DNI dentro del marco</div></div>
+          <div class="scan-indicador"><span>Buscando código</span><span class="scan-dot"></span><span class="scan-dot"></span><span class="scan-dot"></span></div>
+          <button type="button" class="btn-flash" title="Activar/desactivar flash">🔦</button>
+          <img hidden alt="Foto del DNI capturada">
+        </div>
+        <canvas hidden></canvas>
+        <input type="hidden" name="foto_testigo2" value="">
+        <div class="aviso-foto">
+          ⚠️ <span class="motivo-texto">No pudimos leer el código del DNI.</span>
+          <div class="acciones">
+            <button type="button" class="btn-repetir-aviso">Reintentar</button>
+            <button type="button" class="btn-usar-igual">Tomar foto igual</button>
+          </div>
+        </div>
+        <div class="captura-botones">
+          <button type="button" class="btn-secundario btn-camara">Activar cámara</button>
+          <button type="button" class="btn-secundario btn-cancelar" hidden>Cancelar</button>
+        </div>
+        <p class="captura-estado">Sin foto capturada</p>
+        <p class="escaneo-estado"></p>
+      </div>
+    </div>
+    <div class="btns">
+      <button type="submit" class="btn-primario">Generar certificado</button>
+      <button type="button" class="btn-secundario volver">Volver</button>
+    </div>
+    <p class="nota">Las fotos se envían a la comisaría correspondiente a través de un servidor seguro (Supabase) y se usan solo para generar este documento.</p>
+  </form>
+
+  <!-- Formulario: Autorización de Viaje de Menor -->
+  <form id="form-autorizacion">
+    <h2>Autorización de Viaje de Menor</h2>
+    <h3 class="seccion" style="border-top:none;margin-top:0;padding-top:0;">📸 Escaneá tu DNI (progenitor autorizante)</h3>
+    <div class="captura-foto captura-solicitante destacada" data-target="aut-progenitor">
+      <div class="captura-visor">
+        <video autoplay playsinline muted></video>
+        <div class="marco-dni"><div class="marco-dni-texto">Encuadrá el DNI dentro del marco</div></div>
+        <div class="scan-indicador"><span>Buscando código</span><span class="scan-dot"></span><span class="scan-dot"></span><span class="scan-dot"></span></div>
+        <button type="button" class="btn-flash" title="Activar/desactivar flash">🔦</button>
+        <img hidden alt="Foto del DNI capturada">
+      </div>
+      <canvas hidden></canvas>
+      <input type="hidden" name="foto_progenitor" value="">
+      <div class="aviso-foto">
+        ⚠️ <span class="motivo-texto">No pudimos leer el código del DNI.</span>
+        <div class="acciones">
+          <button type="button" class="btn-repetir-aviso">Reintentar</button>
+          <button type="button" class="btn-usar-igual">Tomar foto igual</button>
+        </div>
+      </div>
+      <div class="captura-botones">
+        <button type="button" class="btn-secundario btn-camara">Activar cámara</button>
+        <button type="button" class="btn-secundario btn-cancelar" hidden>Cancelar</button>
+      </div>
+      <p class="captura-estado">Sin foto capturada</p>
+      <p class="escaneo-estado"></p>
+    </div>
+    <h3 class="seccion">Datos del Progenitor que Autoriza</h3>
+    <div class="fila">
+      <div><label>Nombre completo del progenitor</label><input type="text" name="nombreProgenitor" required></div>
+      <div><label>DNI del progenitor</label><input type="text" name="dniProgenitor" pattern="[0-9]{7,8}" required></div>
+    </div>
+    <div class="fila">
+      <div>
+        <label>Vínculo con el menor</label>
+        <select name="vinculoProgenitor" required>
+          <option value="">Seleccionar</option>
+          <option>Padre</option><option>Madre</option><option>Tutor/a</option>
+        </select>
+      </div>
+      <div><label>Email (para avisarte cuando esté listo)</label><input type="email" name="email" placeholder="tucorreo@ejemplo.com" required></div>
+    </div>
+    <h3 class="seccion">Datos del Menor</h3>
+    <div class="fila">
+      <div><label>Nombre completo del menor</label><input type="text" name="nombreMenor" required></div>
+      <div><label>DNI del menor</label><input type="text" name="dniMenor" pattern="[0-9]{7,8}" required></div>
+    </div>
+    <div class="fila">
+      <div><label>Fecha de nacimiento</label><input type="date" name="fechaNacimientoMenor" required></div>
+      <div><label>Nacionalidad</label><input type="text" name="nacionalidadMenor" value="Argentina" required></div>
+    </div>
+    <h3 class="seccion">Datos del Viaje</h3>
+    <div class="fila">
+      <div><label>Destino (Ciudad/Provincia/País)</label><input type="text" name="destino" required></div>
+      <div>
+        <label>Motivo del viaje</label>
+        <select name="motivoViaje" required>
+          <option value="">Seleccionar</option>
+          <option>Turismo</option><option>Salud</option><option>Familiar</option>
+          <option>Estudios</option><option>Otro</option>
+        </select>
+      </div>
+    </div>
+    <div class="fila">
+      <div><label>Fecha de salida</label><input type="date" name="fechaSalida" required></div>
+      <div><label>Fecha de regreso</label><input type="date" name="fechaRegreso" required></div>
+    </div>
+    <div class="fila">
+      <div>
+        <label>Empresa de transporte</label>
+        <select name="empresaTransporte" id="aut-empresa" required>
+          <option value="">Seleccionar empresa</option>
+          <option>Flecha Bus</option><option>Balut</option><option>El Norte</option>
+          <option>Vía Bariloche</option><option>Andesmar</option><option>Chevallier</option>
+          <option>Crucero del Norte</option><option>Singer</option><option>Cóndor Estrella</option>
+          <option>Plusmar</option><option>Fono Bus</option><option>ERSA</option>
+          <option>Transporte Salta</option><option>Vehículo particular</option>
+          <option>Otro (especificar abajo)</option>
+        </select>
+      </div>
+      <div>
+        <label>Si elegiste "Otro", escribí cuál</label>
+        <input type="text" name="empresaOtra" id="aut-empresa-otra" placeholder="Ej: Empresa X" disabled>
+      </div>
+    </div>
+    <label>¿El menor viaja solo o acompañado?</label>
+    <select name="tipoViaje" id="aut-tipo-viaje" required>
+      <option value="">Seleccionar</option>
+      <option value="solo">Viaja SOLO (sin acompañante)</option>
+      <option value="acompanado">Viaja ACOMPAÑADO</option>
+    </select>
+    <div id="aut-bloque-acompanante" style="display:none;">
+      <h3 class="seccion">Datos del Acompañante</h3>
+      <div class="fila">
+        <div><label>Nombre completo</label><input type="text" name="nombreAcompanante"></div>
+        <div><label>DNI</label><input type="text" name="dniAcompanante" pattern="[0-9]{7,8}"></div>
+      </div>
+      <label>Vínculo con el menor (si corresponde)</label>
+      <input type="text" name="vinculoAcompanante" placeholder="Ej: Abuelo/a, Tío/a">
+    </div>
+    <h3 class="seccion">Datos del Otro Progenitor</h3>
+    <div class="fila">
+      <div><label>Nombre completo</label><input type="text" name="nombreOtroProgenitor"></div>
+      <div><label>DNI</label><input type="text" name="dniOtroProgenitor" pattern="[0-9]{7,8}"></div>
+    </div>
+    <h3 class="seccion">📸 Foto del DNI del Menor (opcional)</h3>
+    <div class="captura-foto" data-target="aut-menor">
+      <div class="captura-visor">
+        <video autoplay playsinline muted></video>
+        <div class="marco-dni"><div class="marco-dni-texto">Encuadrá el DNI dentro del marco</div></div>
+        <div class="scan-indicador"><span>Buscando código</span><span class="scan-dot"></span><span class="scan-dot"></span><span class="scan-dot"></span></div>
+        <button type="button" class="btn-flash" title="Activar/desactivar flash">🔦</button>
+        <img hidden alt="Foto del DNI capturada">
+      </div>
+      <canvas hidden></canvas>
+      <input type="hidden" name="foto_menor" value="">
+      <div class="aviso-foto">
+        ⚠️ <span class="motivo-texto">No pudimos leer el código del DNI.</span>
+        <div class="acciones">
+          <button type="button" class="btn-repetir-aviso">Reintentar</button>
+          <button type="button" class="btn-usar-igual">Tomar foto igual</button>
+        </div>
+      </div>
+      <div class="captura-botones">
+        <button type="button" class="btn-secundario btn-camara">Activar cámara</button>
+        <button type="button" class="btn-secundario btn-cancelar" hidden>Cancelar</button>
+      </div>
+      <p class="captura-estado">Sin foto capturada</p>
+      <p class="escaneo-estado"></p>
+    </div>
+    <label>Domicilio (calle, número, barrio)</label>
+    <input type="text" name="domicilio" required>
+    <label>Localidad</label>
+    <select name="localidad" class="select-localidad" required><option value="">Seleccionar</option></select>
+    <label>Zona</label>
+    <select name="zona" class="select-zona" required>
+      <option value="">Se completa automáticamente</option>
+      <optgroup label="Salta Capital">
+        <option value="Centro">Centro</option>
+        <option value="Norte">Norte</option>
+        <option value="Sur">Sur</option>
+        <option value="Este">Este</option>
+        <option value="Oeste">Oeste</option>
+        <option value="Noreste">Noreste</option>
+        <option value="Noroeste">Noroeste</option>
+        <option value="Sudeste">Sudeste</option>
+        <option value="Suroeste">Suroeste</option>
+      </optgroup>
+      <optgroup label="Interior de la provincia">
+        <option value="Norte de la provincia">Norte de la provincia</option>
+        <option value="Este de la provincia">Este de la provincia</option>
+        <option value="Oeste / Valles Calchaquíes">Oeste / Valles Calchaquíes</option>
+        <option value="Sur de la provincia">Sur de la provincia</option>
+        <option value="Centro-Oeste">Centro-Oeste</option>
+      </optgroup>
+    </select>
+    <div class="comisaria-asignada" data-comisaria-aviso>
+      <span class="texto">📍 Calculando comisaría...</span>
+      <strong class="nombre"></strong>
+    </div>
+    <div class="ubicacion-guardada" data-ubicacion-guardada></div>
+    <div class="btns">
+      <button type="submit" class="btn-primario">Generar Acta de Autorización</button>
+      <button type="button" class="btn-secundario volver">Volver</button>
+    </div>
+    <p class="nota">Esta acta es un borrador. Debe ser certificada por escribano público, juez de paz o Registro Civil para tener validez legal.</p>
+  </form>
+
+  <!-- Formulario: Antecedentes Penales -->
+  <form id="form-antecedentes">
+    <h2>Certificado de Antecedentes Penales</h2>
+    <h3 class="seccion" style="border-top:none;margin-top:0;padding-top:0;">📸 Escaneá tu DNI</h3>
+    <div class="captura-foto captura-solicitante destacada" data-target="ant-solicitante">
+      <div class="captura-visor">
+        <video autoplay playsinline muted></video>
+        <div class="marco-dni"><div class="marco-dni-texto">Encuadrá el DNI dentro del marco</div></div>
+        <div class="scan-indicador"><span>Buscando código</span><span class="scan-dot"></span><span class="scan-dot"></span><span class="scan-dot"></span></div>
+        <button type="button" class="btn-flash" title="Activar/desactivar flash">🔦</button>
+        <img hidden alt="Foto del DNI capturada">
+      </div>
+      <canvas hidden></canvas>
+      <input type="hidden" name="foto_solicitante" value="">
+      <div class="aviso-foto">
+        ⚠️ <span class="motivo-texto">No pudimos leer el código del DNI.</span>
+        <div class="acciones">
+          <button type="button" class="btn-repetir-aviso">Reintentar</button>
+          <button type="button" class="btn-usar-igual">Tomar foto igual</button>
+        </div>
+      </div>
+      <div class="captura-botones">
+        <button type="button" class="btn-secundario btn-camara">Activar cámara</button>
+        <button type="button" class="btn-secundario btn-cancelar" hidden>Cancelar</button>
+      </div>
+      <p class="captura-estado">Sin foto capturada</p>
+      <p class="escaneo-estado"></p>
+    </div>
+    <h3 class="seccion">Datos del Solicitante</h3>
+    <label>Nombre completo</label>
+    <input type="text" name="nombre" required>
+    <div class="fila">
+      <div><label>DNI</label><input type="text" name="dni" pattern="[0-9]{7,8}" required></div>
+      <div><label>Fecha de nacimiento</label><input type="date" name="fechaNacimiento" required></div>
+    </div>
+    <label>Email (para avisarte cuando esté listo)</label>
+    <input type="email" name="email" placeholder="tucorreo@ejemplo.com" required>
+    <label>Domicilio (calle, número, barrio)</label>
+    <input type="text" name="domicilio" required>
+    <label>Localidad</label>
+    <select name="localidad" class="select-localidad" required><option value="">Seleccionar</option></select>
+    <label>Zona</label>
+    <select name="zona" class="select-zona" required>
+      <option value="">Se completa automáticamente</option>
+      <optgroup label="Salta Capital">
+        <option value="Centro">Centro</option>
+        <option value="Norte">Norte</option>
+        <option value="Sur">Sur</option>
+        <option value="Este">Este</option>
+        <option value="Oeste">Oeste</option>
+        <option value="Noreste">Noreste</option>
+        <option value="Noroeste">Noroeste</option>
+        <option value="Sudeste">Sudeste</option>
+        <option value="Suroeste">Suroeste</option>
+      </optgroup>
+      <optgroup label="Interior de la provincia">
+        <option value="Norte de la provincia">Norte de la provincia</option>
+        <option value="Este de la provincia">Este de la provincia</option>
+        <option value="Oeste / Valles Calchaquíes">Oeste / Valles Calchaquíes</option>
+        <option value="Sur de la provincia">Sur de la provincia</option>
+        <option value="Centro-Oeste">Centro-Oeste</option>
+      </optgroup>
+    </select>
+    <div class="comisaria-asignada" data-comisaria-aviso>
+      <span class="texto">📍 Calculando comisaría...</span>
+      <strong class="nombre"></strong>
+    </div>
+    <div class="ubicacion-guardada" data-ubicacion-guardada></div>
+    <label>Tipo de certificado</label>
+    <select name="tipoCertificado" required>
+      <option value="">Seleccionar</option>
+      <option>Provincial (Policía de Salta)</option>
+      <option>Nacional (Registro Nacional de Reincidencia)</option>
+      <option>Ambos (Provincial y Nacional)</option>
+    </select>
+    <label>Motivo del trámite</label>
+    <textarea name="motivo" required placeholder="Ej: Solicitud laboral, trámite educativo, etc."></textarea>
+    <div class="btns">
+      <button type="submit" class="btn-primario">Generar certificado</button>
+      <button type="button" class="btn-secundario volver">Volver</button>
+    </div>
+    <p class="nota">Las fotos se envían a la comisaría correspondiente a través de un servidor seguro (Supabase) y se usan solo para generar este documento.</p>
+  </form>
+
+  <!-- Formulario: Certificado de Domicilio -->
+  <form id="form-domicilio">
+    <h2>Certificado de Domicilio</h2>
+    <h3 class="seccion" style="border-top:none;margin-top:0;padding-top:0;">📸 Escaneá tu DNI</h3>
+    <div class="captura-foto captura-solicitante destacada" data-target="dom-solicitante">
+      <div class="captura-visor">
+        <video autoplay playsinline muted></video>
+        <div class="marco-dni"><div class="marco-dni-texto">Encuadrá el DNI dentro del marco</div></div>
+        <div class="scan-indicador"><span>Buscando código</span><span class="scan-dot"></span><span class="scan-dot"></span><span class="scan-dot"></span></div>
+        <button type="button" class="btn-flash" title="Activar/desactivar flash">🔦</button>
+        <img hidden alt="Foto del DNI capturada">
+      </div>
+      <canvas hidden></canvas>
+      <input type="hidden" name="foto_solicitante" value="">
+      <div class="aviso-foto">
+        ⚠️ <span class="motivo-texto">No pudimos leer el código del DNI.</span>
+        <div class="acciones">
+          <button type="button" class="btn-repetir-aviso">Reintentar</button>
+          <button type="button" class="btn-usar-igual">Tomar foto igual</button>
+        </div>
+      </div>
+      <div class="captura-botones">
+        <button type="button" class="btn-secundario btn-camara">Activar cámara</button>
+        <button type="button" class="btn-secundario btn-cancelar" hidden>Cancelar</button>
+      </div>
+      <p class="captura-estado">Sin foto capturada</p>
+      <p class="escaneo-estado"></p>
+    </div>
+    <h3 class="seccion">Datos del Solicitante</h3>
+    <label>Nombre completo</label>
+    <input type="text" name="nombre" required>
+    <div class="fila">
+      <div><label>DNI</label><input type="text" name="dni" pattern="[0-9]{7,8}" required></div>
+      <div><label>Email (para avisarte cuando esté listo)</label><input type="email" name="email" placeholder="tucorreo@ejemplo.com" required></div>
+    </div>
+    <label>Domicilio (calle, número, barrio)</label>
+    <input type="text" name="domicilio" required>
+    <label>Localidad</label>
+    <select name="localidad" class="select-localidad" required><option value="">Seleccionar</option></select>
+    <label>Zona</label>
+    <select name="zona" class="select-zona" required>
+      <option value="">Se completa automáticamente</option>
+      <optgroup label="Salta Capital">
+        <option value="Centro">Centro</option>
+        <option value="Norte">Norte</option>
+        <option value="Sur">Sur</option>
+        <option value="Este">Este</option>
+        <option value="Oeste">Oeste</option>
+        <option value="Noreste">Noreste</option>
+        <option value="Noroeste">Noroeste</option>
+        <option value="Sudeste">Sudeste</option>
+        <option value="Suroeste">Suroeste</option>
+      </optgroup>
+      <optgroup label="Interior de la provincia">
+        <option value="Norte de la provincia">Norte de la provincia</option>
+        <option value="Este de la provincia">Este de la provincia</option>
+        <option value="Oeste / Valles Calchaquíes">Oeste / Valles Calchaquíes</option>
+        <option value="Sur de la provincia">Sur de la provincia</option>
+        <option value="Centro-Oeste">Centro-Oeste</option>
+      </optgroup>
+    </select>
+    <div class="comisaria-asignada" data-comisaria-aviso>
+      <span class="texto">📍 Calculando comisaría...</span>
+      <strong class="nombre"></strong>
+    </div>
+    <div class="ubicacion-guardada" data-ubicacion-guardada></div>
+    <label>Motivo del trámite</label>
+    <textarea name="motivo" required placeholder="Ej: Trámite bancario, gestión de servicios, etc."></textarea>
+    <div class="btns">
+      <button type="submit" class="btn-primario">Generar certificado</button>
+      <button type="button" class="btn-secundario volver">Volver</button>
+    </div>
+    <p class="nota">Las fotos se envían a la comisaría correspondiente a través de un servidor seguro (Supabase) y se usan solo para generar este documento.</p>
+  </form>
+
+  <!-- Formulario: Extravío de Documentos -->
+  <form id="form-extravio">
+    <h2>Constancia de Extravío de Documentos</h2>
+    <h3 class="seccion" style="border-top:none;margin-top:0;padding-top:0;">📸 Escaneá tu DNI</h3>
+    <div class="captura-foto captura-solicitante destacada" data-target="ext-solicitante">
+      <div class="captura-visor">
+        <video autoplay playsinline muted></video>
+        <div class="marco-dni"><div class="marco-dni-texto">Encuadrá el DNI dentro del marco</div></div>
+        <div class="scan-indicador"><span>Buscando código</span><span class="scan-dot"></span><span class="scan-dot"></span><span class="scan-dot"></span></div>
+        <button type="button" class="btn-flash" title="Activar/desactivar flash">🔦</button>
+        <img hidden alt="Foto del DNI capturada">
+      </div>
+      <canvas hidden></canvas>
+      <input type="hidden" name="foto_solicitante" value="">
+      <div class="aviso-foto">
+        ⚠️ <span class="motivo-texto">No pudimos leer el código del DNI.</span>
+        <div class="acciones">
+          <button type="button" class="btn-repetir-aviso">Reintentar</button>
+          <button type="button" class="btn-usar-igual">Tomar foto igual</button>
+        </div>
+      </div>
+      <div class="captura-botones">
+        <button type="button" class="btn-secundario btn-camara">Activar cámara</button>
+        <button type="button" class="btn-secundario btn-cancelar" hidden>Cancelar</button>
+      </div>
+      <p class="captura-estado">Sin foto capturada</p>
+      <p class="escaneo-estado"></p>
+    </div>
+    <h3 class="seccion">Datos del Solicitante</h3>
+    <label>Nombre completo</label>
+    <input type="text" name="nombre" required>
+    <div class="fila">
+      <div><label>DNI</label><input type="text" name="dni" pattern="[0-9]{7,8}" required></div>
+      <div><label>Fecha de nacimiento</label><input type="date" name="fechaNacimiento" required></div>
+    </div>
+    <label>Email (para avisarte cuando esté listo)</label>
+    <input type="email" name="email" placeholder="tucorreo@ejemplo.com" required>
+    <label>Domicilio (calle, número, barrio)</label>
+    <input type="text" name="domicilio" required>
+    <label>Localidad</label>
+    <select name="localidad" class="select-localidad" required><option value="">Seleccionar</option></select>
+    <label>Zona</label>
+    <select name="zona" class="select-zona" required>
+      <option value="">Se completa automáticamente</option>
+      <optgroup label="Salta Capital">
+        <option value="Centro">Centro</option>
+        <option value="Norte">Norte</option>
+        <option value="Sur">Sur</option>
+        <option value="Este">Este</option>
+        <option value="Oeste">Oeste</option>
+        <option value="Noreste">Noreste</option>
+        <option value="Noroeste">Noroeste</option>
+        <option value="Sudeste">Sudeste</option>
+        <option value="Suroeste">Suroeste</option>
+      </optgroup>
+      <optgroup label="Interior de la provincia">
+        <option value="Norte de la provincia">Norte de la provincia</option>
+        <option value="Este de la provincia">Este de la provincia</option>
+        <option value="Oeste / Valles Calchaquíes">Oeste / Valles Calchaquíes</option>
+        <option value="Sur de la provincia">Sur de la provincia</option>
+        <option value="Centro-Oeste">Centro-Oeste</option>
+      </optgroup>
+    </select>
+    <div class="comisaria-asignada" data-comisaria-aviso>
+      <span class="texto">📍 Calculando comisaría...</span>
+      <strong class="nombre"></strong>
+    </div>
+    <div class="ubicacion-guardada" data-ubicacion-guardada></div>
+    <h3 class="seccion">Datos del Documento Extravíado</h3>
+    <div class="fila">
+      <div>
+        <label>Tipo de documento</label>
+        <select name="tipoDocumento" required>
+          <option value="">Seleccionar</option>
+          <option>DNI</option><option>Pasaporte</option><option>Licencia de conducir</option>
+          <option>Tarjeta de crédito/débito</option><option>Cédula verde/azul</option><option>Otro</option>
+        </select>
+      </div>
+      <div><label>Número del documento (si lo recuerda)</label><input type="text" name="numeroDocumento"></div>
+    </div>
+    <div class="fila">
+      <div><label>Fecha aproximada del extravío</label><input type="date" name="fechaExtravio" required></div>
+      <div>
+        <label>Circunstancia</label>
+        <select name="circunstancia" required>
+          <option value="">Seleccionar</option>
+          <option>Robo</option><option>Pérdida</option><option>Extravío</option><option>Otro</option>
+        </select>
+      </div>
+    </div>
+    <label>Lugar aproximado del extravío</label>
+    <input type="text" name="lugarExtravio" placeholder="Ej: Barrio Centro, Salta" required>
+    <label>Detalle adicional (opcional)</label>
+    <textarea name="detalleExtravio" placeholder="Contá brevemente cómo ocurrió"></textarea>
+    <div class="btns">
+      <button type="submit" class="btn-primario">Generar constancia</button>
+      <button type="button" class="btn-secundario volver">Volver</button>
+    </div>
+    <p class="nota">Las fotos se envían a la comisaría correspondiente a través de un servidor seguro (Supabase) y se usan solo para generar este documento.</p>
+  </form>
+
+  <!-- Formulario: Supervivencia -->
+  <form id="form-supervivencia">
+    <h2>Certificado de Supervivencia (Fe de Vida)</h2>
+    <h3 class="seccion" style="border-top:none;margin-top:0;padding-top:0;">📸 Escaneá tu DNI</h3>
+    <div class="captura-foto captura-solicitante destacada" data-target="sup-solicitante">
+      <div class="captura-visor">
+        <video autoplay playsinline muted></video>
+        <div class="marco-dni"><div class="marco-dni-texto">Encuadrá el DNI dentro del marco</div></div>
+        <div class="scan-indicador"><span>Buscando código</span><span class="scan-dot"></span><span class="scan-dot"></span><span class="scan-dot"></span></div>
+        <button type="button" class="btn-flash" title="Activar/desactivar flash">🔦</button>
+        <img hidden alt="Foto del DNI capturada">
+      </div>
+      <canvas hidden></canvas>
+      <input type="hidden" name="foto_solicitante" value="">
+      <div class="aviso-foto">
+        ⚠️ <span class="motivo-texto">No pudimos leer el código del DNI.</span>
+        <div class="acciones">
+          <button type="button" class="btn-repetir-aviso">Reintentar</button>
+          <button type="button" class="btn-usar-igual">Tomar foto igual</button>
+        </div>
+      </div>
+      <div class="captura-botones">
+        <button type="button" class="btn-secundario btn-camara">Activar cámara</button>
+        <button type="button" class="btn-secundario btn-cancelar" hidden>Cancelar</button>
+      </div>
+      <p class="captura-estado">Sin foto capturada</p>
+      <p class="escaneo-estado"></p>
+    </div>
+    <h3 class="seccion">Datos del Solicitante</h3>
+    <label>Nombre completo</label>
+    <input type="text" name="nombre" required>
+    <div class="fila">
+      <div><label>DNI</label><input type="text" name="dni" pattern="[0-9]{7,8}" required></div>
+      <div><label>Fecha de nacimiento</label><input type="date" name="fechaNacimiento" required></div>
+    </div>
+    <label>Email (para avisarte cuando esté listo)</label>
+    <input type="email" name="email" placeholder="tucorreo@ejemplo.com" required>
+    <label>Domicilio (calle, número, barrio)</label>
+    <input type="text" name="domicilio" required>
+    <label>Localidad</label>
+    <select name="localidad" class="select-localidad" required><option value="">Seleccionar</option></select>
+    <label>Zona</label>
+    <select name="zona" class="select-zona" required>
+      <option value="">Se completa automáticamente</option>
+      <optgroup label="Salta Capital">
+        <option value="Centro">Centro</option>
+        <option value="Norte">Norte</option>
+        <option value="Sur">Sur</option>
+        <option value="Este">Este</option>
+        <option value="Oeste">Oeste</option>
+        <option value="Noreste">Noreste</option>
+        <option value="Noroeste">Noroeste</option>
+        <option value="Sudeste">Sudeste</option>
+        <option value="Suroeste">Suroeste</option>
+      </optgroup>
+      <optgroup label="Interior de la provincia">
+        <option value="Norte de la provincia">Norte de la provincia</option>
+        <option value="Este de la provincia">Este de la provincia</option>
+        <option value="Oeste / Valles Calchaquíes">Oeste / Valles Calchaquíes</option>
+        <option value="Sur de la provincia">Sur de la provincia</option>
+        <option value="Centro-Oeste">Centro-Oeste</option>
+      </optgroup>
+    </select>
+    <div class="comisaria-asignada" data-comisaria-aviso>
+      <span class="texto">📍 Calculando comisaría...</span>
+      <strong class="nombre"></strong>
+    </div>
+    <div class="ubicacion-guardada" data-ubicacion-guardada></div>
+    <label>Tipo de beneficio</label>
+    <select name="tipoBeneficio" required>
+      <option value="">Seleccionar</option>
+      <option>Jubilación</option><option>Pensión</option><option>Otro</option>
+    </select>
+    <h3 class="seccion">Testigos (obligatorios: 2)</h3>
+    <div class="bloque-testigo" data-testigo="1" data-activo="true">
+      <div class="fila campos-testigo">
+        <div><label>Nombre del testigo 1</label><input type="text" name="testigo1Nombre" required></div>
+        <div><label>DNI del testigo 1</label><input type="text" name="testigo1Dni" pattern="[0-9]{7,8}" required></div>
+      </div>
+      <label class="campos-testigo">Foto del DNI (testigo 1)</label>
+      <div class="captura-foto campos-testigo" data-target="sup-testigo1">
+        <div class="captura-visor">
+          <video autoplay playsinline muted></video>
+          <div class="marco-dni"><div class="marco-dni-texto">Encuadrá el DNI dentro del marco</div></div>
+          <div class="scan-indicador"><span>Buscando código</span><span class="scan-dot"></span><span class="scan-dot"></span><span class="scan-dot"></span></div>
+          <button type="button" class="btn-flash" title="Activar/desactivar flash">🔦</button>
+          <img hidden alt="Foto del DNI capturada">
+        </div>
+        <canvas hidden></canvas>
+        <input type="hidden" name="foto_testigo1" value="">
+        <div class="aviso-foto">
+          ⚠️ <span class="motivo-texto">No pudimos leer el código del DNI.</span>
+          <div class="acciones">
+            <button type="button" class="btn-repetir-aviso">Reintentar</button>
+            <button type="button" class="btn-usar-igual">Tomar foto igual</button>
+          </div>
+        </div>
+        <div class="captura-botones">
+          <button type="button" class="btn-secundario btn-camara">Activar cámara</button>
+          <button type="button" class="btn-secundario btn-cancelar" hidden>Cancelar</button>
+        </div>
+        <p class="captura-estado">Sin foto capturada</p>
+        <p class="escaneo-estado"></p>
+      </div>
+    </div>
+    <div class="bloque-testigo" data-testigo="2" data-activo="true">
+      <div class="fila campos-testigo">
+        <div><label>Nombre del testigo 2</label><input type="text" name="testigo2Nombre" required></div>
+        <div><label>DNI del testigo 2</label><input type="text" name="testigo2Dni" pattern="[0-9]{7,8}" required></div>
+      </div>
+      <label class="campos-testigo">Foto del DNI (testigo 2)</label>
+      <div class="captura-foto campos-testigo" data-target="sup-testigo2">
+        <div class="captura-visor">
+          <video autoplay playsinline muted></video>
+          <div class="marco-dni"><div class="marco-dni-texto">Encuadrá el DNI dentro del marco</div></div>
+          <div class="scan-indicador"><span>Buscando código</span><span class="scan-dot"></span><span class="scan-dot"></span><span class="scan-dot"></span></div>
+          <button type="button" class="btn-flash" title="Activar/desactivar flash">🔦</button>
+          <img hidden alt="Foto del DNI capturada">
+        </div>
+        <canvas hidden></canvas>
+        <input type="hidden" name="foto_testigo2" value="">
+        <div class="aviso-foto">
+          ⚠️ <span class="motivo-texto">No pudimos leer el código del DNI.</span>
+          <div class="acciones">
+            <button type="button" class="btn-repetir-aviso">Reintentar</button>
+            <button type="button" class="btn-usar-igual">Tomar foto igual</button>
+          </div>
+        </div>
+        <div class="captura-botones">
+          <button type="button" class="btn-secundario btn-camara">Activar cámara</button>
+          <button type="button" class="btn-secundario btn-cancelar" hidden>Cancelar</button>
+        </div>
+        <p class="captura-estado">Sin foto capturada</p>
+        <p class="escaneo-estado"></p>
+      </div>
+    </div>
+    <div class="btns">
+      <button type="submit" class="btn-primario">Generar certificado</button>
+      <button type="button" class="btn-secundario volver">Volver</button>
+    </div>
+    <p class="nota">Las fotos se envían a la comisaría correspondiente a través de un servidor seguro (Supabase) y se usan solo para generar este documento.</p>
+  </form>
+
+  <!-- Formulario: Estadía -->
+  <form id="form-estadia">
+    <h2>Certificado de Estadía</h2>
+    <h3 class="seccion" style="border-top:none;margin-top:0;padding-top:0;">📸 Escaneá tu DNI</h3>
+    <div class="captura-foto captura-solicitante destacada" data-target="est-solicitante">
+      <div class="captura-visor">
+        <video autoplay playsinline muted></video>
+        <div class="marco-dni"><div class="marco-dni-texto">Encuadrá el DNI dentro del marco</div></div>
+        <div class="scan-indicador"><span>Buscando código</span><span class="scan-dot"></span><span class="scan-dot"></span><span class="scan-dot"></span></div>
+        <button type="button" class="btn-flash" title="Activar/desactivar flash">🔦</button>
+        <img hidden alt="Foto del DNI capturada">
+      </div>
+      <canvas hidden></canvas>
+      <input type="hidden" name="foto_solicitante" value="">
+      <div class="aviso-foto">
+        ⚠️ <span class="motivo-texto">No pudimos leer el código del DNI.</span>
+        <div class="acciones">
+          <button type="button" class="btn-repetir-aviso">Reintentar</button>
+          <button type="button" class="btn-usar-igual">Tomar foto igual</button>
+        </div>
+      </div>
+      <div class="captura-botones">
+        <button type="button" class="btn-secundario btn-camara">Activar cámara</button>
+        <button type="button" class="btn-secundario btn-cancelar" hidden>Cancelar</button>
+      </div>
+      <p class="captura-estado">Sin foto capturada</p>
+      <p class="escaneo-estado"></p>
+    </div>
+    <h3 class="seccion">Datos del Solicitante</h3>
+    <label>Nombre completo</label>
+    <input type="text" name="nombre" required>
+    <div class="fila">
+      <div><label>DNI</label><input type="text" name="dni" pattern="[0-9]{7,8}" required></div>
+      <div><label>Fecha de nacimiento</label><input type="date" name="fechaNacimiento" required></div>
+    </div>
+    <label>Email (para avisarte cuando esté listo)</label>
+    <input type="email" name="email" placeholder="tucorreo@ejemplo.com" required>
+    <label>Domicilio de estadía (calle, número, barrio)</label>
+    <input type="text" name="domicilio" required>
+    <label>Localidad</label>
+    <select name="localidad" class="select-localidad" required><option value="">Seleccionar</option></select>
+    <label>Zona</label>
+    <select name="zona" class="select-zona" required>
+      <option value="">Se completa automáticamente</option>
+      <optgroup label="Salta Capital">
+        <option value="Centro">Centro</option>
+        <option value="Norte">Norte</option>
+        <option value="Sur">Sur</option>
+        <option value="Este">Este</option>
+        <option value="Oeste">Oeste</option>
+        <option value="Noreste">Noreste</option>
+        <option value="Noroeste">Noroeste</option>
+        <option value="Sudeste">Sudeste</option>
+        <option value="Suroeste">Suroeste</option>
+      </optgroup>
+      <optgroup label="Interior de la provincia">
+        <option value="Norte de la provincia">Norte de la provincia</option>
+        <option value="Este de la provincia">Este de la provincia</option>
+        <option value="Oeste / Valles Calchaquíes">Oeste / Valles Calchaquíes</option>
+        <option value="Sur de la provincia">Sur de la provincia</option>
+        <option value="Centro-Oeste">Centro-Oeste</option>
+      </optgroup>
+    </select>
+    <div class="comisaria-asignada" data-comisaria-aviso>
+      <span class="texto">📍 Calculando comisaría...</span>
+      <strong class="nombre"></strong>
+    </div>
+    <div class="ubicacion-guardada" data-ubicacion-guardada></div>
+    <label>Tiempo de estadía</label>
+    <input type="text" name="tiempoEstadia" placeholder="Ej: 3 meses" required>
+    <label>Motivo del trámite</label>
+    <textarea name="motivo" required></textarea>
+    <div class="btns">
+      <button type="submit" class="btn-primario">Generar certificado</button>
+      <button type="button" class="btn-secundario volver">Volver</button>
+    </div>
+    <p class="nota">Las fotos se envían a la comisaría correspondiente a través de un servidor seguro (Supabase) y se usan solo para generar este documento.</p>
+  </form>
+
+  <div id="documento">
+    <h2 id="doc-titulo">Certificado</h2>
+    <p class="subt">Policía de Salta</p>
+    <p class="subt" style="margin-top:-16px;">Tu trámite ya fue enviado a la comisaría correspondiente.</p>
+    <dl id="doc-contenido"></dl>
+    <div class="btns no-print" style="margin-top:30px;justify-content:center;">
+      <a href="consultar-tramite.html" class="btn-primario"
+         style="text-decoration:none;display:inline-flex;align-items:center;gap:8px;padding:12px 22px;">
+        🔍 Consultar el estado de mi trámite
+      </a>
+      <button class="btn-secundario" id="doc-volver">Volver al inicio</button>
+    </div>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <p><strong>© 2026 Policía de Salta</strong> · Dirección de Modernización e Innovación Tecnológica (JP)</p>
+    <a href="consultar-tramite.html" class="footer-link">
+      <span>🔍</span>
+      <span>Consultar el estado de un trámite</span>
+    </a>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-config.js"></script>
+<script src="comisarias-config.js"></script>
+<script src="jurisdicciones.js?v=6"></script>
+<script>
+/* ============================================================
+   ZONAS DE COMISARÍAS
+   ============================================================ */
+if (typeof window.ZONAS_COMISARIA === 'undefined') {
+  window.ZONAS_COMISARIA = {
+    "Comisaría N°1": "Centro","Comisaría N°2": "Centro","Comisaría N°3": "Centro",
+    "Comisaría N°5": "Centro","Comisaría N°24": "Centro",
+    "Subcomisaría Villa Asunción": "Centro","Subcomisaría Barrio Policial": "Centro",
+    "Comisaría N°6": "Norte","Comisaría N°11": "Norte","Comisaría N°103": "Norte",
+    "Comisaría N°110": "Norte","Subcomisaría El Huaico": "Norte",
+    "Comisaría N°4": "Sur","Comisaría N°10": "Sur","Comisaría N°12": "Sur",
+    "Comisaría N°17": "Sur","Comisaría N°102": "Sur","Comisaría N°105": "Sur",
+    "Comisaría N°106": "Sur","Comisaría N°111": "Sur","Subcomisaría Villa Mitre": "Sur",
+    "Comisaría N°14": "Este","Comisaría N°16": "Este","Comisaría N°107": "Este",
+    "Subcomisaría Grand Bourg Este": "Este","Subcomisaría Grand Bourg": "Este",
+    "Comisaría N°13": "Oeste","Comisaría N°19": "Oeste",
+    "Subcomisaría Villa Lavalle": "Oeste","Subcomisaría Barrio Docente": "Oeste",
+    "Subcomisaría El Aybal": "Oeste",
+    "Comisaría N°101": "Noreste","Comisaría N°112": "Noreste","Comisaría N°118": "Noreste",
+    "Comisaría N°25": "Noroeste","Comisaría N°100": "Noroeste","Comisaría N°108": "Noroeste",
+    "Comisaría N°8": "Sudeste","Comisaría N°104": "Sudeste","Subcomisaría El Sol": "Sudeste",
+    "Comisaría N°7": "Suroeste","Comisaría N°9": "Suroeste","Comisaría N°15": "Suroeste",
+    "Comisaría N°20": "Suroeste","Destacamento Villa Rebeca": "Suroeste",
+  };
+}
+
+function obtenerZona(nombreComisaria) {
+  if (!nombreComisaria) return "";
+  const n = String(nombreComisaria);
+  const m = n.match(/comisar[íi]a?\s*n?[°º]?\.?\s*(\d{1,3})/i)
+         || n.match(/cr[íi]a\.?\s*(\d{1,3})/i);
+  if (m) {
+    const clave = "Comisaría N°" + m[1];
+    if (window.ZONAS_COMISARIA[clave]) return window.ZONAS_COMISARIA[clave];
+  }
+  const claves = Object.keys(window.ZONAS_COMISARIA).sort((a, b) => b.length - a.length);
+  for (const clave of claves) {
+    if (clave.startsWith("Comisaría N°")) continue;
+    if (n.toLowerCase().includes(clave.toLowerCase())) return window.ZONAS_COMISARIA[clave];
+  }
+  return "";
+}
+
+function normalizarBarrio(t) {
+  return String(t || '')
+    .toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[°ºª]/g, ' ')
+    .replace(/\b(ii|2do|2da|2°|2º|dos|segundo|segunda)\b/g, '2')
+    .replace(/\b(iii|3ro|3ra|tres|tercero|tercera)\b/g, '3')
+    .replace(/\b(iv|4to|4ta|cuatro|cuarto|cuarta)\b/g, '4')
+    .replace(/\b(v|5to|5ta|cinco|quinto|quinta)\b/g, '5')
+    .replace(/\b(i|1ro|1ra|uno|primero|primera)\b/g, '1')
+    .replace(/[^\w\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+
+document.querySelectorAll('.select-zona').forEach(select => {
+  select.addEventListener('change', () => {
+    if (select.value) select.dataset.editadaManualmente = 'true';
+  });
+});
+
+const tarjetas = document.querySelectorAll('.tarjeta');
+const forms = {
+  residencia: document.getElementById('form-residencia'),
+  convivencia: document.getElementById('form-convivencia'),
+  carencia: document.getElementById('form-carencia'),
+  autorizacion: document.getElementById('form-autorizacion'),
+  antecedentes: document.getElementById('form-antecedentes'),
+  domicilio: document.getElementById('form-domicilio'),
+  extravio: document.getElementById('form-extravio'),
+  supervivencia: document.getElementById('form-supervivencia'),
+  estadia: document.getElementById('form-estadia'),
+};
+const tarjetasEl = document.getElementById('tarjetas');
+const documento = document.getElementById('documento');
+const avisoBorrador = document.getElementById('aviso-borrador');
+const avisoConsultaMobile = document.querySelector('.aviso-consulta-mobile');
+
+const BUCKET_FOTOS = 'fotos-tramites';
+
+function generarCodigoTramite() {
+  const primerDigito = Math.floor(Math.random() * 9) + 1;
+  let resto = '';
+  for (let i = 0; i < 7; i++) resto += Math.floor(Math.random() * 10);
+  return String(primerDigito) + resto;
+}
+
+async function generarCodigoUnico() {
+  for (let intento = 0; intento < 5; intento++) {
+    const codigo = generarCodigoTramite();
+    const { data, error } = await supabaseClient
+      .from('solicitudes').select('id').eq('codigo', codigo).limit(1);
+    if (error) { console.warn('Error verificando código:', error); continue; }
+    if (!data || data.length === 0) return codigo;
+  }
+  return String(Date.now()).slice(-8);
+}
+
+const etiquetas = {};
+
+const CAMPO_DOMICILIO = {
+  residencia: 'domicilio',
+  convivencia: 'domicilioComun',
+  carencia: 'domicilio',
+  autorizacion: 'domicilio',
+  antecedentes: 'domicilio',
+  domicilio: 'domicilio',
+  extravio: 'domicilio',
+  supervivencia: 'domicilio',
+  estadia: 'domicilio',
+};
+
+document.querySelectorAll('.select-localidad').forEach(select => {
+  if (typeof LOCALIDADES_SALTA !== 'undefined') {
+    LOCALIDADES_SALTA.forEach(nombre => {
+      const opt = document.createElement('option');
+      opt.value = nombre;
+      opt.textContent = nombre;
+      select.appendChild(opt);
+    });
+  }
+});
+
+const titulos = {
+  residencia: 'Certificado de Residencia',
+  convivencia: 'Certificado de Convivencia',
+  carencia: 'Certificado de Carencia de Recursos',
+  autorizacion: 'Autorización de Viaje de Menor',
+  antecedentes: 'Certificado de Antecedentes Penales',
+  domicilio: 'Certificado de Domicilio',
+  extravio: 'Constancia de Extravío de Documentos',
+  supervivencia: 'Certificado de Supervivencia',
+  estadia: 'Certificado de Estadía',
+};
+
+// La tabla de ubicaciones NO es pública: se accede solo por estas dos funciones de Supabase
+// (buscar_ubicacion / guardar_ubicacion), que devuelven y validan lo mínimo.
+async function buscarUbicacionGuardada(dni) {
+  if (!dni) return null;
+  try {
+    const { data, error } = await supabaseClient.rpc('buscar_ubicacion', { p_dni: String(dni) });
+    if (error) { console.warn('Error buscando ubicación guardada:', error); return null; }
+    if (!data) return null;
+    if (data.estado === 'invalidada' || data.estado === 'sospechosa') return null;
+    return data;
+  } catch (e) { console.warn('Excepción buscando ubicación:', e); return null; }
+}
+
+async function guardarUbicacionCiudadano({ dni, nombre, lat, lon, comisaria, zona, domicilio, localidad }) {
+  if (!dni || lat == null || lon == null) return;
+  try {
+    const { data, error } = await supabaseClient.rpc('guardar_ubicacion', {
+      p_dni: String(dni),
+      p_nombre: nombre || '',
+      p_lat: parseFloat(lat),
+      p_lon: parseFloat(lon),
+      p_comisaria: comisaria || '',
+      p_zona: zona || '',
+      p_domicilio: domicilio || '',
+      p_localidad: localidad || '',
+    });
+    if (error) { console.warn('Error guardando ubicación:', error); return false; }
+    return data === true;
+  } catch (e) { console.warn('Excepción guardando ubicación:', e); return false; }
+}
+
+function mostrarBannerUbicacion(form, ubic) {
+  const banner = form.querySelector('[data-ubicacion-guardada]');
+  if (!banner) return;
+  banner.innerHTML = `
+    <div class="titulo">📍 Encontramos tu ubicación guardada</div>
+    <div class="direccion">
+      <strong>${ubic.domicilio_texto || 'Domicilio registrado'}</strong><br>
+      ${ubic.localidad || ''}${ubic.zona ? ' · Zona ' + ubic.zona : ''}<br>
+      ${ubic.comisaria_asignada ? '🏢 ' + ubic.comisaria_asignada : ''}
+    </div>
+    <div class="acciones">
+      <button type="button" class="btn-usar-ubicacion" data-accion="usar">✅ Sí, sigue igual</button>
+      <button type="button" class="btn-actualizar-ubicacion" data-accion="actualizar">🔄 Actualizar ubicación</button>
+    </div>
+  `;
+  banner.classList.add('activo');
+
+  banner.querySelector('[data-accion="usar"]').addEventListener('click', () => {
+    form.dataset.usarUbicacionGuardada = 'true';
+    form.dataset.ubicacionLat = ubic.lat;
+    form.dataset.ubicacionLon = ubic.lon;
+    form.dataset.ubicacionComisaria = ubic.comisaria_asignada || '';
+    form.dataset.ubicacionZona = ubic.zona || '';
+    form.dataset.ubicacionFuente = 'guardada';
+    form.dataset.ubicacionDomicilio = ubic.domicilio_texto || '';
+    banner.classList.remove('activo');
+    const tramite = form.id.replace('form-', '');
+    const inputDom = form.querySelector(`[name="${CAMPO_DOMICILIO[tramite]}"]`);
+    if (inputDom) inputDom.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+
+  banner.querySelector('[data-accion="actualizar"]').addEventListener('click', () => {
+    form.dataset.usarUbicacionGuardada = 'false';
+    delete form.dataset.ubicacionLat;
+    delete form.dataset.ubicacionLon;
+    banner.classList.remove('activo');
+    const tramite = form.id.replace('form-', '');
+    const inputDom = form.querySelector(`[name="${CAMPO_DOMICILIO[tramite]}"]`);
+    if (inputDom) inputDom.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+}
+
+function guardarFotoEnStorage(clave, dataUrl) {
+  try { localStorage.setItem('foto_' + clave, dataUrl); } catch (e) {}
+}
+function borrarFotoDeStorage(clave) {
+  try { localStorage.removeItem('foto_' + clave); } catch (e) {}
+}
+function limpiarTodasLasFotosDeStorage() {
+  document.querySelectorAll('.captura-foto').forEach(c => borrarFotoDeStorage(c.dataset.target));
+  try { localStorage.removeItem('tramite_activo'); } catch(e){}
+}
+function hayFotosGuardadas() {
+  return Array.from(document.querySelectorAll('.captura-foto')).some(c => localStorage.getItem('foto_' + c.dataset.target));
+}
+function mostrarAvisoBorrador() {
+  if (hayFotosGuardadas()) avisoBorrador.classList.add('activo');
+}
+
+function camposABloquearParaTarget(target) {
+  const [prefijo, persona] = target.split('-');
+  if (persona === 'testigo1' || persona === 'testigo2') return [];
+  if (prefijo === 'res') return ['nombre', 'dni', 'fechaNacimiento'];
+  if (prefijo === 'con') return ['nombreSolicitante', 'dniSolicitante'];
+  if (prefijo === 'car') return ['nombre', 'dni'];
+  if (prefijo === 'aut') {
+    if (persona === 'menor') return ['nombreMenor', 'dniMenor', 'fechaNacimientoMenor'];
+    if (persona === 'progenitor') return ['nombreProgenitor', 'dniProgenitor'];
+  }
+  if (prefijo === 'ant') return ['nombre', 'dni', 'fechaNacimiento'];
+  if (prefijo === 'dom') return ['nombre', 'dni'];
+  if (prefijo === 'ext') return ['nombre', 'dni', 'fechaNacimiento'];
+  if (prefijo === 'sup') return ['nombre', 'dni', 'fechaNacimiento'];
+  if (prefijo === 'est') return ['nombre', 'dni', 'fechaNacimiento'];
+  return [];
+}
+
+function bloquearCampos(form, nombresCampos) {
+  if (!form || !nombresCampos.length) return;
+  nombresCampos.forEach(nombre => {
+    const input = form.querySelector(`[name="${nombre}"]`);
+    if (input) {
+      input.setAttribute('readonly', 'readonly');
+      input.setAttribute('tabindex', '-1');
+      input.title = '🔒 Este campo se completó automáticamente desde tu DNI y no puede modificarse.';
+    }
+  });
+}
+
+function desbloquearCampos(form, nombresCampos) {
+  if (!form || !nombresCampos.length) return;
+  nombresCampos.forEach(nombre => {
+    const input = form.querySelector(`[name="${nombre}"]`);
+    if (input) {
+      input.removeAttribute('readonly');
+      input.removeAttribute('tabindex');
+      input.removeAttribute('title');
+    }
+  });
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.captura-foto').forEach(captura => {
+    const clave = captura.dataset.target;
+    const guardada = localStorage.getItem('foto_' + clave);
+    if (!guardada) return;
+    const img = captura.querySelector('img');
+    const estado = captura.querySelector('.captura-estado');
+    const hiddenInput = captura.querySelector('input[type=hidden]');
+    const btnCamara = captura.querySelector('.btn-camara');
+    img.src = guardada;
+    img.hidden = false;
+    hiddenInput.value = guardada;
+    estado.textContent = 'Foto recuperada (se había guardado antes).';
+    estado.classList.add('ok');
+    btnCamara.hidden = true;
+    const form = captura.closest('form');
+    const campos = camposABloquearParaTarget(clave);
+    if (form && campos.length) bloquearCampos(form, campos);
+  });
+  const tramiteGuardado = localStorage.getItem('tramite_activo');
+  if (tramiteGuardado && forms[tramiteGuardado]) {
+    tarjetas.forEach(x => x.classList.remove('activa'));
+    const tarjetaActiva = document.querySelector(`.tarjeta[data-tramite="${tramiteGuardado}"]`);
+    if (tarjetaActiva) tarjetaActiva.classList.add('activa');
+    Object.values(forms).forEach(f => f.classList.remove('activo'));
+    forms[tramiteGuardado].classList.add('activo');
+    tarjetasEl.style.display = 'none';
+    if (avisoConsultaMobile) avisoConsultaMobile.classList.remove('activo');
+  }
+  mostrarAvisoBorrador();
+});
+
+document.getElementById('btn-descartar-borrador').addEventListener('click', () => {
+  if (!confirm('¿Seguro que querés borrar las fotos guardadas y empezar de nuevo?')) return;
+  limpiarTodasLasFotosDeStorage();
+  document.querySelectorAll('.captura-foto').forEach(c => resetCaptura(c));
+  avisoBorrador.classList.remove('activo');
+  Object.values(forms).forEach(f => f.classList.remove('activo'));
+  tarjetasEl.style.display = 'grid';
+  if (avisoConsultaMobile) avisoConsultaMobile.classList.add('activo');
+});
+
+tarjetas.forEach(t => {
+  t.addEventListener('click', () => {
+    const tramite = t.dataset.tramite;
+    tarjetas.forEach(x => x.classList.remove('activa'));
+    t.classList.add('activa');
+    Object.values(forms).forEach(f => f.classList.remove('activo'));
+    forms[tramite].classList.add('activo');
+    tarjetasEl.style.display = 'none';
+    if (avisoConsultaMobile) avisoConsultaMobile.classList.remove('activo');
+    try { localStorage.setItem('tramite_activo', tramite); } catch(e){}
+  });
+});
+
+document.querySelectorAll('.volver').forEach(btn => {
+  btn.addEventListener('click', () => {
+    Object.values(forms).forEach(f => f.classList.remove('activo'));
+    tarjetasEl.style.display = 'grid';
+    if (avisoConsultaMobile) avisoConsultaMobile.classList.add('activo');
+    try { localStorage.removeItem('tramite_activo'); } catch(e){}
+  });
+});
+
+document.getElementById('doc-volver').addEventListener('click', () => {
+  documento.classList.remove('activo');
+  tarjetasEl.style.display = 'grid';
+  if (avisoConsultaMobile) avisoConsultaMobile.classList.add('activo');
+  try { localStorage.removeItem('tramite_activo'); } catch(e){}
+});
+
+/* PARSER DNI QR */
+function parsearCodigoDNIQR(texto) {
+  const contenido = String(texto || '').trim().replace(/^\uFEFF/, '');
+  if (!contenido) return null;
+  const match = contenido.match(
+    /^(\d{10,14})@([^@]+)@([^@]+)@(\d{6,9})@([A-Za-z])@([^@]+?)(?:@([^@]+?))?(?:@(.+))?$/
+  );
+  if (!match) return null;
+  const [, nroTramite, apellido, nombre, dni, tipoDoc, fechaNacDMY, fechaEmisionDMY] = match;
+  if (!/^\d{7,8}$/.test(dni)) return null;
+  function convertirFechaDMY(fechaStr) {
+    if (!fechaStr) return '';
+    const limpio = String(fechaStr).trim();
+    if (!/^\d{2}\/\d{2}\/\d{2,4}$/.test(limpio)) return '';
+    const [dd, mm, aa] = limpio.split('/');
+    let anio = aa;
+    if (aa.length === 2) anio = parseInt(aa) > 50 ? '19' + aa : '20' + aa;
+    return `${anio}-${mm.padStart(2, '0')}-${dd.padStart(2, '0')}`;
+  }
+  const tipos = { 'D': 'DNI', 'C': 'LC', 'E': 'LE', 'P': 'Pasaporte', 'I': 'CI' };
+  return {
+    nombreCompleto: `${apellido.trim()} ${nombre.trim()}`.trim(),
+    apellido: apellido.trim(),
+    nombre: nombre.trim(),
+    dni: dni,
+    tipoDocumento: tipos[tipoDoc.toUpperCase()] || tipoDoc.toUpperCase(),
+    fechaNacimientoISO: convertirFechaDMY(fechaNacDMY),
+    fechaEmisionISO: convertirFechaDMY(fechaEmisionDMY),
+    nroTramite: nroTramite,
+    esNuevoDNI: true,
+    sexo: ''
+  };
+}
+
+function parsearCodigoDNI(texto) {
+  const datosQR = parsearCodigoDNIQR(texto);
+  if (datosQR) return datosQR;
+  const contenido = String(texto || "").replace(/[\r\n]+/g, "@");
+  const partes = contenido.split("@").map(p => p.trim()).filter(Boolean);
+  const dniMatch = contenido.match(/\b\d{7,8}\b/);
+  const dni = dniMatch ? dniMatch[0] : "";
+  let sexo = "";
+  const sexoParte = partes.map(p => p.toUpperCase()).find(p =>
+    p === "M" || p === "F" || p === "X" || p === "MASCULINO" || p === "FEMENINO"
+  );
+  if (sexoParte === "M" || sexoParte === "MASCULINO") sexo = "Masculino";
+  else if (sexoParte === "F" || sexoParte === "FEMENINO") sexo = "Femenino";
+  else if (sexoParte === "X") sexo = "Otro / Prefiero no especificar";
+  const candidatosNombre = partes
+    .filter(p => /^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ ]{3,}$/.test(p))
+    .filter(p => !/^(ARG|ARGENTINA|IDARG|DNI|EJEMPLAR|NACIONALIDAD|APELLIDO|NOMBRE|MERCOSUR)$/i.test(p));
+  const nombre = candidatosNombre.slice(0, 2).join(" ").trim();
+  let fechaISO = "";
+  const fechaParte = partes.find(p => {
+    if (/^\d{2}[/-]\d{2}[/-]\d{4}$/.test(p)) return true;
+    return /^\d{8}$/.test(p) && (/^(19|20)\d{2}/.test(p) || /(19|20)\d{2}$/.test(p));
+  });
+  if (fechaParte) {
+    const nums = fechaParte.replace(/\D/g, "");
+    if (nums.length === 8) {
+      const empiezaAnio = /^(19|20)\d{2}/.test(nums);
+      const anio = empiezaAnio ? nums.slice(0, 4) : nums.slice(4, 8);
+      const mes = empiezaAnio ? nums.slice(4, 6) : nums.slice(2, 4);
+      const dia = empiezaAnio ? nums.slice(6, 8) : nums.slice(0, 2);
+      fechaISO = `${anio}-${mes}-${dia}`;
+    }
+  }
+  if (!dni && !nombre) return null;
+  return { nombreCompleto: nombre, dni: dni, sexo: sexo, fechaNacimientoISO: fechaISO };
+}
+
+function camposParaTarget(target) {
+  const [prefijo, persona] = target.split('-');
+  if (persona === 'testigo1' || persona === 'testigo2') {
+    return { nombre: `${persona}Nombre`, dni: `${persona}Dni`, fechaNacimiento: null };
+  }
+  if (prefijo === 'res') return { nombre: 'nombre', dni: 'dni', fechaNacimiento: 'fechaNacimiento' };
+  if (prefijo === 'con') return { nombre: 'nombreSolicitante', dni: 'dniSolicitante', fechaNacimiento: null };
+  if (prefijo === 'car') return { nombre: 'nombre', dni: 'dni', fechaNacimiento: null };
+  if (prefijo === 'aut') {
+    if (persona === 'menor') return { nombre: 'nombreMenor', dni: 'dniMenor', fechaNacimiento: 'fechaNacimientoMenor' };
+    if (persona === 'progenitor') return { nombre: 'nombreProgenitor', dni: 'dniProgenitor', fechaNacimiento: null };
+  }
+  if (prefijo === 'ant') return { nombre: 'nombre', dni: 'dni', fechaNacimiento: 'fechaNacimiento' };
+  if (prefijo === 'dom') return { nombre: 'nombre', dni: 'dni', fechaNacimiento: null };
+  if (prefijo === 'ext') return { nombre: 'nombre', dni: 'dni', fechaNacimiento: 'fechaNacimiento' };
+  if (prefijo === 'sup') return { nombre: 'nombre', dni: 'dni', fechaNacimiento: 'fechaNacimiento' };
+  if (prefijo === 'est') return { nombre: 'nombre', dni: 'dni', fechaNacimiento: 'fechaNacimiento' };
+  return null;
+}
+
+function resetCaptura(captura){
+  const video = captura.querySelector('video');
+  const img = captura.querySelector('img');
+  const estado = captura.querySelector('.captura-estado');
+  const hiddenInput = captura.querySelector('input[type=hidden]');
+  const btnCamara = captura.querySelector('.btn-camara');
+  const btnCancelar = captura.querySelector('.btn-cancelar');
+  const btnRepetir = captura.querySelector('.btn-repetir');
+  const marcoDni = captura.querySelector('.marco-dni');
+  const avisoFoto = captura.querySelector('.aviso-foto');
+  const btnFlash = captura.querySelector('.btn-flash');
+  const scanIndicador = captura.querySelector('.scan-indicador');
+  if (captura._scanInterval) { clearInterval(captura._scanInterval); captura._scanInterval = null; }
+  if (video.srcObject) { video.srcObject.getTracks().forEach(t => t.stop()); video.srcObject = null; }
+  video.hidden = true;
+  img.hidden = true;
+  img.src = '';
+  hiddenInput.value = '';
+  estado.textContent = 'Sin foto capturada';
+  estado.classList.remove('ok', 'error');
+  if (btnCamara) btnCamara.hidden = false;
+  if (btnCancelar) btnCancelar.hidden = true;
+  if (btnRepetir) btnRepetir.hidden = true;
+  if (marcoDni) marcoDni.classList.remove('activo');
+  if (avisoFoto) avisoFoto.classList.remove('activo');
+  if (scanIndicador) scanIndicador.classList.remove('activo');
+  if (btnFlash) { btnFlash.classList.remove('activo'); btnFlash.classList.remove('encendido'); }
+  borrarFotoDeStorage(captura.dataset.target);
+  const form = captura.closest('form');
+  const campos = camposABloquearParaTarget(captura.dataset.target);
+  if (form && campos.length) desbloquearCampos(form, campos);
+}
+
+document.querySelectorAll('.captura-foto').forEach(captura => {
+  const video = captura.querySelector('video');
+  const canvas = captura.querySelector('canvas');
+  const img = captura.querySelector('img');
+  const estado = captura.querySelector('.captura-estado');
+  const escaneoEstado = captura.querySelector('.escaneo-estado');
+  const hiddenInput = captura.querySelector('input[type=hidden]');
+  const btnCamara = captura.querySelector('.btn-camara');
+  const btnCancelar = captura.querySelector('.btn-cancelar');
+  const marcoDni = captura.querySelector('.marco-dni');
+  const avisoFoto = captura.querySelector('.aviso-foto');
+  const motivoTexto = captura.querySelector('.motivo-texto');
+  const btnRepetirAviso = captura.querySelector('.btn-repetir-aviso');
+  const btnUsarIgual = captura.querySelector('.btn-usar-igual');
+  const btnFlash = captura.querySelector('.btn-flash');
+  const scanIndicador = captura.querySelector('.scan-indicador');
+  const form = captura.closest('form');
+  const campos = camposParaTarget(captura.dataset.target);
+
+  let trackActual = null;
+  let flashEncendido = false;
+  let flashSoportado = false;
+  let scannerActivo = false;
+  let intentosSinDeteccion = 0;
+  let detector = null;
+
+  const barcodeDisponible = !!window.BarcodeDetector;
+  const jsQRDisponible = !!window.jsQR;
+  if (!barcodeDisponible && !jsQRDisponible) {
+    escaneoEstado.textContent = 'Escaneo automático no disponible. Se sacará la foto igual.';
+  } else if (!barcodeDisponible && jsQRDisponible) {
+    escaneoEstado.textContent = 'Modo compatibilidad activo (jsQR).';
+  }
+
+  btnCamara.addEventListener('click', async () => {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      estado.textContent = 'Este navegador no permite acceder a la cámara.';
+      estado.classList.add('error');
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } }
+      });
+      video.srcObject = stream;
+      video.hidden = false;
+      img.hidden = true;
+      btnCamara.hidden = true;
+      if (btnCancelar) btnCancelar.hidden = false;
+      if (marcoDni) marcoDni.classList.add('activo');
+      if (avisoFoto) avisoFoto.classList.remove('activo');
+      if (scanIndicador) scanIndicador.classList.add('activo');
+      estado.textContent = 'Apuntá al código del DNI. Se escaneará automáticamente.';
+      estado.classList.remove('ok', 'error');
+      trackActual = stream.getVideoTracks()[0];
+      const capacidades = trackActual.getCapabilities ? trackActual.getCapabilities() : {};
+      flashSoportado = !!capacidades.torch;
+      if (btnFlash && flashSoportado) btnFlash.classList.add('activo');
+      iniciarEscaneo();
+    } catch (err) {
+      estado.textContent = 'No se pudo acceder a la cámara (revisá los permisos).';
+      estado.classList.add('error');
+    }
+  });
+
+  if (btnCancelar) btnCancelar.addEventListener('click', () => resetCaptura(captura));
+
+  if (btnFlash) {
+    btnFlash.addEventListener('click', async () => {
+      if (!trackActual || !flashSoportado) return;
+      try {
+        flashEncendido = !flashEncendido;
+        await trackActual.applyConstraints({ advanced: [{ torch: flashEncendido }] });
+        btnFlash.classList.toggle('encendido', flashEncendido);
+      } catch (err) {}
+    });
+  }
+
+  function iniciarEscaneo() {
+    if (scannerActivo) return;
+    scannerActivo = true;
+    intentosSinDeteccion = 0;
+    if (barcodeDisponible && !detector) {
+      try { detector = new BarcodeDetector({ formats: ['pdf417', 'qr_code'] }); }
+      catch (e) { detector = null; }
+    }
+    captura._scanInterval = setInterval(escanearFrame, 1000);
+    setTimeout(escanearFrame, 500);
+  }
+
+  async function escanearFrame() {
+    if (!scannerActivo) return;
+    if (!video.srcObject || video.readyState < 2 || !video.videoWidth) return;
+    try {
+      const anchoMax = 1600;
+      const escala = Math.min(1, anchoMax / video.videoWidth);
+      canvas.width = Math.round(video.videoWidth * escala);
+      canvas.height = Math.round(video.videoHeight * escala);
+      const ctx = canvas.getContext('2d', { willReadFrequently: true });
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      let rawValue = null;
+      if (detector) {
+        try {
+          const codigos = await detector.detect(canvas);
+          if (codigos && codigos.length) rawValue = codigos[0].rawValue;
+        } catch (e) { }
+      }
+      if (!rawValue && window.jsQR) {
+        try {
+          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const qr = window.jsQR(imageData.data, imageData.width, imageData.height, {
+            inversionAttempts: 'dontInvert'
+          });
+          if (qr && qr.data) rawValue = qr.data;
+        } catch (e) { }
+      }
+      if (rawValue) {
+        const datos = parsearCodigoDNI(rawValue);
+        if (datos && (datos.dni || datos.nombreCompleto)) { exitoEscaneo(datos, canvas); return; }
+      }
+      intentosSinDeteccion++;
+      if (intentosSinDeteccion === 20) mostrarTimeout();
+    } catch (err) { console.warn('Error escaneando frame:', err); }
+  }
+
+  async function exitoEscaneo(datos, canvasFoto) {
+    scannerActivo = false;
+    if (captura._scanInterval) { clearInterval(captura._scanInterval); captura._scanInterval = null; }
+    const dataUrl = canvasFoto.toDataURL('image/jpeg', 0.7);
+    hiddenInput.value = dataUrl;
+    guardarFotoEnStorage(captura.dataset.target, dataUrl);
+    img.src = dataUrl;
+    img.hidden = false;
+    video.hidden = true;
+    if (marcoDni) marcoDni.classList.remove('activo');
+    if (scanIndicador) scanIndicador.classList.remove('activo');
+    if (btnFlash) btnFlash.classList.remove('activo');
+    if (btnCancelar) btnCancelar.hidden = true;
+    if (flashEncendido && trackActual) { trackActual.applyConstraints({ advanced: [{ torch: false }] }).catch(()=>{}); flashEncendido = false; }
+    if (video.srcObject) { video.srcObject.getTracks().forEach(t => t.stop()); video.srcObject = null; }
+    trackActual = null;
+
+    // 🔓 Desbloquear los campos que estaban esperando el escaneo
+    if (window.__desbloquearCamposPorEscaneo && form) {
+      window.__desbloquearCamposPorEscaneo(form);
+    }
+
+    if (campos && form) {
+      if (datos.nombreCompleto && form.querySelector(`[name="${campos.nombre}"]`))
+        form.querySelector(`[name="${campos.nombre}"]`).value = datos.nombreCompleto;
+      if (datos.dni && form.querySelector(`[name="${campos.dni}"]`))
+        form.querySelector(`[name="${campos.dni}"]`).value = datos.dni;
+      if (campos.fechaNacimiento && datos.fechaNacimientoISO) {
+        const inputFecha = form.querySelector(`[name="${campos.fechaNacimiento}"]`);
+        if (inputFecha) inputFecha.value = datos.fechaNacimientoISO;
+      }
+    }
+
+    if (datos.esNuevoDNI && form) {
+      const setHidden = (nombre, valor) => {
+        let input = form.querySelector(`input[name="${nombre}"]`);
+        if (!input) {
+          input = document.createElement('input');
+          input.type = 'hidden';
+          input.name = nombre;
+          form.appendChild(input);
+        }
+        input.value = valor;
+      };
+      setHidden('nroTramiteDNI', datos.nroTramite || '');
+      setHidden('tipoDocumentoDNI', datos.tipoDocumento || '');
+      setHidden('fechaEmisionDNI', datos.fechaEmisionISO || '');
+      setHidden('esDNINuevo', 'true');
+    }
+
+    const camposBloqueo = camposABloquearParaTarget(captura.dataset.target);
+    if (form && camposBloqueo.length) bloquearCampos(form, camposBloqueo);
+
+    const etiquetaDNI = datos.esNuevoDNI ? 'DNI nuevo (QR)' : 'DNI (PDF417)';
+    estado.textContent = `✓ ${etiquetaDNI} escaneado: ${datos.nombreCompleto || ''} (${datos.dni || ''}) — Datos bloqueados`;
+    estado.classList.add('ok');
+    estado.classList.remove('error');
+    escaneoEstado.textContent = '🔒 Los datos fueron bloqueados para evitar modificaciones.';
+
+    const target = captura.dataset.target;
+    const esDniSolicitante = target.endsWith('-solicitante') || target === 'aut-progenitor';
+    if (esDniSolicitante && datos.dni && form) {
+      form.dataset.dniSolicitante = datos.dni;
+      const ubic = await buscarUbicacionGuardada(datos.dni);
+      if (ubic && ubic.lat != null && ubic.lon != null) {
+        form.dataset.usarUbicacionGuardada = 'true';
+        form.dataset.ubicacionLat = ubic.lat;
+        form.dataset.ubicacionLon = ubic.lon;
+        form.dataset.ubicacionComisaria = ubic.comisaria_asignada || '';
+        form.dataset.ubicacionZona = ubic.zona || '';
+    form.dataset.ubicacionFuente = 'guardada';
+    form.dataset.ubicacionDomicilio = ubic.domicilio_texto || '';
+        const tramite = form.id.replace('form-', '');
+        const campoDom = CAMPO_DOMICILIO[tramite];
+        const inputDom = form.querySelector(`[name="${campoDom}"]`);
+        if (inputDom && !inputDom.value && ubic.domicilio_texto) inputDom.value = ubic.domicilio_texto;
+        const selectLoc = form.querySelector('[name="localidad"]');
+        if (selectLoc && !selectLoc.value && ubic.localidad) selectLoc.value = ubic.localidad;
+        const selectZona = form.querySelector('[name="zona"]');
+        if (selectZona && !selectZona.value && ubic.zona) selectZona.value = ubic.zona;
+        mostrarBannerUbicacion(form, ubic);
+        if (inputDom) inputDom.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+    }
+  }
+
+  function mostrarTimeout() {
+    scannerActivo = false;
+    if (captura._scanInterval) { clearInterval(captura._scanInterval); captura._scanInterval = null; }
+    if (scanIndicador) scanIndicador.classList.remove('activo');
+    if (motivoTexto) motivoTexto.textContent = 'No pudimos leer el código del DNI.';
+    if (avisoFoto) avisoFoto.classList.add('activo');
+    estado.textContent = 'No se detectó el código. Podés reintentar o sacar la foto igual.';
+    estado.classList.add('error');
+  }
+
+  if (btnRepetirAviso) btnRepetirAviso.addEventListener('click', () => resetCaptura(captura));
+
+  if (btnUsarIgual) {
+    btnUsarIgual.addEventListener('click', () => {
+      if (video.srcObject && video.videoWidth) {
+        const anchoMax = 1600;
+        const escala = Math.min(1, anchoMax / video.videoWidth);
+        canvas.width = Math.round(video.videoWidth * escala);
+        canvas.height = Math.round(video.videoHeight * escala);
+        canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+      }
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+      hiddenInput.value = dataUrl;
+      guardarFotoEnStorage(captura.dataset.target, dataUrl);
+      img.src = dataUrl;
+      img.hidden = false;
+      video.hidden = true;
+      if (marcoDni) marcoDni.classList.remove('activo');
+      if (scanIndicador) scanIndicador.classList.remove('activo');
+      if (avisoFoto) avisoFoto.classList.remove('activo');
+      if (btnCancelar) btnCancelar.hidden = true;
+      if (flashEncendido && trackActual) { trackActual.applyConstraints({ advanced: [{ torch: false }] }).catch(()=>{}); flashEncendido = false; }
+      if (video.srcObject) { video.srcObject.getTracks().forEach(t => t.stop()); video.srcObject = null; }
+      trackActual = null;
+      estado.textContent = 'Foto guardada sin datos escaneados. Completá los datos a mano.';
+      estado.classList.add('ok');
+      estado.classList.remove('error');
+      escaneoEstado.textContent = 'Foto guardada. Completá los datos manualmente.';
+    });
+  }
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+  const selectEmpresa = document.getElementById('aut-empresa');
+  const inputEmpresaOtra = document.getElementById('aut-empresa-otra');
+  const selectTipoViaje = document.getElementById('aut-tipo-viaje');
+  const bloqueAcompanante = document.getElementById('aut-bloque-acompanante');
+  if (selectEmpresa && inputEmpresaOtra) {
+    selectEmpresa.addEventListener('change', () => {
+      if (selectEmpresa.value === 'Otro (especificar abajo)') {
+        inputEmpresaOtra.disabled = false;
+        inputEmpresaOtra.required = true;
+        inputEmpresaOtra.focus();
+      } else {
+        inputEmpresaOtra.disabled = true;
+        inputEmpresaOtra.required = false;
+        inputEmpresaOtra.value = '';
+      }
+    });
+  }
+  if (selectTipoViaje && bloqueAcompanante) {
+    selectTipoViaje.addEventListener('change', () => {
+      if (selectTipoViaje.value === 'acompanado') {
+        bloqueAcompanante.style.display = 'block';
+        bloqueAcompanante.querySelectorAll('input').forEach(inp => {
+          if (inp.name === 'nombreAcompanante' || inp.name === 'dniAcompanante') inp.required = true;
+        });
+      } else {
+        bloqueAcompanante.style.display = 'none';
+        bloqueAcompanante.querySelectorAll('input').forEach(inp => {
+          inp.required = false;
+          inp.value = '';
+        });
+      }
+    });
+  }
+});
+
+/* ===== Asignación de comisaría: usa jurisdicciones.js (polígonos oficiales) ===== */
+let poligonosCargados = false;
+async function cargarTodosLosPoligonos() {
+  try { await cargarJurisdicciones(); poligonosCargados = true; }
+  catch (e) { console.warn('Error cargando jurisdicciones:', e); }
+}
+window.addEventListener('DOMContentLoaded', () => { cargarTodosLosPoligonos(); });
+
+// Compatibilidad: devuelve { nombre, ... } o null. Ya no se filtra por zona.
+function buscarComisariaPorCoordenadas(lat, lon) {
+  const r = jurisdiccionDePunto(lat, lon);
+  return r ? { ...r, lat, lon } : null;
+}
+
+async function geocodificarConNominatim(domicilio, localidad) {
+  return geocodificarDomicilio(domicilio, localidad);
+}
+
+async function asignarComisariaPorJurisdiccion(domicilio, localidad, zona, opciones = {}) {
+  if (!domicilio || !localidad) return { error: 'Falta domicilio o localidad' };
+  const { latGuardada, lonGuardada } = opciones;
+  if (!poligonosCargados) await cargarTodosLosPoligonos();
+
+  // 1) Punto exacto marcado por la persona (mapa o GPS): es lo más preciso.
+  if (latGuardada != null && lonGuardada != null && !isNaN(latGuardada)) {
+    const r = jurisdiccionDePunto(latGuardada, lonGuardada);
+    if (r) return { comisaria: r.nombre, lat: latGuardada, lon: lonGuardada, origen: 'punto_exacto', detalle: r };
+    return { error: 'El punto marcado no está dentro de ninguna jurisdicción', lat: latGuardada, lon: lonGuardada };
+  }
+
+  // 2) Barrio confirmado manualmente: el marcador va en el barrio correcto, nunca en otro
+  const regla = buscarBarrioConfirmado(domicilio, zona);
+  if (regla) {
+    let lat = regla.lat ?? null, lon = regla.lon ?? null, precision = 'barrio';
+    try {
+      const ubic = await geocodificarDomicilio(domicilio, localidad, zona);
+      let cand = null;
+      if (ubic && ubic.opciones) cand = ubic.opciones.find(o => o.jurisdiccion === regla.jurisdiccion) || null;
+      else if (ubic && ubic.precision && ubic.precision !== 'localidad' && ubic.precision !== 'calle') cand = ubic;
+      // solo se usa lo encontrado si cae en la misma jurisdicción confirmada
+      if (cand) {
+        const rj = jurisdiccionDePunto(cand.lat, cand.lon);
+        if (rj && rj.nombre === regla.jurisdiccion) {
+          // para manzana/número usar el punto fino; para el barrio, quedarse con el centro confirmado
+          if (ubic.precision === 'manzana' || ubic.precision === 'numero' || lat == null) { lat = cand.lat; lon = cand.lon; precision = ubic.precision || 'barrio'; }
+        }
+      }
+    } catch (e) { console.warn('Geocodificación opcional falló', e); }
+    return { comisaria: regla.jurisdiccion, origen: 'barrio_confirmado', lat, lon, detalle: { nota: regla.nota } };
+  }
+
+  // 3) Geocodificar domicilio y ubicar en el polígono
+  const ubic = await geocodificarDomicilio(domicilio, localidad, zona);
+  if (!ubic) return { requiereMapa: true, motivo: 'No encontramos el domicilio. Marcá tu casa en el mapa.' };
+  if (ubic.opciones) return { elegir: ubic.opciones };
+  if (ubic.precision === 'localidad') {
+    return { requiereMapa: true, lat: ubic.lat, lon: ubic.lon,
+             motivo: 'Encontramos la localidad pero no tu calle o barrio. Marcá tu casa en el mapa para asignar la comisaría exacta.' };
+  }
+  const r = jurisdiccionDePunto(ubic.lat, ubic.lon);
+  if (!r) return { requiereMapa: true, lat: ubic.lat, lon: ubic.lon, motivo: 'La dirección encontrada no cae en ninguna jurisdicción. Marcá tu casa en el mapa.' };
+  if (ubic.precision === 'calle') {
+    return { requiereMapa: true, lat: ubic.lat, lon: ubic.lon, sugerida: r.nombre,
+             motivo: 'Encontramos la calle pero no la altura. Agregá el número o el barrio, o marcá tu casa en el mapa.' };
+  }
+  if (r.cercaDelLimite || r.aproximada) {
+    return { requiereMapa: true, lat: ubic.lat, lon: ubic.lon, sugerida: r.nombre, vecina: r.vecina,
+             motivo: 'Tu domicilio está justo en el límite entre dos comisarías. Confirmá tu casa en el mapa.' };
+  }
+  return { comisaria: r.nombre, lat: ubic.lat, lon: ubic.lon, origen: 'poligono_' + ubic.precision, detalle: r, descripcion: ubic.descripcion };
+}
+
+let mapaLeafletActivo = null;
+let marcadorLeafletActivo = null;
+let capaJurisdiccion = null;
+
+function _pintarJurisdiccion(nombre) {
+  if (!mapaLeafletActivo) return;
+  if (capaJurisdiccion) { mapaLeafletActivo.removeLayer(capaJurisdiccion); capaJurisdiccion = null; }
+  if (!nombre) return;
+  const polys = poligonosDeJurisdiccion(nombre);
+  if (!polys.length) return;
+  capaJurisdiccion = L.polygon(polys, { color: '#16a34a', weight: 2, fillColor: '#22c55e', fillOpacity: 0.12 })
+    .addTo(mapaLeafletActivo);
+}
+
+function _fijarResultado(form, aviso, nombre, extraTexto) {
+  const texto = aviso.querySelector('.texto');
+  const nombreEl = aviso.querySelector('.nombre');
+  aviso.classList.remove('cargando', 'error');
+  aviso.classList.add('activo');
+  form.dataset.comisariaAsignada = nombre;
+  form.dataset.ubicacionComisaria = nombre;
+  texto.textContent = '📍 Comisaría que te corresponde:';
+  nombreEl.textContent = nombreLegibleJurisdiccion(nombre);
+  nombreEl.title = nombre;
+  nombreEl.style.display = '';
+  let sub = aviso.querySelector('.sub-aviso');
+  if (!sub) { sub = document.createElement('div'); sub.className = 'sub-aviso'; sub.style.cssText = 'font-size:0.78rem;margin-top:6px;opacity:0.85;'; nombreEl.after(sub); }
+  sub.textContent = extraTexto || '';
+}
+
+function _sinResultado(form, aviso, mensaje) {
+  const texto = aviso.querySelector('.texto');
+  const nombreEl = aviso.querySelector('.nombre');
+  aviso.classList.remove('error');
+  aviso.classList.add('activo', 'cargando');
+  form.dataset.comisariaAsignada = '';
+  texto.textContent = '👇 ' + mensaje;
+  nombreEl.textContent = '';
+  const sub = aviso.querySelector('.sub-aviso'); if (sub) sub.textContent = '';
+}
+
+function crearMapaConfirmacion(aviso, form, { lat, lng, nombre, pedirPunto, zoom }) {
+  const bloqueMapa = document.createElement('div');
+  bloqueMapa.className = 'mapa-confirmacion';
+  bloqueMapa.innerHTML = `
+    <div class="titulo">${pedirPunto ? '🗺️ Marcá tu casa en el mapa' : '🗺️ Verificá que el marcador esté en tu casa'}</div>
+    <div id="mapa-leaflet"></div>
+    <button type="button" class="btn-gps" style="margin-top:10px;width:100%;padding:10px;border-radius:6px;border:1px solid var(--dorado-claro,#d4af37);background:transparent;color:inherit;font-weight:600;cursor:pointer;">📡 Estoy en mi casa: usar mi ubicación actual</button>
+    <div class="ayuda">👆 Tocá el mapa o arrastrá el marcador hasta tu casa. La zona verde es la jurisdicción de la comisaría asignada; si el marcador sale de ella, la comisaría cambia sola.</div>
+    <div class="coords" data-coords></div>
+  `;
+  aviso.appendChild(bloqueMapa);
+
+  setTimeout(() => {
+    const divMapa = bloqueMapa.querySelector('#mapa-leaflet');
+    const coordsEl = bloqueMapa.querySelector('[data-coords]');
+    const ayudaEl = bloqueMapa.querySelector('.ayuda');
+    mapaLeafletActivo = L.map(divMapa, { center: [lat, lng], zoom: zoom || 16 });
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(mapaLeafletActivo);
+    marcadorLeafletActivo = L.marker([lat, lng], { draggable: true, title: 'Arrastrame a tu casa' }).addTo(mapaLeafletActivo);
+    coordsEl.textContent = `📍 ${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+    if (nombre) _pintarJurisdiccion(nombre);
+
+    async function moverA(nLat, nLng, fuente) {
+      marcadorLeafletActivo.setLatLng([nLat, nLng]);
+      coordsEl.textContent = `📍 ${nLat.toFixed(5)}, ${nLng.toFixed(5)}`;
+      form.dataset.ubicacionLat = nLat;
+      form.dataset.ubicacionLon = nLng;
+      form.dataset.usarUbicacionGuardada = 'true';
+      form.dataset.ubicacionFuente = 'mapa';
+      if (!poligonosCargados) await cargarTodosLosPoligonos();
+      const r = jurisdiccionDePunto(nLat, nLng);
+      if (r) {
+        _fijarResultado(form, aviso, r.nombre,
+          r.aproximada ? `Tu casa quedó a ${r.fueraPorMetros} m del borde del mapa oficial; el personal lo verificará.`
+            : (r.cercaDelLimite ? 'Tu casa está muy cerca del límite con otra comisaría. Asegurate de que el marcador esté exactamente sobre tu casa.'
+              : (fuente === 'gps' ? 'Ubicación tomada del GPS de tu celular.' : 'Ubicación marcada por vos en el mapa.')));
+        _pintarJurisdiccion(r.nombre);
+        ayudaEl.style.color = '#86efac';
+      } else {
+        _sinResultado(form, aviso, 'Ese punto está fuera de las jurisdicciones de Salta. Mové el marcador a tu casa.');
+        _pintarJurisdiccion(null);
+        ayudaEl.style.color = '#fca5a5';
+      }
+    }
+    marcadorLeafletActivo.on('dragend', e => { const p = e.target.getLatLng(); moverA(p.lat, p.lng, 'mapa'); });
+    mapaLeafletActivo.on('click', e => moverA(e.latlng.lat, e.latlng.lng, 'mapa'));
+    bloqueMapa.querySelector('.btn-gps').addEventListener('click', ev => {
+      const btn = ev.currentTarget;
+      if (!navigator.geolocation) { alert('Tu dispositivo no permite obtener la ubicación.'); return; }
+      btn.textContent = '⏳ Obteniendo ubicación...';
+      navigator.geolocation.getCurrentPosition(pos => {
+        btn.textContent = '📡 Estoy en mi casa: usar mi ubicación actual';
+        if (pos.coords.accuracy > 150) {
+          alert(`La precisión del GPS es baja (±${Math.round(pos.coords.accuracy)} m). Revisá que el marcador quede sobre tu casa.`);
+        }
+        mapaLeafletActivo.setView([pos.coords.latitude, pos.coords.longitude], 17);
+        moverA(pos.coords.latitude, pos.coords.longitude, 'gps');
+      }, () => {
+        btn.textContent = '📡 Estoy en mi casa: usar mi ubicación actual';
+        alert('No se pudo obtener tu ubicación. Activá el GPS y dale permiso al navegador, o marcá tu casa a mano en el mapa.');
+      }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
+    });
+    setTimeout(() => mapaLeafletActivo && mapaLeafletActivo.invalidateSize(), 200);
+  }, 50);
+}
+
+function _limpiarAviso(aviso) {
+  aviso.classList.remove('activo', 'cargando', 'error');
+  aviso.querySelectorAll('.mapa-confirmacion').forEach(el => el.remove());
+  if (mapaLeafletActivo) { mapaLeafletActivo.remove(); mapaLeafletActivo = null; marcadorLeafletActivo = null; capaJurisdiccion = null; }
+  const sub = aviso.querySelector('.sub-aviso'); if (sub) sub.textContent = '';
+}
+
+const CENTRO_SALTA = { lat: -24.7883, lng: -65.4106 };
+
+async function mostrarAvisoComisaria(form, estado, dato) {
+  const aviso = form.querySelector('[data-comisaria-aviso]');
+  if (!aviso) return;
+  _limpiarAviso(aviso);
+  const texto = aviso.querySelector('.texto');
+  const nombreEl = aviso.querySelector('.nombre');
+
+  if (estado === 'cargando') {
+    aviso.classList.add('activo', 'cargando');
+    texto.textContent = '⏳ Buscando tu domicilio y la comisaría que corresponde...';
+    nombreEl.textContent = '';
+  } else if (estado === 'ok') {
+    const extra = dato.origen === 'barrio_confirmado' ? 'Asignada por tu barrio.'
+      : dato.origen === 'punto_exacto' ? 'Según la ubicación exacta marcada.'
+      : dato.origen === 'poligono_barrio' ? `Ubicamos tu barrio (${dato.descripcion || ''}). Verificá en el mapa que el marcador esté en tu casa.`
+      : dato.origen === 'poligono_manzana' ? `Ubicamos tu manzana (${dato.descripcion || ''}).`
+      : dato.origen === 'poligono_numero' ? `Ubicamos la dirección exacta (${dato.descripcion || ''}).`
+      : 'Según la dirección ingresada. Verificá en el mapa que el marcador esté en tu casa.';
+    _fijarResultado(form, aviso, dato.comisaria, extra);
+    if (dato.lat != null && dato.lon != null) {
+      form.dataset.ubicacionLat = dato.lat;
+      form.dataset.ubicacionLon = dato.lon;
+    }
+    crearMapaConfirmacion(aviso, form, {
+      lat: dato.lat ?? CENTRO_SALTA.lat, lng: dato.lon ?? CENTRO_SALTA.lng,
+      nombre: dato.comisaria, pedirPunto: dato.lat == null, zoom: dato.lat == null ? 14 : 16
+    });
+  } else if (estado === 'mapa') {
+    _sinResultado(form, aviso, dato.motivo || 'Marcá tu casa en el mapa para asignar la comisaría exacta.');
+    if (dato.sugerida) {
+      const sub = document.createElement('div'); sub.className = 'sub-aviso';
+      sub.style.cssText = 'font-size:0.78rem;margin-top:6px;opacity:0.85;';
+      sub.textContent = `Posibles: ${nombreLegibleJurisdiccion(dato.sugerida)}${dato.vecina ? ' o ' + nombreLegibleJurisdiccion(dato.vecina) : ''}.`;
+      nombreEl.after(sub);
+    }
+    crearMapaConfirmacion(aviso, form, {
+      lat: dato.lat ?? CENTRO_SALTA.lat, lng: dato.lon ?? CENTRO_SALTA.lng,
+      nombre: dato.sugerida || null, pedirPunto: true, zoom: dato.lat == null ? 13 : (dato.sugerida ? 17 : 14)
+    });
+  } else if (estado === 'elegir') {
+    _sinResultado(form, aviso, 'Hay más de un barrio con ese nombre. Tocá el tuyo:');
+    const caja = document.createElement('div');
+    caja.className = 'mapa-confirmacion elegir-barrio';
+    dato.opciones.forEach(op => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.style.cssText = 'display:block;width:100%;text-align:left;margin:6px 0;padding:10px 12px;border-radius:6px;border:1px solid rgba(255,255,255,0.25);background:rgba(255,255,255,0.06);color:inherit;cursor:pointer;line-height:1.4;';
+      b.innerHTML = `<strong>${op.nombre}</strong>${op.zona ? ' — ' + op.zona : ''}<br><small>Comisaría: ${nombreLegibleJurisdiccion(op.jurisdiccion)}</small>`;
+      b.addEventListener('click', () => {
+        form.dataset.ubicacionLat = op.lat;
+        form.dataset.ubicacionLon = op.lon;
+        form.dataset.usarUbicacionGuardada = 'true';
+        form.dataset.ubicacionFuente = 'mapa';
+        mostrarAvisoComisaria(form, 'ok', { comisaria: op.jurisdiccion, lat: op.lat, lon: op.lon, origen: 'poligono_barrio', descripcion: `${op.nombre}${op.zona ? ', ' + op.zona : ''}` });
+      });
+      caja.appendChild(b);
+    });
+    aviso.appendChild(caja);
+  } else if (estado === 'error') {
+    aviso.classList.add('activo', 'error');
+    texto.textContent = '⚠️ No se pudo calcular la comisaría (revisá tu conexión).';
+    nombreEl.textContent = 'Si no se resuelve, el personal la asignará';
+    form.dataset.comisariaAsignada = '';
+  } else {
+    form.dataset.comisariaAsignada = '';
+  }
+}
+
+Object.entries(forms).forEach(([tramite, form]) => {
+  const campoDomicilio = CAMPO_DOMICILIO[tramite];
+  const inputDomicilio = form.querySelector(`[name="${campoDomicilio}"]`);
+  const selectLocalidad = form.querySelector('[name="localidad"]');
+  const selectZona = form.querySelector('[name="zona"]');
+  if (!inputDomicilio || !selectLocalidad) return;
+
+  let timeoutId = null;
+  let ultimaConsulta = '';
+  let ultimoDomicilio = '';
+
+  async function calcularComisaria() {
+    const domicilio = inputDomicilio.value.trim();
+    const localidad = selectLocalidad.value;
+    const zona = selectZona ? selectZona.value : null;
+    if (!domicilio || !localidad || domicilio.length < 5) {
+      mostrarAvisoComisaria(form, 'oculto');
+      return;
+    }
+    // Si la persona cambió el domicilio, el punto marcado antes ya no vale.
+    const domNorm = normalizarTextoDomicilio(domicilio + '|' + localidad);
+    if (ultimoDomicilio && ultimoDomicilio !== domNorm && form.dataset.ubicacionFuente === 'mapa') {
+      form.dataset.usarUbicacionGuardada = 'false';
+      form.dataset.ubicacionFuente = '';
+    }
+    if (form.dataset.ubicacionFuente === 'guardada' && form.dataset.ubicacionDomicilio
+        && normalizarTextoDomicilio(form.dataset.ubicacionDomicilio) !== normalizarTextoDomicilio(domicilio)) {
+      form.dataset.usarUbicacionGuardada = 'false';
+      form.dataset.ubicacionFuente = '';
+    }
+    ultimoDomicilio = domNorm;
+    const usarGuardada = form.dataset.usarUbicacionGuardada === 'true';
+    const latG = usarGuardada ? parseFloat(form.dataset.ubicacionLat) : null;
+    const lonG = usarGuardada ? parseFloat(form.dataset.ubicacionLon) : null;
+    const consulta = `${domicilio}|${localidad}|${zona}|${latG ?? ''}|${lonG ?? ''}`;
+    if (consulta === ultimaConsulta) return;
+    ultimaConsulta = consulta;
+    mostrarAvisoComisaria(form, 'cargando');
+    try {
+      const r = await asignarComisariaPorJurisdiccion(domicilio, localidad, zona, { latGuardada: latG, lonGuardada: lonG });
+      if (consulta !== ultimaConsulta) return; // llegó una consulta más nueva
+      if (r.comisaria) mostrarAvisoComisaria(form, 'ok', { ...r, domicilio, localidad });
+      else if (r.elegir) mostrarAvisoComisaria(form, 'elegir', { opciones: r.elegir });
+      else if (r.requiereMapa || r.error) mostrarAvisoComisaria(form, 'mapa', { motivo: r.motivo || r.error, lat: r.lat, lon: r.lon, sugerida: r.sugerida, vecina: r.vecina });
+      else mostrarAvisoComisaria(form, 'error');
+    } catch (err) { console.error(err); mostrarAvisoComisaria(form, 'error'); }
+  }
+
+  function debounceCalcular() {
+    if (timeoutId) clearTimeout(timeoutId);
+    timeoutId = setTimeout(calcularComisaria, 1200);
+  }
+  inputDomicilio.addEventListener('input', debounceCalcular);
+  selectLocalidad.addEventListener('change', calcularComisaria);
+  if (selectZona) selectZona.addEventListener('change', calcularComisaria);
+});
+
+async function subirFotoAStorage(dataUrl, tramite, nombreArchivo) {
+  if (!dataUrl || !dataUrl.startsWith('data:image')) return null;
+  const respuesta = await fetch(dataUrl);
+  const blob = await respuesta.blob();
+  const timestamp = Date.now();
+  const random = Math.random().toString(36).substring(2, 8);
+  const ruta = `${tramite}/${timestamp}-${random}-${nombreArchivo}.jpg`;
+  const { error: errorSubida } = await supabaseClient
+    .storage.from(BUCKET_FOTOS).upload(ruta, blob, { contentType: 'image/jpeg', upsert: false });
+  if (errorSubida) {
+    console.error('❌ Error subiendo foto:', nombreArchivo, errorSubida);
+    throw new Error(`No se pudo subir la foto ${nombreArchivo}: ${errorSubida.message}`);
+  }
+  return ruta;
+}
+
+/* ===== Todo el texto en MAYÚSCULAS ===== */
+function _campoDeTexto(el) {
+  return el && ((el.tagName === 'INPUT' && el.type === 'text') || el.tagName === 'TEXTAREA');
+}
+function pasarAMayusculas(el) {
+  if (!_campoDeTexto(el) || !el.value) return;
+  const m = el.value.toLocaleUpperCase('es-AR');
+  if (m === el.value) return;
+  let a = null, b = null;
+  try { a = el.selectionStart; b = el.selectionEnd; } catch (e) {}
+  el.value = m;
+  try { if (a !== null) el.setSelectionRange(a, b); } catch (e) {}
+}
+document.addEventListener('input', e => pasarAMayusculas(e.target), true);
+document.addEventListener('change', e => pasarAMayusculas(e.target), true);
+function mayusculasEnFormulario(form) {
+  form.querySelectorAll('input[type="text"], textarea').forEach(pasarAMayusculas);
+}
+
+Object.entries(forms).forEach(([tramite, form]) => {
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const tramitesConTestigos = ['residencia', 'convivencia', 'carencia', 'supervivencia'];
+    if (tramitesConTestigos.includes(tramite)) {
+      for (const n of [1, 2]) {
+        const foto = form.querySelector(`input[name="foto_testigo${n}"]`);
+        if (!foto || !foto.value) {
+          alert(`Falta la foto del DNI del testigo ${n}. Tocá "Activar cámara" y sacala.`);
+          return;
+        }
+      }
+    }
+
+    const btnEnviar = form.querySelector('button[type=submit]');
+    const textoOriginal = btnEnviar.textContent;
+    btnEnviar.disabled = true;
+    btnEnviar.textContent = 'Enviando...';
+    mayusculasEnFormulario(form);
+    const datos = new FormData(form);
+    const registro = {};
+    const contenido = document.getElementById('doc-contenido');
+    contenido.innerHTML = '';
+
+    try {
+      const fotos = {};
+      for (const [campo, valor] of datos.entries()) {
+        if (!valor) continue;
+        if (campo.startsWith('foto_') && valor.startsWith('data:image')) {
+          fotos[campo] = valor;
+          registro[campo] = valor;
+        } else {
+          registro[campo] = valor;
+        }
+      }
+
+      btnEnviar.textContent = 'Subiendo fotos...';
+      const entradasFotos = Object.entries(fotos);
+      for (let i = 0; i < entradasFotos.length; i++) {
+        const [campo, base64] = entradasFotos[i];
+        btnEnviar.textContent = `Subiendo foto ${i + 1}/${entradasFotos.length}...`;
+        const ruta = await subirFotoAStorage(base64, tramite, campo);
+        registro[campo] = ruta;
+      }
+
+      btnEnviar.textContent = 'Ubicando domicilio...';
+      const campoDomicilio = CAMPO_DOMICILIO[tramite];
+      const zona = registro.zona || null;
+      const usarGuardada = form.dataset.usarUbicacionGuardada === 'true';
+      const latG = usarGuardada ? parseFloat(form.dataset.ubicacionLat) : null;
+      const lonG = usarGuardada ? parseFloat(form.dataset.ubicacionLon) : null;
+      const asignacion = await asignarComisariaPorJurisdiccion(
+        registro[campoDomicilio], registro.localidad, zona,
+        { latGuardada: latG, lonGuardada: lonG }
+      );
+
+      let comisariaAsignada = form.dataset.comisariaAsignada || (asignacion && asignacion.comisaria) || '';
+      if (!comisariaAsignada) {
+        alert('Falta ubicar tu domicilio: marcá tu casa en el mapa (o usá el botón de ubicación actual) para asignar la comisaría que te corresponde.');
+        const av = form.querySelector('[data-comisaria-aviso]'); if (av) av.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        btnEnviar.disabled = false;
+        btnEnviar.textContent = textoOriginal;
+        return;
+      }
+
+      btnEnviar.textContent = 'Generando código...';
+      const codigoTramite = await generarCodigoUnico();
+
+      registro._origenAsignacion = asignacion?.origen || 'manual';
+      if (asignacion?.zonaElegida) registro._zonaElegida = asignacion.zonaElegida;
+      if (form.querySelector('[name="zona"]')?.dataset.editadaManualmente === 'true') {
+        registro._zonaEditadaManualmente = true;
+      }
+
+      const latFinal = asignacion?.lat ?? latG ?? null;
+      const lonFinal = asignacion?.lon ?? lonG ?? null;
+      if (latFinal != null && lonFinal != null) {
+        registro._ubicacion_lat = latFinal;
+        registro._ubicacion_lon = lonFinal;
+      }
+
+      btnEnviar.textContent = 'Guardando trámite...';
+      const { error } = await supabaseClient.from('solicitudes').insert([{
+        tramite: tramite,
+        tramite_titulo: titulos[tramite],
+        comisaria_asignada: comisariaAsignada,
+        estado: 'pendiente',
+        datos: registro,
+        codigo: codigoTramite,
+      }]);
+      if (error) throw error;
+
+      const dniSol = form.dataset.dniSolicitante;
+      if (dniSol && latFinal != null && lonFinal != null) {
+        const nombreSol = registro.nombre || registro.nombreSolicitante || registro.nombreProgenitor || '';
+        guardarUbicacionCiudadano({
+          dni: dniSol, nombre: nombreSol, lat: latFinal, lon: lonFinal,
+          comisaria: comisariaAsignada, zona: registro.zona || '',
+          domicilio: registro[campoDomicilio] || '', localidad: registro.localidad || '',
+        }).catch(err => console.warn('No se pudo guardar ubicación:', err));
+      }
+
+      document.querySelector('#documento > h2').textContent = 'Trámite enviado correctamente';
+      document.querySelectorAll('#documento > .subt').forEach(el => el.style.display = 'block');
+
+      contenido.innerHTML = `
+        <div style="background:rgba(21,128,61,0.2);border:1px solid rgba(134,239,172,0.5);
+                    border-left:4px solid #86efac;padding:20px 24px;border-radius:10px;
+                    margin:18px 0;text-align:center;">
+          <div style="font-size:2.5rem;margin-bottom:8px;">✅</div>
+          <h3 style="margin:0 0 8px;color:#86efac;font-size:1.15rem;font-weight:700;">
+            ¡Tu trámite fue enviado!
+          </h3>
+          <p style="margin:0;color:#fff;font-size:0.95rem;line-height:1.6;">
+            Tu solicitud fue derivada a <strong>${comisariaAsignada}</strong>.<br>
+            <strong>Esperá la validación del personal policial.</strong>
+          </p>
+        </div>
+        <div style="background:rgba(201,169,97,0.15);border:2px dashed rgba(201,169,97,0.7);
+                    border-radius:12px;padding:22px;margin:20px 0;text-align:center;">
+          <div style="font-size:0.82rem;color:var(--dorado-claro);
+                      text-transform:uppercase;letter-spacing:0.1em;font-weight:700;
+                      margin-bottom:10px;">
+            🔐 Tu código único de trámite
+          </div>
+          <div style="font-family:'Courier New',monospace;font-size:2.4rem;font-weight:700;
+                      color:var(--dorado-brilloso);letter-spacing:0.2em;
+                      background:rgba(0,0,0,0.3);padding:18px 22px;border-radius:8px;
+                      user-select:all;word-break:break-all;">
+            ${codigoTramite}
+          </div>
+          <p style="margin:14px 0 0;font-size:0.85rem;color:rgba(255,255,255,0.85);line-height:1.5;">
+            📌 <strong>Guardá este código.</strong> Lo vas a necesitar para retirar
+            tu certificado y para consultar el estado.
+          </p>
+        </div>
+        <div style="background:rgba(44,90,160,0.35);border:2px solid rgba(147,197,253,0.6);
+                    border-radius:12px;padding:20px;margin:20px 0;text-align:center;">
+          <p style="margin:0 0 14px;font-size:0.95rem;color:#fff;line-height:1.5;">
+            🔍 <strong>Consultá el estado de tu trámite cuando quieras</strong><br>
+            <span style="font-size:0.85rem;opacity:0.9;">Con tu código de 8 dígitos podés ver si ya está aprobado,
+            la comisaría asignada y la fecha límite de retiro.</span>
+          </p>
+          <a href="consultar-tramite.html" style="background:linear-gradient(135deg, var(--dorado), var(--dorado-brilloso));
+                                                  color:var(--azul-oscuro);padding:12px 24px;border-radius:8px;
+                                                  font-weight:700;text-decoration:none;display:inline-flex;
+                                                  align-items:center;gap:8px;box-shadow:0 4px 12px rgba(201,169,97,0.3);">
+            🔍 Consultar mi trámite
+          </a>
+        </div>
+        <div style="background:rgba(185,28,28,0.2);border:1px solid rgba(252,165,165,0.5);
+                    border-left:4px solid #fca5a5;border-radius:10px;padding:16px 20px;margin:18px 0;">
+          <p style="margin:0;font-size:0.9rem;color:#fff;line-height:1.6;">
+            ⏰ <strong>Tenés 5 días hábiles para retirarlo</strong> una vez que el
+            personal lo valide. Si no te presentás, el certificado se elimina
+            automáticamente.
+          </p>
+        </div>
+        <div style="background:rgba(44,90,160,0.25);border:1px solid rgba(201,169,97,0.4);
+                    border-radius:10px;padding:16px 20px;margin:18px 0;">
+          <p style="margin:0;font-size:0.9rem;color:#fff;line-height:1.6;">
+            📧 <strong>Estate atento a tu Gmail.</strong> Cuando el personal policial
+            valide tu trámite, te vamos a enviar un correo con tu código y la fecha
+            límite para retirarlo.
+          </p>
+        </div>
+      `;
+
+      document.getElementById('doc-titulo').textContent = titulos[tramite];
+      form.classList.remove('activo');
+      documento.classList.add('activo');
+      if (avisoConsultaMobile) avisoConsultaMobile.classList.remove('activo');
+
+      form.reset();
+      form.querySelectorAll('.captura-foto').forEach(c => resetCaptura(c));
+      form.querySelectorAll('[data-ubicacion-guardada]').forEach(b => b.classList.remove('activo'));
+      delete form.dataset.dniSolicitante;
+      delete form.dataset.ubicacionLat;
+      delete form.dataset.ubicacionLon;
+      delete form.dataset.usarUbicacionGuardada;
+      limpiarTodasLasFotosDeStorage();
+      avisoBorrador.classList.remove('activo');
+
+    } catch (err) {
+      console.error(err);
+      alert('No se pudo enviar el trámite: ' + err.message);
+    } finally {
+      btnEnviar.disabled = false;
+      btnEnviar.textContent = textoOriginal;
+    }
+  });
+});
+
+document.querySelectorAll('.volver').forEach(btn => {
+  btn.addEventListener('click', () => {
+    if (mapaLeafletActivo) {
+      mapaLeafletActivo.remove();
+      mapaLeafletActivo = null;
+      marcadorLeafletActivo = null;
+    }
+  });
+});
+
+/* ============================================================
+   BLOQUEO DE CAMPOS HASTA ESCANEAR EL DNI
+   ============================================================ */
+(function(){
+  const CAMPOS_HABILITADOS_POR_ESCANEO = {
+    residencia:    ['nombre', 'dni', 'fechaNacimiento'],
+    convivencia:   ['nombreSolicitante', 'dniSolicitante'],
+    carencia:      ['nombre', 'dni'],
+    autorizacion:  ['nombreProgenitor', 'dniProgenitor', 'nombreMenor', 'dniMenor', 'fechaNacimientoMenor'],
+    antecedentes:  ['nombre', 'dni', 'fechaNacimiento'],
+    domicilio:     ['nombre', 'dni'],
+    extravio:      ['nombre', 'dni', 'fechaNacimiento'],
+    supervivencia: ['nombre', 'dni', 'fechaNacimiento'],
+    estadia:       ['nombre', 'dni', 'fechaNacimiento'],
+  };
+
+  const PLACEHOLDER_BLOQUEADO = '🔒 Escaneá tu DNI para completar';
+
+  function bloquearHastaEscanear(input) {
+    if (!input) return;
+    if (input.dataset.escaneoObligatorio === 'false') return;
+    input.readOnly = true;
+    input.tabIndex = -1;
+    input.classList.add('campo-esperando-escaneo');
+    if (!input.value) input.placeholder = PLACEHOLDER_BLOQUEADO;
+    input.title = '🔒 Este campo se completa automáticamente al escanear tu DNI.';
+  }
+
+  function desbloquearPorEscaneo(input) {
+    if (!input) return;
+    input.readOnly = false;
+    input.tabIndex = 0;
+    input.classList.remove('campo-esperando-escaneo');
+    input.title = '';
+  }
+
+  function desbloquearCompletarManual(form) {
+    const tramite = form.id.replace('form-', '');
+    const campos = CAMPOS_HABILITADOS_POR_ESCANEO[tramite] || [];
+    campos.forEach(nombre => {
+      const input = form.querySelector(`[name="${nombre}"]`);
+      if (!input) return;
+      input.dataset.escaneoObligatorio = 'false';
+      input.readOnly = false;
+      input.tabIndex = 0;
+      input.classList.remove('campo-esperando-escaneo');
+      if (input.placeholder === PLACEHOLDER_BLOQUEADO) input.placeholder = '';
+      input.title = '';
+    });
+    form.querySelectorAll('.aviso-escaneo-obligatorio').forEach(a => a.remove());
+    form.querySelectorAll('.link-completar-manual').forEach(l => l.classList.add('oculto'));
+  }
+
+  function inicializarBloqueo() {
+    Object.entries(CAMPOS_HABILITADOS_POR_ESCANEO).forEach(([tramite, campos]) => {
+      const form = document.getElementById('form-' + tramite);
+      if (!form) return;
+
+      campos.forEach(nombre => {
+        const input = form.querySelector(`[name="${nombre}"]`);
+        bloquearHastaEscanear(input);
+      });
+
+      const primerInput = form.querySelector(`[name="${campos[0]}"]`);
+      if (!primerInput) return;
+
+      if (primerInput.nextElementSibling &&
+          primerInput.nextElementSibling.classList.contains('aviso-escaneo-obligatorio')) return;
+
+      const aviso = document.createElement('div');
+      aviso.className = 'aviso-escaneo-obligatorio';
+      aviso.innerHTML = `
+        <span class="icono">📸</span>
+        <span>Escaneá tu DNI arriba para completar estos datos automáticamente.</span>
+      `;
+      primerInput.parentNode.insertBefore(aviso, primerInput.nextSibling);
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', inicializarBloqueo);
+  } else {
+    inicializarBloqueo();
+  }
+
+  window.__desbloquearCamposPorEscaneo = function(form) {
+    const tramite = form.id.replace('form-', '');
+    const campos = CAMPOS_HABILITADOS_POR_ESCANEO[tramite] || [];
+    campos.forEach(nombre => {
+      const input = form.querySelector(`[name="${nombre}"]`);
+      desbloquearPorEscaneo(input);
+    });
+    form.querySelectorAll('.aviso-escaneo-obligatorio').forEach(a => a.remove());
+    form.querySelectorAll('.link-completar-manual').forEach(l => l.classList.add('oculto'));
+  };
+})();
+</script>
+
 </body>
 </html>
