@@ -101,6 +101,15 @@
   .tarjeta-resultado .subt{font-size:0.82rem;color:rgba(255,255,255,0.7);
     margin-bottom:20px;padding-bottom:14px;border-bottom:1px solid rgba(255,255,255,0.15);}
 
+  .modo-busqueda{display:flex;gap:8px;margin:14px 0 6px;flex-wrap:wrap;}
+  .modo-busqueda .modo{flex:1;min-width:140px;width:auto;margin:0;padding:10px 12px;border-radius:8px;
+    font-size:0.88rem;font-weight:600;cursor:pointer;background:rgba(255,255,255,0.08);
+    color:#fff;border:1px solid rgba(255,255,255,0.25);}
+  .modo-busqueda .modo.activo{background:rgba(201,169,97,0.25);border-color:var(--dorado);color:var(--dorado-brilloso);}
+  .lista-tramites{display:flex;flex-direction:column;gap:10px;margin-top:16px;}
+  .lista-tramites button{width:100%;text-align:left;padding:12px 14px;border-radius:8px;cursor:pointer;
+    background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.25);font-size:0.92rem;}
+  .lista-tramites button small{display:block;color:rgba(255,255,255,0.75);margin-top:3px;}
   .estado-grande{display:flex;align-items:center;gap:14px;padding:18px 20px;
     border-radius:10px;margin-bottom:22px;}
   .estado-grande.pendiente{background:rgba(202,138,4,0.15);
@@ -230,12 +239,27 @@
   <div class="caja-busqueda">
     <h2>🔍 Consultá el estado de tu trámite</h2>
     <p class="ayuda">
-      Ingresá el <strong>código único de 8 dígitos</strong> que te dio el sistema cuando enviaste tu solicitud.
+      Ingresá el <strong>código único de 8 dígitos</strong> que te dio el sistema cuando enviaste tu solicitud, o, si no te acordás, buscá con tu <strong>DNI</strong>.
       Es el número que empieza con un dígito y sigue con otros 7 (ej: <strong>12345678</strong>).
     </p>
-    <label for="input-codigo">Código de trámite</label>
-    <input type="text" id="input-codigo" maxlength="8" inputmode="numeric"
-           pattern="[0-9]{8}" placeholder="00000000" autocomplete="off">
+    <div class="modo-busqueda" role="tablist">
+      <button type="button" id="modo-codigo" class="modo activo" role="tab">🔐 Tengo mi código</button>
+      <button type="button" id="modo-dni" class="modo" role="tab">🪪 No me acuerdo, uso mi DNI</button>
+    </div>
+
+    <div id="bloque-codigo">
+      <label for="input-codigo">Código de trámite</label>
+      <input type="text" id="input-codigo" maxlength="8" inputmode="numeric"
+             pattern="[0-9]{8}" placeholder="00000000" autocomplete="off">
+    </div>
+
+    <div id="bloque-dni" hidden>
+      <label for="input-dni">DNI del solicitante</label>
+      <input type="text" id="input-dni" maxlength="8" inputmode="numeric"
+             placeholder="Sin puntos ni espacios" autocomplete="off">
+      <p class="ayuda" style="margin-top:8px;">Es el DNI de la persona que figura como solicitante en el trámite.</p>
+    </div>
+
     <button id="btn-consultar" type="button">🔎 Consultar estado</button>
     <div id="error-busqueda"></div>
   </div>
@@ -346,50 +370,66 @@ const btnConsultar = document.getElementById('btn-consultar');
 const errorBusqueda = document.getElementById('error-busqueda');
 const resultado = document.getElementById('resultado');
 
-// Solo dígitos en el input
+const inputDni = document.getElementById('input-dni');
+const bloqueCodigo = document.getElementById('bloque-codigo');
+const bloqueDni = document.getElementById('bloque-dni');
+const btnModoCodigo = document.getElementById('modo-codigo');
+const btnModoDni = document.getElementById('modo-dni');
+let modoBusqueda = 'codigo';
+
+function cambiarModo(modo) {
+  modoBusqueda = modo;
+  bloqueCodigo.hidden = modo !== 'codigo';
+  bloqueDni.hidden = modo !== 'dni';
+  btnModoCodigo.classList.toggle('activo', modo === 'codigo');
+  btnModoDni.classList.toggle('activo', modo === 'dni');
+  errorBusqueda.classList.remove('activo');
+  errorBusqueda.innerHTML = '';
+  resultado.classList.remove('activo');
+  resultado.innerHTML = '';
+  (modo === 'codigo' ? inputCodigo : inputDni).focus();
+}
+btnModoCodigo.addEventListener('click', () => cambiarModo('codigo'));
+btnModoDni.addEventListener('click', () => cambiarModo('dni'));
+
+// Solo dígitos en los inputs
 inputCodigo.addEventListener('input', () => {
   inputCodigo.value = inputCodigo.value.replace(/\D/g, '').slice(0, 8);
 });
-
-inputCodigo.addEventListener('keypress', (e) => {
-  if (e.key === 'Enter') {
-    e.preventDefault();
-    consultar();
-  }
+inputDni.addEventListener('input', () => {
+  inputDni.value = inputDni.value.replace(/\D/g, '').slice(0, 8);
 });
+[inputCodigo, inputDni].forEach(inp => inp.addEventListener('keypress', (e) => {
+  if (e.key === 'Enter') { e.preventDefault(); consultar(); }
+}));
 
 btnConsultar.addEventListener('click', consultar);
 
 async function consultar() {
+  const porDni = modoBusqueda === 'dni';
   const codigo = inputCodigo.value.trim();
+  const dni = inputDni.value.trim();
 
-  // Limpiar
   errorBusqueda.classList.remove('activo');
   errorBusqueda.innerHTML = '';
   resultado.classList.remove('activo');
   resultado.innerHTML = '';
 
-  // Validar
-  if (!codigo) {
-    mostrarError('Ingresá el código de tu trámite', 'El código está vacío.');
-    return;
-  }
-  if (codigo.length !== 8) {
-    mostrarError('Código inválido', 'El código debe tener 8 dígitos. Fijate que no falte ninguno.');
-    return;
+  if (porDni) {
+    if (!dni) { mostrarError('Ingresá tu DNI', 'El DNI está vacío.'); return; }
+    if (dni.length < 7) { mostrarError('DNI inválido', 'El DNI debe tener 7 u 8 dígitos, sin puntos.'); return; }
+  } else {
+    if (!codigo) { mostrarError('Ingresá el código de tu trámite', 'El código está vacío.'); return; }
+    if (codigo.length !== 8) { mostrarError('Código inválido', 'El código debe tener 8 dígitos. Fijate que no falte ninguno.'); return; }
   }
 
-  // Cargar
   btnConsultar.disabled = true;
   btnConsultar.innerHTML = '<span class="spinner"></span>Buscando...';
 
   try {
-    const { data, error } = await supabaseClient
-      .from('solicitudes')
-      .select('*')
-      .eq('codigo', codigo)
-      .limit(1)
-      .maybeSingle();
+    const { data, error } = porDni
+      ? await supabaseClient.rpc('consultar_tramites_dni', { p_dni: dni })
+      : await supabaseClient.rpc('consultar_tramite_codigo', { p_codigo: codigo });
 
     if (error) {
       console.error(error);
@@ -397,15 +437,30 @@ async function consultar() {
       return;
     }
 
-    if (!data) {
+    const filas = (data || []).map(f => ({ ...f, created_at: f.created_at || f.fecha_recepcion }));
+
+    if (!filas.length) {
       mostrarError(
         'No encontramos tu trámite',
-        `No existe ninguna solicitud con el código <strong>${escapeHtml(codigo)}</strong>. Verificá que esté bien escrito.`
+        porDni
+          ? `No hay trámites a nombre del DNI <strong>${escapeHtml(dni)}</strong>. Verificá que esté bien escrito (es el DNI del solicitante).`
+          : `No existe ninguna solicitud con el código <strong>${escapeHtml(codigo)}</strong>. Verificá que esté bien escrito.`
       );
       return;
     }
 
-    renderizarResultado(data);
+    if (filas.length === 1) { renderizarResultado(filas[0]); return; }
+
+    // Varios trámites con ese DNI: que elija cuál ver
+    const iconos = { procesado: '✅', denegado: '❌' };
+    resultado.innerHTML = `<div class="tarjeta-resultado"><h3>📄 Encontramos ${filas.length} trámites</h3>
+      <p class="subt">Tocá el que quieras ver.</p><div class="lista-tramites">` +
+      filas.map((f, i) => `<button type="button" data-i="${i}">${iconos[f.estado] || '⏳'} ${escapeHtml(f.tramite_titulo || f.tramite || 'Trámite')}
+        <small>Código ${escapeHtml(f.codigo || '—')} · ${f.created_at ? new Date(f.created_at).toLocaleDateString('es-AR') : ''}</small></button>`).join('') +
+      '</div></div>';
+    resultado.classList.add('activo');
+    resultado.querySelectorAll('button[data-i]').forEach(b =>
+      b.addEventListener('click', () => { renderizarResultado(filas[Number(b.dataset.i)]); }));
 
   } catch (e) {
     console.error(e);
