@@ -2071,7 +2071,7 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
     }
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } }
+        video: { facingMode: 'environment', width: { ideal: 2560 }, height: { ideal: 1440 } }
       });
       video.srcObject = stream;
       video.hidden = false;
@@ -2086,6 +2086,9 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
       trackActual = stream.getVideoTracks()[0];
       const capacidades = trackActual.getCapabilities ? trackActual.getCapabilities() : {};
       flashSoportado = !!capacidades.torch;
+      if (capacidades.focusMode && capacidades.focusMode.includes('continuous')) {
+        trackActual.applyConstraints({ advanced: [{ focusMode: 'continuous' }] }).catch(() => {});
+      }
       if (btnFlash && flashSoportado) btnFlash.classList.add('activo');
       iniciarEscaneo();
       // Centrar el visor en la pantalla para que se vea la cámara que se acaba de activar
@@ -2156,10 +2159,58 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
     } catch (err) { console.warn('Error escaneando frame:', err); }
   }
 
+  // Nitidez = varianza del Laplaciano sobre una copia chica en grises (más alto = más nítido)
+  function medirNitidez(cv) {
+    const w = 640, h = Math.max(1, Math.round(cv.height * w / cv.width));
+    const c = document.createElement('canvas'); c.width = w; c.height = h;
+    const cx = c.getContext('2d', { willReadFrequently: true });
+    cx.drawImage(cv, 0, 0, w, h);
+    const px = cx.getImageData(0, 0, w, h).data;
+    const g = new Float32Array(w * h);
+    for (let i = 0, j = 0; i < px.length; i += 4, j++) g[j] = px[i] * 0.299 + px[i + 1] * 0.587 + px[i + 2] * 0.114;
+    let suma = 0, suma2 = 0, n = 0;
+    for (let y = 1; y < h - 1; y++) {
+      for (let x = 1; x < w - 1; x++) {
+        const k = y * w + x;
+        const l = 4 * g[k] - g[k - 1] - g[k + 1] - g[k - w] - g[k + w];
+        suma += l; suma2 += l * l; n++;
+      }
+    }
+    const media = suma / n;
+    return suma2 / n - media * media;
+  }
+
+  // 2.ª toma: con los datos ya leídos, saca varias fotos en ~2,5 s y se queda con la más nítida
+  async function tomarFotoNitida(canvasInicial) {
+    const esperar = ms => new Promise(r => setTimeout(r, ms));
+    const MAX_MS = 3000;
+    const inicio = performance.now();
+    let mejor = { score: -1, canvas: canvasInicial };
+    try { mejor.score = medirNitidez(canvasInicial); } catch (e) {}
+    await esperar(500); // dejar que enfoque y se quede quieta
+    for (let i = 0; i < 8 && performance.now() - inicio < MAX_MS; i++) {
+      if (!video.srcObject || !video.videoWidth) break;
+      try {
+        const escala = Math.min(1, 2400 / video.videoWidth);
+        const fc = document.createElement('canvas');
+        fc.width = Math.round(video.videoWidth * escala);
+        fc.height = Math.round(video.videoHeight * escala);
+        fc.getContext('2d').drawImage(video, 0, 0, fc.width, fc.height);
+        const score = medirNitidez(fc);
+        if (score > mejor.score) mejor = { score, canvas: fc };
+      } catch (e) {}
+      await esperar(300);
+    }
+    return mejor.canvas.toDataURL('image/jpeg', 0.88);
+  }
+
   async function exitoEscaneo(datos, canvasFoto) {
     scannerActivo = false;
     if (captura._scanInterval) { clearInterval(captura._scanInterval); captura._scanInterval = null; }
-    const dataUrl = canvasFoto.toDataURL('image/jpeg', 0.7);
+    if (scanIndicador) scanIndicador.classList.remove('activo');
+    estado.textContent = '✓ Datos leídos. Mantené el DNI quieto un instante: sacando la foto nítida…';
+    estado.classList.remove('error');
+    const dataUrl = await tomarFotoNitida(canvasFoto);
     hiddenInput.value = dataUrl;
     guardarFotoEnStorage(captura.dataset.target, dataUrl);
     img.src = dataUrl;
