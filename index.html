@@ -7,6 +7,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js"></script>
 <style>
   :root{
     --azul-fondo:#0a1e3d; --azul-oscuro:#0d2a4d; --azul:#1a3a6b; --azul-claro:#2c5aa0;
@@ -167,7 +168,7 @@
   .aviso-foto .acciones{margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;}
   .aviso-foto .acciones button{padding:6px 12px;font-size:0.8rem;border-radius:6px;border:none;cursor:pointer;}
   .aviso-foto .btn-repetir-aviso{background:#8a6400;color:#fff;}
-  .aviso-foto .btn-usar-igual{background:rgba(255,255,255,0.2);color:#fff;}
+  .aviso-foto .btn-usar-igual{background:rgba(255,255,255,0.2);color:#fff;display:none;}
   .captura-botones{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;justify-content:center;}
   .captura-botones button{padding:7px 12px;font-size:0.82rem;}
   .captura-estado{font-size:0.78rem;color:rgba(255,255,255,0.7);margin-top:6px;text-align:center;}
@@ -2057,7 +2058,7 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
 
   const barcodeDisponible = !!window.BarcodeDetector;
   const jsQRDisponible = !!window.jsQR;
-  if (!barcodeDisponible && !jsQRDisponible) {
+  if (!barcodeDisponible && !jsQRDisponible && !window.ZXing) {
     escaneoEstado.textContent = 'Escaneo automático no disponible. Se sacará la foto igual.';
   } else if (!barcodeDisponible && jsQRDisponible) {
     escaneoEstado.textContent = 'Modo compatibilidad activo (jsQR).';
@@ -2112,6 +2113,26 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
     });
   }
 
+  // Lector de respaldo (ZXing): entiende PDF417 (DNI tarjeta) y QR en cualquier navegador/WebView
+  let zxingReader = null;
+  function leerConZXing(cv) {
+    if (!window.ZXing) return null;
+    try {
+      if (!zxingReader) {
+        const hints = new Map();
+        hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [ZXing.BarcodeFormat.PDF_417, ZXing.BarcodeFormat.QR_CODE]);
+        hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
+        zxingReader = new ZXing.MultiFormatReader();
+        zxingReader.setHints(hints);
+      }
+      const fuente = new ZXing.HTMLCanvasElementLuminanceSource(cv);
+      const bitmap = new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(fuente));
+      const resultado = zxingReader.decode(bitmap);
+      return resultado ? resultado.getText() : null;
+    } catch (e) { return null; }
+  }
+
+  let escaneandoAhora = false;
   function iniciarEscaneo() {
     if (scannerActivo) return;
     scannerActivo = true;
@@ -2120,13 +2141,14 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
       try { detector = new BarcodeDetector({ formats: ['pdf417', 'qr_code'] }); }
       catch (e) { detector = null; }
     }
-    captura._scanInterval = setInterval(escanearFrame, 1000);
-    setTimeout(escanearFrame, 500);
+    captura._scanInterval = setInterval(escanearFrame, 600);
+    setTimeout(escanearFrame, 400);
   }
 
   async function escanearFrame() {
-    if (!scannerActivo) return;
+    if (!scannerActivo || escaneandoAhora) return;
     if (!video.srcObject || video.readyState < 2 || !video.videoWidth) return;
+    escaneandoAhora = true;
     try {
       const anchoMax = 1600;
       const escala = Math.min(1, anchoMax / video.videoWidth);
@@ -2154,9 +2176,16 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
         const datos = parsearCodigoDNI(rawValue);
         if (datos && (datos.dni || datos.nombreCompleto)) { exitoEscaneo(datos, canvas); return; }
       }
+      // Respaldo: ZXing (PDF417 / QR) cuando el lector del navegador no lo vio
+      const textoZX = leerConZXing(canvas);
+      if (textoZX) {
+        const datos = parsearCodigoDNI(textoZX);
+        if (datos && (datos.dni || datos.nombreCompleto)) { exitoEscaneo(datos, canvas); return; }
+      }
       intentosSinDeteccion++;
-      if (intentosSinDeteccion === 20) mostrarTimeout();
+      if (intentosSinDeteccion === 30) mostrarTimeout();
     } catch (err) { console.warn('Error escaneando frame:', err); }
+    finally { escaneandoAhora = false; }
   }
 
   // Nitidez = varianza del Laplaciano sobre una copia chica en grises (más alto = más nítido)
@@ -2297,9 +2326,9 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
     scannerActivo = false;
     if (captura._scanInterval) { clearInterval(captura._scanInterval); captura._scanInterval = null; }
     if (scanIndicador) scanIndicador.classList.remove('activo');
-    if (motivoTexto) motivoTexto.textContent = 'No pudimos leer el código del DNI.';
+    if (motivoTexto) motivoTexto.textContent = 'No pudimos leer el código del DNI. Probá con más luz, sin reflejos, a unos 15–20 cm, apuntando al código del dorso.';
     if (avisoFoto) avisoFoto.classList.add('activo');
-    estado.textContent = 'No se detectó el código. Podés reintentar o sacar la foto igual.';
+    estado.textContent = 'No se detectó el código. Tocá Reintentar.';
     estado.classList.add('error');
   }
 
