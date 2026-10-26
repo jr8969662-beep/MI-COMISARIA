@@ -2070,6 +2070,8 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
       flashSoportado = !!capacidades.torch;
       if (btnFlash && flashSoportado) btnFlash.classList.add('activo');
       iniciarEscaneo();
+      // Centrar el visor en la pantalla para que se vea la cámara que se acaba de activar
+      setTimeout(() => captura.scrollIntoView({ behavior: 'smooth', block: 'center' }), 200);
     } catch (err) {
       estado.textContent = 'No se pudo acceder a la cámara (revisá los permisos).';
       estado.classList.add('error');
