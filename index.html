@@ -383,18 +383,6 @@
       <span class="tarjeta-desc">Genera el acta de autorización para que un menor pueda viajar.</span>
       <span class="tarjeta-cta">Iniciar trámite →</span>
     </button>
-    <button class="tarjeta" data-tramite="antecedentes">
-      <span class="tarjeta-icono">📜</span>
-      <b>Antecedentes Penales</b>
-      <span class="tarjeta-desc">Solicita tu certificado de antecedentes penales provincial o nacional.</span>
-      <span class="tarjeta-cta">Iniciar trámite →</span>
-    </button>
-    <button class="tarjeta" data-tramite="domicilio">
-      <span class="tarjeta-icono">📄</span>
-      <b>Certificado de Domicilio</b>
-      <span class="tarjeta-desc">Constancia simple del domicilio declarado por el ciudadano.</span>
-      <span class="tarjeta-cta">Iniciar trámite →</span>
-    </button>
     <button class="tarjeta" data-tramite="extravio">
       <span class="tarjeta-icono">🔍</span>
       <b>Extravío de Documentos</b>
@@ -1093,165 +1081,6 @@
     <p class="nota">Esta acta es un borrador. Debe ser certificada por escribano público, juez de paz o Registro Civil para tener validez legal.</p>
   </form>
 
-  <!-- Formulario: Antecedentes Penales -->
-  <form id="form-antecedentes">
-    <h2>Certificado de Antecedentes Penales</h2>
-    <h3 class="seccion" style="border-top:none;margin-top:0;padding-top:0;">📸 Escaneá tu DNI</h3>
-    <div class="captura-foto captura-solicitante destacada" data-target="ant-solicitante">
-      <div class="captura-visor">
-        <video autoplay playsinline muted poster="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"></video>
-        <div class="marco-dni"><div class="marco-dni-texto">Encuadrá el DNI dentro del marco</div></div>
-        <div class="scan-indicador"><span>Buscando código</span><span class="scan-dot"></span><span class="scan-dot"></span><span class="scan-dot"></span></div>
-        <button type="button" class="btn-flash" title="Activar/desactivar flash">🔦</button>
-        <img hidden alt="Foto del DNI capturada">
-      </div>
-      <canvas hidden></canvas>
-      <input type="hidden" name="foto_solicitante" value="">
-      <div class="aviso-foto">
-        ⚠️ <span class="motivo-texto">No pudimos leer el código del DNI.</span>
-        <div class="acciones">
-          <button type="button" class="btn-repetir-aviso">Reintentar</button>
-          <button type="button" class="btn-usar-igual">Tomar foto igual</button>
-        </div>
-      </div>
-      <div class="captura-botones">
-        <button type="button" class="btn-secundario btn-camara">Activar cámara</button>
-        <button type="button" class="btn-secundario btn-cancelar" hidden>Cancelar</button>
-      </div>
-      <p class="captura-estado">Sin foto capturada</p>
-      <p class="escaneo-estado"></p>
-    </div>
-    <h3 class="seccion">Datos del Solicitante</h3>
-    <label>Nombre completo</label>
-    <input type="text" name="nombre" required>
-    <div class="fila">
-      <div><label>DNI</label><input type="text" name="dni" pattern="[0-9]{7,8}" required></div>
-      <div><label>Fecha de nacimiento</label><input type="date" name="fechaNacimiento" required></div>
-    </div>
-    <label>Email (para avisarte cuando esté listo)</label>
-    <input type="email" name="email" placeholder="tucorreo@ejemplo.com" required>
-    <label>Domicilio (calle, número, barrio)</label>
-    <input type="text" name="domicilio" required>
-    <label>Localidad</label>
-    <select name="localidad" class="select-localidad" required><option value="">Seleccionar</option></select>
-    <label>Zona</label>
-    <select name="zona" class="select-zona" required>
-      <option value="">Se completa automáticamente</option>
-      <optgroup label="Salta Capital">
-        <option value="Centro">Centro</option>
-        <option value="Norte">Norte</option>
-        <option value="Sur">Sur</option>
-        <option value="Este">Este</option>
-        <option value="Oeste">Oeste</option>
-        <option value="Noreste">Noreste</option>
-        <option value="Noroeste">Noroeste</option>
-        <option value="Sudeste">Sudeste</option>
-        <option value="Suroeste">Suroeste</option>
-      </optgroup>
-      <optgroup label="Interior de la provincia">
-        <option value="Norte de la provincia">Norte de la provincia</option>
-        <option value="Este de la provincia">Este de la provincia</option>
-        <option value="Oeste / Valles Calchaquíes">Oeste / Valles Calchaquíes</option>
-        <option value="Sur de la provincia">Sur de la provincia</option>
-        <option value="Centro-Oeste">Centro-Oeste</option>
-      </optgroup>
-    </select>
-    <div class="comisaria-asignada" data-comisaria-aviso>
-      <span class="texto">📍 Calculando comisaría...</span>
-      <strong class="nombre"></strong>
-    </div>
-    <div class="ubicacion-guardada" data-ubicacion-guardada></div>
-    <label>Tipo de certificado</label>
-    <select name="tipoCertificado" required>
-      <option value="">Seleccionar</option>
-      <option>Provincial (Policía de Salta)</option>
-      <option>Nacional (Registro Nacional de Reincidencia)</option>
-      <option>Ambos (Provincial y Nacional)</option>
-    </select>
-    <label>Motivo del trámite</label>
-    <textarea name="motivo" required placeholder="Ej: Solicitud laboral, trámite educativo, etc."></textarea>
-    <div class="btns">
-      <button type="submit" class="btn-primario">Generar certificado</button>
-      <button type="button" class="btn-secundario volver">Volver</button>
-    </div>
-    <p class="nota">Las fotos se envían a la comisaría correspondiente a través de un servidor seguro (Supabase) y se usan solo para generar este documento.</p>
-  </form>
-
-  <!-- Formulario: Certificado de Domicilio -->
-  <form id="form-domicilio">
-    <h2>Certificado de Domicilio</h2>
-    <h3 class="seccion" style="border-top:none;margin-top:0;padding-top:0;">📸 Escaneá tu DNI</h3>
-    <div class="captura-foto captura-solicitante destacada" data-target="dom-solicitante">
-      <div class="captura-visor">
-        <video autoplay playsinline muted poster="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"></video>
-        <div class="marco-dni"><div class="marco-dni-texto">Encuadrá el DNI dentro del marco</div></div>
-        <div class="scan-indicador"><span>Buscando código</span><span class="scan-dot"></span><span class="scan-dot"></span><span class="scan-dot"></span></div>
-        <button type="button" class="btn-flash" title="Activar/desactivar flash">🔦</button>
-        <img hidden alt="Foto del DNI capturada">
-      </div>
-      <canvas hidden></canvas>
-      <input type="hidden" name="foto_solicitante" value="">
-      <div class="aviso-foto">
-        ⚠️ <span class="motivo-texto">No pudimos leer el código del DNI.</span>
-        <div class="acciones">
-          <button type="button" class="btn-repetir-aviso">Reintentar</button>
-          <button type="button" class="btn-usar-igual">Tomar foto igual</button>
-        </div>
-      </div>
-      <div class="captura-botones">
-        <button type="button" class="btn-secundario btn-camara">Activar cámara</button>
-        <button type="button" class="btn-secundario btn-cancelar" hidden>Cancelar</button>
-      </div>
-      <p class="captura-estado">Sin foto capturada</p>
-      <p class="escaneo-estado"></p>
-    </div>
-    <h3 class="seccion">Datos del Solicitante</h3>
-    <label>Nombre completo</label>
-    <input type="text" name="nombre" required>
-    <div class="fila">
-      <div><label>DNI</label><input type="text" name="dni" pattern="[0-9]{7,8}" required></div>
-      <div><label>Email (para avisarte cuando esté listo)</label><input type="email" name="email" placeholder="tucorreo@ejemplo.com" required></div>
-    </div>
-    <label>Domicilio (calle, número, barrio)</label>
-    <input type="text" name="domicilio" required>
-    <label>Localidad</label>
-    <select name="localidad" class="select-localidad" required><option value="">Seleccionar</option></select>
-    <label>Zona</label>
-    <select name="zona" class="select-zona" required>
-      <option value="">Se completa automáticamente</option>
-      <optgroup label="Salta Capital">
-        <option value="Centro">Centro</option>
-        <option value="Norte">Norte</option>
-        <option value="Sur">Sur</option>
-        <option value="Este">Este</option>
-        <option value="Oeste">Oeste</option>
-        <option value="Noreste">Noreste</option>
-        <option value="Noroeste">Noroeste</option>
-        <option value="Sudeste">Sudeste</option>
-        <option value="Suroeste">Suroeste</option>
-      </optgroup>
-      <optgroup label="Interior de la provincia">
-        <option value="Norte de la provincia">Norte de la provincia</option>
-        <option value="Este de la provincia">Este de la provincia</option>
-        <option value="Oeste / Valles Calchaquíes">Oeste / Valles Calchaquíes</option>
-        <option value="Sur de la provincia">Sur de la provincia</option>
-        <option value="Centro-Oeste">Centro-Oeste</option>
-      </optgroup>
-    </select>
-    <div class="comisaria-asignada" data-comisaria-aviso>
-      <span class="texto">📍 Calculando comisaría...</span>
-      <strong class="nombre"></strong>
-    </div>
-    <div class="ubicacion-guardada" data-ubicacion-guardada></div>
-    <label>Motivo del trámite</label>
-    <textarea name="motivo" required placeholder="Ej: Trámite bancario, gestión de servicios, etc."></textarea>
-    <div class="btns">
-      <button type="submit" class="btn-primario">Generar certificado</button>
-      <button type="button" class="btn-secundario volver">Volver</button>
-    </div>
-    <p class="nota">Las fotos se envían a la comisaría correspondiente a través de un servidor seguro (Supabase) y se usan solo para generar este documento.</p>
-  </form>
-
   <!-- Formulario: Extravío de Documentos -->
   <form id="form-extravio">
     <h2>Constancia de Extravío de Documentos</h2>
@@ -1676,8 +1505,6 @@ const forms = {
   convivencia: document.getElementById('form-convivencia'),
   carencia: document.getElementById('form-carencia'),
   autorizacion: document.getElementById('form-autorizacion'),
-  antecedentes: document.getElementById('form-antecedentes'),
-  domicilio: document.getElementById('form-domicilio'),
   extravio: document.getElementById('form-extravio'),
   supervivencia: document.getElementById('form-supervivencia'),
   estadia: document.getElementById('form-estadia'),
@@ -1714,8 +1541,6 @@ const CAMPO_DOMICILIO = {
   convivencia: 'domicilioComun',
   carencia: 'domicilio',
   autorizacion: 'domicilio',
-  antecedentes: 'domicilio',
-  domicilio: 'domicilio',
   extravio: 'domicilio',
   supervivencia: 'domicilio',
   estadia: 'domicilio',
@@ -1737,8 +1562,6 @@ const titulos = {
   convivencia: 'Certificado de Convivencia',
   carencia: 'Certificado de Carencia de Recursos',
   autorizacion: 'Autorización de Viaje de Menor',
-  antecedentes: 'Certificado de Antecedentes Penales',
-  domicilio: 'Certificado de Domicilio',
   extravio: 'Constancia de Extravío de Documentos',
   supervivencia: 'Certificado de Supervivencia',
   estadia: 'Certificado de Estadía',
@@ -1846,8 +1669,6 @@ function camposABloquearParaTarget(target) {
     if (persona === 'progenitor') return ['nombreProgenitor', 'dniProgenitor'];
     if (persona === 'acompanante') return ['nombreAcompanante', 'dniAcompanante'];
   }
-  if (prefijo === 'ant') return ['nombre', 'dni', 'fechaNacimiento'];
-  if (prefijo === 'dom') return ['nombre', 'dni'];
   if (prefijo === 'ext') return ['nombre', 'dni', 'fechaNacimiento'];
   if (prefijo === 'sup') return ['nombre', 'dni', 'fechaNacimiento'];
   if (prefijo === 'est') return ['nombre', 'dni', 'fechaNacimiento'];
@@ -2050,8 +1871,6 @@ function camposParaTarget(target) {
     if (persona === 'progenitor') return { nombre: 'nombreProgenitor', dni: 'dniProgenitor', fechaNacimiento: null };
     if (persona === 'acompanante') return { nombre: 'nombreAcompanante', dni: 'dniAcompanante', fechaNacimiento: null };
   }
-  if (prefijo === 'ant') return { nombre: 'nombre', dni: 'dni', fechaNacimiento: 'fechaNacimiento' };
-  if (prefijo === 'dom') return { nombre: 'nombre', dni: 'dni', fechaNacimiento: null };
   if (prefijo === 'ext') return { nombre: 'nombre', dni: 'dni', fechaNacimiento: 'fechaNacimiento' };
   if (prefijo === 'sup') return { nombre: 'nombre', dni: 'dni', fechaNacimiento: 'fechaNacimiento' };
   if (prefijo === 'est') return { nombre: 'nombre', dni: 'dni', fechaNacimiento: 'fechaNacimiento' };
@@ -3042,8 +2861,6 @@ document.querySelectorAll('.volver').forEach(btn => {
     convivencia:   ['nombreSolicitante', 'dniSolicitante', 'testigo1Nombre', 'testigo1Dni', 'testigo2Nombre', 'testigo2Dni'].concat(...[1,2,3,4,5,6,7,8,9].map(n => ['nombreConviviente' + (n === 1 ? '' : n), 'dniConviviente' + (n === 1 ? '' : n)])),
     carencia:      ['nombre', 'dni', 'testigo1Nombre', 'testigo1Dni', 'testigo2Nombre', 'testigo2Dni'],
     autorizacion:  ['nombreProgenitor', 'dniProgenitor', 'nombreMenor', 'dniMenor', 'fechaNacimientoMenor', 'nacionalidadMenor', 'nombreAcompanante', 'dniAcompanante'],
-    antecedentes:  ['nombre', 'dni', 'fechaNacimiento'],
-    domicilio:     ['nombre', 'dni'],
     extravio:      ['nombre', 'dni', 'fechaNacimiento'],
     supervivencia: ['nombre', 'dni', 'fechaNacimiento', 'testigo1Nombre', 'testigo1Dni', 'testigo2Nombre', 'testigo2Dni'],
     estadia:       ['nombre', 'dni', 'fechaNacimiento'],
