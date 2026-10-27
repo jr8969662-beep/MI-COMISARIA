@@ -895,22 +895,6 @@
       <p class="captura-estado">Sin foto capturada</p>
       <p class="escaneo-estado"></p>
     </div>
-    <h3 class="seccion">Datos del Progenitor que Autoriza</h3>
-    <div class="fila">
-      <div><label>Nombre completo del progenitor</label><input type="text" name="nombreProgenitor" required></div>
-      <div><label>DNI del progenitor</label><input type="text" name="dniProgenitor" pattern="[0-9]{7,8}" required></div>
-    </div>
-    <div class="fila">
-      <div>
-        <label>Vínculo con el menor</label>
-        <select name="vinculoProgenitor" required>
-          <option value="">Seleccionar</option>
-          <option>Padre</option><option>Madre</option><option>Tutor/a</option>
-        </select>
-      </div>
-      <div><label>Email (para avisarte cuando esté listo)</label><input type="email" name="email" placeholder="tucorreo@ejemplo.com" required></div>
-    </div>
-    <h3 class="seccion">Datos del Menor</h3>
     <h3 class="seccion" style="border-top:none;margin-top:0;padding-top:0;font-size:1rem;">📸 Escaneá el DNI del menor (obligatorio)</h3>
     <div class="captura-foto captura-solicitante destacada" data-target="aut-menor">
       <div class="captura-visor">
@@ -936,6 +920,22 @@
       <p class="captura-estado">Sin foto capturada</p>
       <p class="escaneo-estado"></p>
     </div>
+    <h3 class="seccion">Datos del Progenitor que Autoriza</h3>
+    <div class="fila">
+      <div><label>Nombre completo del progenitor</label><input type="text" name="nombreProgenitor" required></div>
+      <div><label>DNI del progenitor</label><input type="text" name="dniProgenitor" pattern="[0-9]{7,8}" required></div>
+    </div>
+    <div class="fila">
+      <div>
+        <label>Vínculo con el menor</label>
+        <select name="vinculoProgenitor" required>
+          <option value="">Seleccionar</option>
+          <option>Padre</option><option>Madre</option><option>Tutor/a</option>
+        </select>
+      </div>
+      <div><label>Email (para avisarte cuando esté listo)</label><input type="email" name="email" placeholder="tucorreo@ejemplo.com" required></div>
+    </div>
+    <h3 class="seccion">Datos del Menor</h3>
     <div class="fila">
       <div><label>Nombre completo del menor</label><input type="text" name="nombreMenor" required></div>
       <div><label>DNI del menor</label><input type="text" name="dniMenor" pattern="[0-9]{7,8}" required></div>
@@ -946,7 +946,18 @@
     </div>
     <h3 class="seccion">Datos del Viaje</h3>
     <div class="fila">
-      <div><label>Destino (Ciudad/Provincia/País)</label><input type="text" name="destino" required></div>
+      <div id="aut-destino-bloque">
+        <label>Destino</label>
+        <select id="aut-destino-tipo" required>
+          <option value="">¿Ciudad, provincia o país?</option>
+          <option value="ciudad">Ciudad</option>
+          <option value="provincia">Provincia</option>
+          <option value="pais">País</option>
+        </select>
+        <select id="aut-destino-lista" style="margin-top:8px;display:none;"></select>
+        <input type="text" id="aut-destino-otro" placeholder="Escribí el destino" style="margin-top:8px;display:none;">
+        <input type="hidden" name="destino" value="">
+      </div>
       <div>
         <label>Motivo del viaje</label>
         <select name="motivoViaje" required>
@@ -992,11 +1003,6 @@
       </div>
       <label>Vínculo con el menor (si corresponde)</label>
       <input type="text" name="vinculoAcompanante" placeholder="Ej: Abuelo/a, Tío/a">
-    </div>
-    <h3 class="seccion">Datos del Otro Progenitor</h3>
-    <div class="fila">
-      <div><label>Nombre completo</label><input type="text" name="nombreOtroProgenitor"></div>
-      <div><label>DNI</label><input type="text" name="dniOtroProgenitor" pattern="[0-9]{7,8}"></div>
     </div>
     <label>Domicilio (calle, número, barrio)</label>
     <input type="text" name="domicilio" required>
@@ -3088,5 +3094,57 @@ document.querySelectorAll('.volver').forEach(btn => {
 })();
 </script>
 
+
+<script>
+(function(){
+  const PROV=['Buenos Aires','Catamarca','Chaco','Chubut','Ciudad Autónoma de Buenos Aires','Córdoba','Corrientes','Entre Ríos','Formosa','Jujuy','La Pampa','La Rioja','Mendoza','Misiones','Neuquén','Río Negro','Salta','San Juan','San Luis','Santa Cruz','Santa Fe','Santiago del Estero','Tierra del Fuego','Tucumán'];
+  const CIU={'Salta':['Salta Capital','San Ramón de la Nueva Orán','Tartagal','General Güemes','Metán','Rosario de la Frontera','Cafayate','Cerrillos','Rosario de Lerma','Embarcación','Joaquín V. González','Pichanal','Campo Quijano','San Antonio de los Cobres','Cachi'],
+  'Jujuy':['San Salvador de Jujuy','Palpalá','San Pedro','Libertador Gral. San Martín','Humahuaca','Tilcara','La Quiaca','Perico'],
+  'Tucumán':['San Miguel de Tucumán','Yerba Buena','Tafí Viejo','Concepción','Monteros','Tafí del Valle'],
+  'Santiago del Estero':['Santiago del Estero','La Banda','Termas de Río Hondo','Frías'],
+  'Catamarca':['San Fernando del Valle de Catamarca','Belén','Tinogasta','Andalgalá'],
+  'La Rioja':['La Rioja','Chilecito','Chamical'],
+  'Córdoba':['Córdoba','Villa Carlos Paz','Río Cuarto','Villa María','San Francisco','Alta Gracia','Río Tercero','Cosquín','Mina Clavero'],
+  'Buenos Aires':['La Plata','Mar del Plata','Bahía Blanca','Tandil','Quilmes','Lanús','Lomas de Zamora','Avellaneda','San Isidro','Tigre','Pilar','Junín','Pinamar','Villa Gesell','Necochea','Olavarría'],
+  'Ciudad Autónoma de Buenos Aires':['Ciudad Autónoma de Buenos Aires'],
+  'Santa Fe':['Santa Fe','Rosario','Rafaela','Venado Tuerto','Reconquista'],
+  'Entre Ríos':['Paraná','Concordia','Gualeguaychú','Concepción del Uruguay'],
+  'Corrientes':['Corrientes','Goya','Paso de los Libres','Esquina'],
+  'Misiones':['Posadas','Oberá','Puerto Iguazú','Eldorado'],
+  'Chaco':['Resistencia','Presidencia Roque Sáenz Peña','Villa Ángela'],
+  'Formosa':['Formosa','Clorinda'],
+  'Mendoza':['Mendoza','San Rafael','Godoy Cruz','Maipú','Malargüe','San Martín'],
+  'San Juan':['San Juan','Rawson','Rivadavia','Jáchal'],
+  'San Luis':['San Luis','Villa Mercedes','Merlo'],
+  'La Pampa':['Santa Rosa','General Pico'],
+  'Neuquén':['Neuquén','San Martín de los Andes','Villa La Angostura','Zapala','Cutral Có'],
+  'Río Negro':['San Carlos de Bariloche','Viedma','General Roca','Cipolletti','El Bolsón'],
+  'Chubut':['Rawson','Comodoro Rivadavia','Trelew','Puerto Madryn','Esquel'],
+  'Santa Cruz':['Río Gallegos','El Calafate','Caleta Olivia','Puerto Deseado'],
+  'Tierra del Fuego':['Ushuaia','Río Grande']};
+  const PAISES=['Afganistán','Albania','Alemania','Andorra','Angola','Antigua y Barbuda','Arabia Saudita','Argelia','Argentina','Armenia','Australia','Austria','Azerbaiyán','Bahamas','Bangladés','Barbados','Baréin','Bélgica','Belice','Benín','Bielorrusia','Birmania (Myanmar)','Bolivia','Bosnia y Herzegovina','Botsuana','Brasil','Brunéi','Bulgaria','Burkina Faso','Burundi','Bután','Cabo Verde','Camboya','Camerún','Canadá','Catar','Chad','Chile','China','Chipre','Colombia','Comoras','Corea del Norte','Corea del Sur','Costa de Marfil','Costa Rica','Croacia','Cuba','Dinamarca','Dominica','Ecuador','Egipto','El Salvador','Emiratos Árabes Unidos','Eritrea','Eslovaquia','Eslovenia','España','Estados Unidos','Estonia','Esuatini','Etiopía','Filipinas','Finlandia','Fiyi','Francia','Gabón','Gambia','Georgia','Ghana','Granada','Grecia','Guatemala','Guinea','Guinea Ecuatorial','Guinea-Bisáu','Guyana','Haití','Honduras','Hungría','India','Indonesia','Irak','Irán','Irlanda','Islandia','Islas Marshall','Islas Salomón','Israel','Italia','Jamaica','Japón','Jordania','Kazajistán','Kenia','Kirguistán','Kiribati','Kuwait','Laos','Lesoto','Letonia','Líbano','Liberia','Libia','Liechtenstein','Lituania','Luxemburgo','Macedonia del Norte','Madagascar','Malasia','Malaui','Maldivas','Malí','Malta','Marruecos','Mauricio','Mauritania','México','Micronesia','Moldavia','Mónaco','Mongolia','Montenegro','Mozambique','Namibia','Nauru','Nepal','Nicaragua','Níger','Nigeria','Noruega','Nueva Zelanda','Omán','Países Bajos','Pakistán','Palaos','Palestina','Panamá','Papúa Nueva Guinea','Paraguay','Perú','Polonia','Portugal','Reino Unido','República Centroafricana','República Checa','República del Congo','República Democrática del Congo','República Dominicana','Ruanda','Rumania','Rusia','Samoa','San Cristóbal y Nieves','San Marino','San Vicente y las Granadinas','Santa Lucía','Santo Tomé y Príncipe','Senegal','Serbia','Seychelles','Sierra Leona','Singapur','Siria','Somalia','Sri Lanka','Sudáfrica','Sudán','Sudán del Sur','Suecia','Suiza','Surinam','Tailandia','Tanzania','Tayikistán','Timor Oriental','Togo','Tonga','Trinidad y Tobago','Túnez','Turkmenistán','Turquía','Tuvalu','Ucrania','Uganda','Uruguay','Uzbekistán','Vanuatu','Vaticano','Venezuela','Vietnam','Yemen','Yibuti','Zambia','Zimbabue'];
+  const tipo=document.getElementById('aut-destino-tipo'), lista=document.getElementById('aut-destino-lista'),
+        otro=document.getElementById('aut-destino-otro'), hid=document.querySelector('[name="destino"]');
+  if(!tipo||!lista||!hid) return;
+  const OTRO='__otro__';
+  function opts(arr,ph){return '<option value="">'+ph+'</option>'+arr.map(x=>'<option>'+x+'</option>').join('')+'<option value="'+OTRO+'">Otro (escribir)</option>';}
+  function ciudadesOpts(){return '<option value="">Seleccionar ciudad</option>'+PROV.filter(p=>CIU[p]).map(p=>'<optgroup label="'+p+'">'+CIU[p].map(c=>'<option value="'+c+' ('+p+')">'+c+'</option>').join('')+'</optgroup>').join('')+'<option value="'+OTRO+'">Otra ciudad (escribir)</option>';}
+  function actualizar(){
+    let v=lista.value;
+    if(v===OTRO){otro.style.display='';otro.required=true;v=otro.value.trim();}
+    else{otro.style.display='none';otro.required=false;}
+    const t=tipo.value;
+    hid.value=(t&&v)?({ciudad:'Ciudad: ',provincia:'Provincia: ',pais:'País: '}[t])+v:'';
+  }
+  tipo.addEventListener('change',()=>{
+    otro.value='';otro.style.display='none';otro.required=false;
+    if(!tipo.value){lista.style.display='none';lista.required=false;hid.value='';return;}
+    lista.innerHTML=tipo.value==='ciudad'?ciudadesOpts():tipo.value==='provincia'?opts(PROV,'Seleccionar provincia'):opts(PAISES,'Seleccionar país');
+    lista.style.display='';lista.required=true;actualizar();
+  });
+  lista.addEventListener('change',actualizar);
+  otro.addEventListener('input',actualizar);
+})();
+</script>
 </body>
 </html>
