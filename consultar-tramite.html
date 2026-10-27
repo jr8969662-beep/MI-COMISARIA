@@ -278,6 +278,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-config.js"></script>
 <script src="comisarias-config.js"></script>
+<script src="jurisdicciones.js?v=7"></script>
 <script>
 /* ============================================================
    ZONAS DE COMISARÍAS (fallback si no está en comisarias-config.js)
@@ -427,6 +428,7 @@ async function consultar() {
   btnConsultar.innerHTML = '<span class="spinner"></span>Buscando...';
 
   try {
+    if (typeof cargarDependencias === 'function') await cargarDependencias();
     const { data, error } = porDni
       ? await supabaseClient.rpc('consultar_tramites_dni', { p_dni: dni })
       : await supabaseClient.rpc('consultar_tramite_codigo', { p_codigo: codigo });
@@ -486,8 +488,11 @@ function renderizarResultado(s) {
   const d = s.datos || {};
   const estado = s.estado || 'pendiente';
   const codigo = s.codigo || '—';
-  const comisaria = s.comisaria_asignada || 'A asignar';
-  const zona = d.zona || obtenerZona(s.comisaria_asignada);
+  const depOf = (typeof dependenciaOficial === 'function') ? dependenciaOficial(s.comisaria_asignada) : null;
+  const comisaria = (depOf && depOf.oficial)
+    ? `${depOf.nombre} — Distrito ${depOf.distrito} (${depOf.distritoNombre}) · Sector ${depOf.sector}`
+    : (s.comisaria_asignada || 'A asignar');
+  const zona = d.zona || s.zona || obtenerZona(s.comisaria_asignada);
   const fechaEnvio = s.created_at ? new Date(s.created_at).toLocaleString('es-AR') : '—';
   const nombre = d.nombre || d.nombreSolicitante || d.nombreConviviente || d.nombreMenor || '';
   const dni = d.dni || d.dniSolicitante || d.dniMenor || '';
@@ -591,7 +596,10 @@ function renderizarResultado(s) {
   }
 
   // Bloque del mapa (solo si tiene coordenadas de la comisaría)
-  const comisariaInfo = DEPENDENCIAS_POLICIALES?.find(x => x.nombre === s.comisaria_asignada);
+  // Punto de la dependencia: primero el dato oficial nuevo; si es un trámite viejo, la lista anterior
+  const comisariaInfo = (depOf && depOf.lat != null)
+    ? { nombre: depOf.nombre, lat: depOf.lat, lon: depOf.lon }
+    : (typeof DEPENDENCIAS_POLICIALES !== 'undefined' ? DEPENDENCIAS_POLICIALES.find(x => x.nombre === s.comisaria_asignada) : null);
   const tieneCoords = comisariaInfo && comisariaInfo.lat && comisariaInfo.lon;
 
   // HTML completo

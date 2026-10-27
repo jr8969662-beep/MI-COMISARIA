@@ -50,7 +50,25 @@ function _bbox(anillo) {
   return [a, b, c, d];
 }
 
+// Datos oficiales de cada dependencia (SIGETec): nombre, distrito, sector, punto en el mapa.
+// La clave es el nombre interno que se guarda en cada trámite (no cambia).
+const DEPENDENCIAS = { cargado: false, porClave: {}, promesa: null };
+function cargarDependencias() {
+  if (DEPENDENCIAS.promesa) return DEPENDENCIAS.promesa;
+  DEPENDENCIAS.promesa = fetch('dependencias.json?v=1')
+    .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(lista => {
+      lista.forEach(d => { DEPENDENCIAS.porClave[d.clave] = d; });
+      DEPENDENCIAS.cargado = true;
+      return DEPENDENCIAS.porClave;
+    })
+    .catch(err => { console.warn('No se pudo cargar dependencias.json (se usan los nombres del mapa)', err); return {}; });
+  return DEPENDENCIAS.promesa;
+}
+function dependenciaOficial(clave) { return DEPENDENCIAS.porClave[clave] || null; }
+
 function cargarJurisdicciones() {
+  cargarDependencias();
   if (JURIS.cargado) return Promise.resolve(JURIS.lista);
   if (JURIS.promesa) return JURIS.promesa;
   JURIS.promesa = fetch('jurisdicciones.json?v=3')
@@ -165,6 +183,8 @@ function poligonosDeJurisdiccion(nombre) {
 // Nombre legible para mostrar: "Comisaría 11° (Ex-cria 103) — DUR 1"
 function nombreLegibleJurisdiccion(nombre) {
   if (!nombre) return '';
+  const of = dependenciaOficial(nombre);
+  if (of && of.oficial) return `${of.nombre} — Distrito ${of.distrito} (${of.distritoNombre}) · Sector ${of.sector}`;
   const m = String(nombre).match(/^DUR\s*(\d+)\s*-\s*S\s*\d+\s*-\s*(.*)$/i);
   let resto = m ? m[2] : String(nombre);
   resto = resto

@@ -11,6 +11,7 @@ que le corresponde según el mapa oficial de jurisdicciones.
 |---|---|
 | `index.html`, `styles.css`, `script.js` | Portada |
 | `index.html` | Formularios de trámites (página principal) (escaneo de DNI, mapa, envío) |
+| `dependencias.json` | Datos oficiales de cada dependencia (SIGETec 26/10/2026): nombre, distrito, sector y punto en el mapa. La clave es el nombre interno que guarda cada trámite (no se cambia). Sin teléfonos: esos están solo en Supabase. |
 | `consultar-tramite.html` | La persona consulta el estado de su trámite con el código |
 | `jurisdicciones.js` + `jurisdicciones.json` | Motor que asigna la comisaría por polígono oficial |
 | `comisarias-config.js` | Datos auxiliares de comisarías |
