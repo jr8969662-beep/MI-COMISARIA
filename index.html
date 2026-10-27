@@ -911,6 +911,31 @@
       <div><label>Email (para avisarte cuando esté listo)</label><input type="email" name="email" placeholder="tucorreo@ejemplo.com" required></div>
     </div>
     <h3 class="seccion">Datos del Menor</h3>
+    <h3 class="seccion" style="border-top:none;margin-top:0;padding-top:0;font-size:1rem;">📸 Escaneá el DNI del menor (obligatorio)</h3>
+    <div class="captura-foto captura-solicitante destacada" data-target="aut-menor">
+      <div class="captura-visor">
+        <video autoplay playsinline muted poster="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"></video>
+        <div class="marco-dni"><div class="marco-dni-texto">Encuadrá el DNI dentro del marco</div></div>
+        <div class="scan-indicador"><span>Buscando código</span><span class="scan-dot"></span><span class="scan-dot"></span><span class="scan-dot"></span></div>
+        <button type="button" class="btn-flash" title="Activar/desactivar flash">🔦</button>
+        <img hidden alt="Foto del DNI capturada">
+      </div>
+      <canvas hidden></canvas>
+      <input type="hidden" name="foto_menor" value="">
+      <div class="aviso-foto">
+        ⚠️ <span class="motivo-texto">No pudimos leer el código del DNI.</span>
+        <div class="acciones">
+          <button type="button" class="btn-repetir-aviso">Reintentar</button>
+          <button type="button" class="btn-usar-igual">Tomar foto igual</button>
+        </div>
+      </div>
+      <div class="captura-botones">
+        <button type="button" class="btn-secundario btn-camara">Activar cámara</button>
+        <button type="button" class="btn-secundario btn-cancelar" hidden>Cancelar</button>
+      </div>
+      <p class="captura-estado">Sin foto capturada</p>
+      <p class="escaneo-estado"></p>
+    </div>
     <div class="fila">
       <div><label>Nombre completo del menor</label><input type="text" name="nombreMenor" required></div>
       <div><label>DNI del menor</label><input type="text" name="dniMenor" pattern="[0-9]{7,8}" required></div>
@@ -972,31 +997,6 @@
     <div class="fila">
       <div><label>Nombre completo</label><input type="text" name="nombreOtroProgenitor"></div>
       <div><label>DNI</label><input type="text" name="dniOtroProgenitor" pattern="[0-9]{7,8}"></div>
-    </div>
-    <h3 class="seccion">📸 Foto del DNI del Menor (opcional)</h3>
-    <div class="captura-foto" data-target="aut-menor">
-      <div class="captura-visor">
-        <video autoplay playsinline muted poster="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"></video>
-        <div class="marco-dni"><div class="marco-dni-texto">Encuadrá el DNI dentro del marco</div></div>
-        <div class="scan-indicador"><span>Buscando código</span><span class="scan-dot"></span><span class="scan-dot"></span><span class="scan-dot"></span></div>
-        <button type="button" class="btn-flash" title="Activar/desactivar flash">🔦</button>
-        <img hidden alt="Foto del DNI capturada">
-      </div>
-      <canvas hidden></canvas>
-      <input type="hidden" name="foto_menor" value="">
-      <div class="aviso-foto">
-        ⚠️ <span class="motivo-texto">No pudimos leer el código del DNI.</span>
-        <div class="acciones">
-          <button type="button" class="btn-repetir-aviso">Reintentar</button>
-          <button type="button" class="btn-usar-igual">Tomar foto igual</button>
-        </div>
-      </div>
-      <div class="captura-botones">
-        <button type="button" class="btn-secundario btn-camara">Activar cámara</button>
-        <button type="button" class="btn-secundario btn-cancelar" hidden>Cancelar</button>
-      </div>
-      <p class="captura-estado">Sin foto capturada</p>
-      <p class="escaneo-estado"></p>
     </div>
     <label>Domicilio (calle, número, barrio)</label>
     <input type="text" name="domicilio" required>
@@ -2276,7 +2276,7 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
 
     // 🔓 Desbloquear los campos que estaban esperando el escaneo
     if (window.__desbloquearCamposPorEscaneo && form) {
-      window.__desbloquearCamposPorEscaneo(form);
+      window.__desbloquearCamposPorEscaneo(form, captura.dataset.target);
     }
 
     if (campos && form) {
@@ -2980,7 +2980,7 @@ document.querySelectorAll('.volver').forEach(btn => {
     residencia:    ['nombre', 'dni', 'fechaNacimiento'],
     convivencia:   ['nombreSolicitante', 'dniSolicitante'],
     carencia:      ['nombre', 'dni'],
-    autorizacion:  ['nombreProgenitor', 'dniProgenitor', 'nombreMenor', 'dniMenor', 'fechaNacimientoMenor'],
+    autorizacion:  ['nombreProgenitor', 'dniProgenitor', 'nombreMenor', 'dniMenor', 'fechaNacimientoMenor', 'nacionalidadMenor'],
     antecedentes:  ['nombre', 'dni', 'fechaNacimiento'],
     domicilio:     ['nombre', 'dni'],
     extravio:      ['nombre', 'dni', 'fechaNacimiento'],
@@ -3048,6 +3048,14 @@ document.querySelectorAll('.volver').forEach(btn => {
         <span>Escaneá tu DNI arriba para completar estos datos automáticamente.</span>
       `;
       primerInput.parentNode.insertBefore(aviso, primerInput.nextSibling);
+      if (tramite === 'autorizacion') {
+        const m = form.querySelector('[name="nombreMenor"]');
+        if (m && !m.parentNode.querySelector('.aviso-escaneo-obligatorio')) {
+          const a2 = aviso.cloneNode(true);
+          a2.querySelector('span:last-child').textContent = 'Escaneá el DNI del menor arriba para completar estos datos.';
+          m.parentNode.insertBefore(a2, m.nextSibling);
+        }
+      }
     });
   }
 
@@ -3057,14 +3065,24 @@ document.querySelectorAll('.volver').forEach(btn => {
     inicializarBloqueo();
   }
 
-  window.__desbloquearCamposPorEscaneo = function(form) {
+  const GRUPOS_AUT = {
+    'aut-progenitor': ['nombreProgenitor', 'dniProgenitor'],
+    'aut-menor': ['nombreMenor', 'dniMenor', 'fechaNacimientoMenor', 'nacionalidadMenor'],
+  };
+  window.__desbloquearCamposPorEscaneo = function(form, target) {
     const tramite = form.id.replace('form-', '');
-    const campos = CAMPOS_HABILITADOS_POR_ESCANEO[tramite] || [];
+    const grupo = (tramite === 'autorizacion' && GRUPOS_AUT[target]) || null;
+    const campos = grupo || CAMPOS_HABILITADOS_POR_ESCANEO[tramite] || [];
     campos.forEach(nombre => {
-      const input = form.querySelector(`[name="${nombre}"]`);
-      desbloquearPorEscaneo(input);
+      desbloquearPorEscaneo(form.querySelector(`[name="${nombre}"]`));
     });
-    form.querySelectorAll('.aviso-escaneo-obligatorio').forEach(a => a.remove());
+    if (grupo) {
+      const primero = form.querySelector(`[name="${grupo[0]}"]`);
+      const av = primero && primero.parentNode.querySelector('.aviso-escaneo-obligatorio');
+      if (av) av.remove();
+    } else {
+      form.querySelectorAll('.aviso-escaneo-obligatorio').forEach(a => a.remove());
+    }
     form.querySelectorAll('.link-completar-manual').forEach(l => l.classList.add('oculto'));
   };
 })();
