@@ -590,22 +590,48 @@
     </div>
     <label>Email (para avisarte cuando esté listo)</label>
     <input type="email" name="email" placeholder="tucorreo@ejemplo.com" required>
-    <h3 class="seccion">Conviviente</h3>
-    <div class="fila">
-      <div><label>Nombre completo</label><input type="text" name="nombreConviviente" required></div>
-      <div><label>DNI</label><input type="text" name="dniConviviente" pattern="[0-9]{7,8}" required></div>
-    </div>
-    <label>Parentesco con el conviviente</label>
-    <select name="parentesco" required>
-      <option value="">Seleccionar</option>
-      <option>Cónyuge</option><option>Concubino/a</option><option>Pareja</option>
-      <option>Hijo/a</option><option>Padre</option><option>Madre</option>
-      <option>Hermano/a</option><option>Abuelo/a</option><option>Nieto/a</option>
-      <option>Tío/a</option><option>Sobrino/a</option><option>Primo/a</option>
-      <option>Suegro/a</option><option>Cuñado/a</option><option>Yerno</option>
-      <option>Nuera</option><option>Padrastro</option><option>Madrastra</option>
-      <option>Hijastro/a</option><option>Otro</option>
+    <h3 class="seccion">Personas que conviven con vos</h3>
+    <label>¿Cuántas personas conviven con vos? (sin contarte a vos)</label>
+    <select id="con-cantidad">
+      <option value="1" selected>1 persona</option><option value="2">2 personas</option><option value="3">3 personas</option>
+      <option value="4">4 personas</option><option value="5">5 personas</option><option value="6">6 personas</option>
+      <option value="7">7 personas</option><option value="8">8 personas</option><option value="9">9 personas</option>
     </select>
+    <div id="con-lista"></div>
+    <script>
+    (function(){
+      const lista=document.getElementById('con-lista'), cant=document.getElementById('con-cantidad');
+      const plantilla=document.querySelector('#form-convivencia [data-target="con-solicitante"]');
+      const PAR=["Cónyuge", "Concubino/a", "Pareja", "Hijo/a", "Padre", "Madre", "Hermano/a", "Abuelo/a", "Nieto/a", "Tío/a", "Sobrino/a", "Primo/a", "Suegro/a", "Cuñado/a", "Yerno", "Nuera", "Padrastro", "Madrastra", "Hijastro/a", "Otro"];
+      const bloques=[];
+      for(let n=1;n<=9;n++){
+        const suf=n===1?'':String(n);
+        const cap=plantilla.cloneNode(true);
+        cap.dataset.target='con-conviviente'+suf;
+        cap.classList.remove('captura-solicitante');
+        const h=cap.querySelector('input[type=hidden]'); h.name='foto_conviviente'+suf; h.value='';
+        const div=document.createElement('div');
+        div.className='bloque-conviviente'; div.dataset.n=n;
+        div.innerHTML='<h3 class="seccion">Conviviente '+n+'</h3><p class="nota" style="margin-top:0">📸 Escaneá el DNI de esta persona</p>';
+        div.appendChild(cap);
+        const extra=document.createElement('div');
+        extra.innerHTML='<div class="fila"><div><label>Nombre completo</label><input type="text" name="nombreConviviente'+suf+'" required></div>'+
+          '<div><label>DNI</label><input type="text" name="dniConviviente'+suf+'" pattern="[0-9]{7,8}" required></div></div>'+
+          '<label>Parentesco</label><select name="parentesco'+suf+'" required><option value="">Seleccionar</option>'+PAR.map(p=>'<option>'+p+'</option>').join('')+'</select>';
+        while(extra.firstChild) div.appendChild(extra.firstChild);
+        lista.appendChild(div); bloques.push(div);
+      }
+      function aplicar(){
+        const c=parseInt(cant.value,10)||1;
+        bloques.forEach((d,i)=>{
+          const on=i<c;
+          d.style.display=on?'':'none';
+          d.querySelectorAll('input[name],select[name]').forEach(e=>{ e.disabled=!on; });
+        });
+      }
+      cant.addEventListener('change',aplicar); aplicar();
+    })();
+    </script>
     <label>Domicilio en común (calle, número, barrio)</label>
     <input type="text" name="domicilioComun" required>
     <label>Localidad</label>
@@ -1811,6 +1837,7 @@ function mostrarAvisoBorrador() {
 function camposABloquearParaTarget(target) {
   const [prefijo, persona] = target.split('-');
   if (persona === 'testigo1' || persona === 'testigo2') return [];
+  if (persona && persona.startsWith('conviviente')) { const n = persona.slice(11); return ['nombreConviviente' + n, 'dniConviviente' + n]; }
   if (prefijo === 'res') return ['nombre', 'dni', 'fechaNacimiento'];
   if (prefijo === 'con') return ['nombreSolicitante', 'dniSolicitante'];
   if (prefijo === 'car') return ['nombre', 'dni'];
@@ -2014,6 +2041,7 @@ function camposParaTarget(target) {
   if (persona === 'testigo1' || persona === 'testigo2') {
     return { nombre: `${persona}Nombre`, dni: `${persona}Dni`, fechaNacimiento: null };
   }
+  if (persona && persona.startsWith('conviviente')) { const n = persona.slice(11); return { nombre: 'nombreConviviente' + n, dni: 'dniConviviente' + n, fechaNacimiento: null }; }
   if (prefijo === 'res') return { nombre: 'nombre', dni: 'dni', fechaNacimiento: 'fechaNacimiento' };
   if (prefijo === 'con') return { nombre: 'nombreSolicitante', dni: 'dniSolicitante', fechaNacimiento: null };
   if (prefijo === 'car') return { nombre: 'nombre', dni: 'dni', fechaNacimiento: null };
@@ -3011,7 +3039,7 @@ document.querySelectorAll('.volver').forEach(btn => {
 (function(){
   const CAMPOS_HABILITADOS_POR_ESCANEO = {
     residencia:    ['nombre', 'dni', 'fechaNacimiento'],
-    convivencia:   ['nombreSolicitante', 'dniSolicitante'],
+    convivencia:   ['nombreSolicitante', 'dniSolicitante'].concat(...[1,2,3,4,5,6,7,8,9].map(n => ['nombreConviviente' + (n === 1 ? '' : n), 'dniConviviente' + (n === 1 ? '' : n)])),
     carencia:      ['nombre', 'dni'],
     autorizacion:  ['nombreProgenitor', 'dniProgenitor', 'nombreMenor', 'dniMenor', 'fechaNacimientoMenor', 'nacionalidadMenor', 'nombreAcompanante', 'dniAcompanante'],
     antecedentes:  ['nombre', 'dni', 'fechaNacimiento'],
@@ -3081,6 +3109,17 @@ document.querySelectorAll('.volver').forEach(btn => {
         <span>Escaneá tu DNI arriba para completar estos datos automáticamente.</span>
       `;
       primerInput.parentNode.insertBefore(aviso, primerInput.nextSibling);
+      if (tramite === 'convivencia') {
+        for (let n = 1; n <= 9; n++) {
+          const x = n === 1 ? '' : n;
+          const c = form.querySelector('[name="nombreConviviente' + x + '"]');
+          if (c && !c.parentNode.querySelector('.aviso-escaneo-obligatorio')) {
+            const a4 = aviso.cloneNode(true);
+            a4.querySelector('span:last-child').textContent = 'Escaneá el DNI de esta persona arriba para completar estos datos.';
+            c.parentNode.insertBefore(a4, c.nextSibling);
+          }
+        }
+      }
       if (tramite === 'autorizacion') {
         const ac = form.querySelector('[name="nombreAcompanante"]');
         if (ac && !ac.parentNode.querySelector('.aviso-escaneo-obligatorio')) {
@@ -3105,13 +3144,15 @@ document.querySelectorAll('.volver').forEach(btn => {
   }
 
   const GRUPOS_AUT = {
+    'con-solicitante': ['nombreSolicitante', 'dniSolicitante'],
     'aut-progenitor': ['nombreProgenitor', 'dniProgenitor'],
     'aut-acompanante': ['nombreAcompanante', 'dniAcompanante'],
+    ...Object.fromEntries([1,2,3,4,5,6,7,8,9].map(n => { const x = n === 1 ? '' : n; return ['con-conviviente' + x, ['nombreConviviente' + x, 'dniConviviente' + x]]; })),
     'aut-menor': ['nombreMenor', 'dniMenor', 'fechaNacimientoMenor', 'nacionalidadMenor'],
   };
   window.__desbloquearCamposPorEscaneo = function(form, target) {
     const tramite = form.id.replace('form-', '');
-    const grupo = (tramite === 'autorizacion' && GRUPOS_AUT[target]) || null;
+    const grupo = GRUPOS_AUT[target] || null;
     const campos = grupo || CAMPOS_HABILITADOS_POR_ESCANEO[tramite] || [];
     campos.forEach(nombre => {
       desbloquearPorEscaneo(form.querySelector(`[name="${nombre}"]`));
