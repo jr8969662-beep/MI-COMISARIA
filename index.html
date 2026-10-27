@@ -1430,7 +1430,7 @@
 
 <footer class="site-footer">
   <div class="footer-inner">
-    <p style="font-size:11px;opacity:.7;font-weight:normal;">Versión 27/10 · 11:25</p>
+    <p style="font-size:11px;opacity:.7;font-weight:normal;">Versión 27/10 · 12:05</p>
     <p><strong>© 2026 Policía de Salta</strong> · Dirección de Modernización e Innovación Tecnológica (JP)</p>
     <a href="consultar-tramite.html" class="footer-link">
       <span>🔍</span>
@@ -1728,16 +1728,8 @@ window.addEventListener('DOMContentLoaded', () => {
     const campos = camposABloquearParaTarget(clave);
     if (form && campos.length) bloquearCampos(form, campos);
   });
-  const tramiteGuardado = localStorage.getItem('tramite_activo');
-  if (tramiteGuardado && forms[tramiteGuardado]) {
-    tarjetas.forEach(x => x.classList.remove('activa'));
-    const tarjetaActiva = document.querySelector(`.tarjeta[data-tramite="${tramiteGuardado}"]`);
-    if (tarjetaActiva) tarjetaActiva.classList.add('activa');
-    Object.values(forms).forEach(f => f.classList.remove('activo'));
-    forms[tramiteGuardado].classList.add('activo');
-    tarjetasEl.style.display = 'none';
-    if (avisoConsultaMobile) avisoConsultaMobile.classList.remove('activo');
-  }
+  // Siempre se empieza en la pantalla principal (lista de trámites)
+  try { localStorage.removeItem('tramite_activo'); } catch(e){}
   mostrarAvisoBorrador();
 });
 
