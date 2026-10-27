@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+<meta name="color-scheme" content="dark">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Trámites Policiales Salta</title>
@@ -90,10 +91,11 @@
     transform:translateY(-4px);background:rgba(13,42,77,0.75);}
   .tarjeta:hover::before{opacity:1;}
   .info-tramite-overlay{position:fixed;top:0;left:0;right:0;bottom:0;width:100%;height:100%;box-sizing:border-box;-webkit-overflow-scrolling:touch;z-index:9999;background:rgba(0,0,0,0.75);display:flex;align-items:center;justify-content:center;padding:16px;}
-  .info-tramite-caja{box-sizing:border-box;background:#0d2a4d;border:1px solid var(--dorado);border-radius:14px;max-width:460px;width:100%;max-height:90vh;overflow:auto;padding:20px;color:#fff;box-shadow:0 12px 40px rgba(0,0,0,0.6);}
-  .info-tramite-caja h3{margin:0 0 12px;color:var(--dorado-brilloso);font-size:1.2rem;}
+  .info-tramite-caja{box-sizing:border-box;margin:0 auto;background-color:#0d2a4d !important;color:#fff !important;-webkit-text-fill-color:#fff;border:1px solid var(--dorado);border-radius:14px;max-width:460px;width:100%;max-height:90vh;overflow:auto;padding:20px;color:#fff;box-shadow:0 12px 40px rgba(0,0,0,0.6);}
+  .info-tramite-caja h3{margin:0 0 12px;color:#f0d78c !important;-webkit-text-fill-color:#f0d78c;font-size:1.2rem;}
   .info-tramite-caja p{margin:0 0 12px;line-height:1.45;font-size:0.95rem;}
-  .info-tramite-caja p b{color:var(--dorado-claro);}
+  .info-tramite-caja p b{color:#e6c988 !important;-webkit-text-fill-color:#e6c988;}
+  .info-tramite-caja span,.info-tramite-caja p{color:#fff !important;-webkit-text-fill-color:#fff;}
   .info-tramite-btns{display:flex;justify-content:flex-end;margin:16px -5px 0;flex-wrap:wrap;}
   .info-tramite-btns button{flex:1;min-width:120px;margin:5px;}
   .tarjeta.activa{border-color:var(--dorado);background:rgba(26,58,107,0.85);box-shadow:var(--sombra-media);}
@@ -1762,6 +1764,7 @@ function mostrarInfoTramite(tramite, alContinuar) {
   if (!i) { alContinuar(); return; }
   const ov = document.createElement('div');
   ov.className = 'info-tramite-overlay';
+  ov.style.cssText = 'position:static;background:transparent;display:block;padding:0;height:auto;width:auto;z-index:auto;';
   ov.setAttribute('role', 'dialog');
   ov.setAttribute('aria-modal', 'true');
   ov.innerHTML = '<div class="info-tramite-caja"><h3></h3>' +
@@ -1772,12 +1775,14 @@ function mostrarInfoTramite(tramite, alContinuar) {
     '<button type="button" class="btn-primario" data-k="continuar">Continuar</button></div></div>';
   ov.querySelector('h3').textContent = i[0];
   [1, 2, 3].forEach(k => { ov.querySelector('[data-k="' + k + '"]').textContent = i[k]; });
-  const cerrar = () => { ov.remove(); document.removeEventListener('keydown', esc); };
+  const cerrar = () => { ov.remove(); tarjetasEl.style.display = 'grid'; document.removeEventListener('keydown', esc); };
   const esc = e => { if (e.key === 'Escape') cerrar(); };
   document.addEventListener('keydown', esc);
   ov.querySelector('[data-k="cancelar"]').addEventListener('click', cerrar);
   ov.querySelector('[data-k="continuar"]').addEventListener('click', () => { cerrar(); alContinuar(); });
-  document.body.appendChild(ov);
+  tarjetasEl.style.display = 'none';
+  tarjetasEl.parentNode.insertBefore(ov, tarjetasEl);
+  window.scrollTo({ top: 0 });
   ov.querySelector('[data-k="continuar"]').focus();
 }
 
@@ -1785,6 +1790,7 @@ tarjetas.forEach(t => {
   t.addEventListener('click', () => {
     const tramite = t.dataset.tramite;
     mostrarInfoTramite(tramite, () => {
+      document.querySelectorAll('.info-tramite-overlay').forEach(x => x.remove());
       tarjetas.forEach(x => x.classList.remove('activa'));
       t.classList.add('activa');
       Object.values(forms).forEach(f => f.classList.remove('activo'));
