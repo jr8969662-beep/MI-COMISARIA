@@ -1430,7 +1430,7 @@
 
 <footer class="site-footer">
   <div class="footer-inner">
-    <p style="font-size:11px;opacity:.7;font-weight:normal;">Versión 27/10 · 12:05</p>
+    <p style="font-size:11px;opacity:.7;font-weight:normal;">Versión 27/10 · 12:15</p>
     <p><strong>© 2026 Policía de Salta</strong> · Dirección de Modernización e Innovación Tecnológica (JP)</p>
     <a href="consultar-tramite.html" class="footer-link">
       <span>🔍</span>
@@ -1651,7 +1651,7 @@ function mostrarBannerUbicacion(form, ubic) {
 }
 
 function guardarFotoEnStorage(clave, dataUrl) {
-  try { localStorage.setItem('foto_' + clave, dataUrl); } catch (e) {}
+  // Por privacidad, las fotos de DNI ya NO se guardan en el celular.
 }
 function borrarFotoDeStorage(clave) {
   try { localStorage.removeItem('foto_' + clave); } catch (e) {}
@@ -1710,6 +1710,10 @@ function desbloquearCampos(form, nombresCampos) {
 }
 
 window.addEventListener('DOMContentLoaded', () => {
+  // Borra cualquier foto de DNI que haya quedado guardada de versiones anteriores
+  try {
+    Object.keys(localStorage).filter(k => k.indexOf('foto_') === 0).forEach(k => localStorage.removeItem(k));
+  } catch (e) {}
   document.querySelectorAll('.captura-foto').forEach(captura => {
     const clave = captura.dataset.target;
     const guardada = localStorage.getItem('foto_' + clave);
