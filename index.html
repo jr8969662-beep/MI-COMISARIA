@@ -89,6 +89,13 @@
   .tarjeta:hover{border-color:var(--dorado);box-shadow:0 8px 32px rgba(201,169,97,0.3);
     transform:translateY(-4px);background:rgba(13,42,77,0.75);}
   .tarjeta:hover::before{opacity:1;}
+  .info-tramite-overlay{position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.75);display:flex;align-items:center;justify-content:center;padding:16px;}
+  .info-tramite-caja{background:#0d2a4d;border:1px solid var(--dorado);border-radius:14px;max-width:460px;width:100%;max-height:90vh;overflow:auto;padding:20px;color:#fff;box-shadow:0 12px 40px rgba(0,0,0,0.6);}
+  .info-tramite-caja h3{margin:0 0 12px;color:var(--dorado-brilloso);font-size:1.2rem;}
+  .info-tramite-caja p{margin:0 0 12px;line-height:1.45;font-size:0.95rem;}
+  .info-tramite-caja p b{color:var(--dorado-claro);}
+  .info-tramite-btns{display:flex;gap:10px;justify-content:flex-end;margin-top:16px;flex-wrap:wrap;}
+  .info-tramite-btns button{flex:1;min-width:120px;}
   .tarjeta.activa{border-color:var(--dorado);background:rgba(26,58,107,0.85);box-shadow:var(--sombra-media);}
   .tarjeta .tarjeta-icono{font-size:2rem;margin-bottom:12px;display:block;line-height:1;}
   .tarjeta b{display:block;margin-bottom:10px;color:var(--dorado-claro);
@@ -1741,16 +1748,52 @@ document.getElementById('btn-descartar-borrador').addEventListener('click', () =
   if (avisoConsultaMobile) avisoConsultaMobile.classList.add('activo');
 });
 
+const INFO_TRAMITES = {
+  residencia: ['Certificado de Residencia', 'Es una constancia policial que acredita en qué domicilio vivís actualmente.', 'Se usa para presentarlo ante escuelas, bancos, empleadores, obras sociales u organismos públicos que te piden comprobar tu domicilio.', 'Vas a necesitar: tu DNI, 2 testigos mayores de edad con su DNI y los datos de tu domicilio.'],
+  convivencia: ['Certificado de Convivencia', 'Es una constancia policial que acredita con qué personas vivís en un mismo domicilio.', 'Se usa para trámites de asignaciones, pensiones, obras sociales, alquileres o cualquier gestión que pida probar quiénes conviven con vos.', 'Vas a necesitar: tu DNI, el DNI de cada persona que convive con vos, 2 testigos con su DNI y el domicilio en común.'],
+  carencia: ['Certificado de Carencia de Recursos', 'Es una constancia policial donde declarás que no contás con recursos económicos suficientes.', 'Se usa para pedir beneficios, gratuidad de trámites, becas, asistencia social o ayudas del Estado.', 'Vas a necesitar: tu DNI, 2 testigos con su DNI y explicar tu situación.'],
+  autorizacion: ['Autorización de Viaje de Menor', 'Es un acta donde el progenitor o tutor autoriza que un menor de edad viaje, solo o acompañado.', 'Se usa para viajes en micro, avión o cruces de frontera, para que el menor pueda viajar sin la presencia de quien autoriza.', 'Vas a necesitar: tu DNI, el DNI del menor, los datos del viaje y, si viaja acompañado, el DNI del acompañante. El acta es un borrador: puede requerir certificación posterior según el destino.'],
+  extravio: ['Constancia de Extravío de Documentos', 'Es una constancia policial que deja registrado que perdiste o te robaron un documento.', 'Se usa para tramitar el duplicado del documento perdido y como respaldo mientras lo recuperás.', 'Vas a necesitar: tu DNI (o tus datos si lo perdiste), el tipo de documento extraviado y cómo ocurrió.'],
+  supervivencia: ['Certificado de Supervivencia', 'Es una constancia policial que acredita que la persona está con vida y su domicilio.', 'Se usa para cobrar jubilaciones, pensiones u otros haberes que exigen probar periódicamente que seguís con vida.', 'Vas a necesitar: tu DNI, 2 testigos con su DNI y tu domicilio.'],
+  estadia: ['Certificado de Estadía', 'Es una constancia policial que acredita que estás residiendo temporalmente en un lugar.', 'Se usa si viniste a estudiar, trabajar o vivir un tiempo y necesitás comprobar tu domicilio transitorio.', 'Vas a necesitar: tu DNI, los datos del domicilio donde te alojás y el tiempo de estadía.'],
+};
+function mostrarInfoTramite(tramite, alContinuar) {
+  const i = INFO_TRAMITES[tramite];
+  if (!i) { alContinuar(); return; }
+  const ov = document.createElement('div');
+  ov.className = 'info-tramite-overlay';
+  ov.setAttribute('role', 'dialog');
+  ov.setAttribute('aria-modal', 'true');
+  ov.innerHTML = '<div class="info-tramite-caja"><h3></h3>' +
+    '<p><b>¿En qué consiste?</b><br><span data-k="1"></span></p>' +
+    '<p><b>¿Para qué sirve?</b><br><span data-k="2"></span></p>' +
+    '<p><b>¿Qué necesitás?</b><br><span data-k="3"></span></p>' +
+    '<div class="info-tramite-btns"><button type="button" class="btn-secundario" data-k="cancelar">Cancelar</button>' +
+    '<button type="button" class="btn-primario" data-k="continuar">Continuar</button></div></div>';
+  ov.querySelector('h3').textContent = i[0];
+  [1, 2, 3].forEach(k => { ov.querySelector('[data-k="' + k + '"]').textContent = i[k]; });
+  const cerrar = () => { ov.remove(); document.removeEventListener('keydown', esc); };
+  const esc = e => { if (e.key === 'Escape') cerrar(); };
+  document.addEventListener('keydown', esc);
+  ov.querySelector('[data-k="cancelar"]').addEventListener('click', cerrar);
+  ov.querySelector('[data-k="continuar"]').addEventListener('click', () => { cerrar(); alContinuar(); });
+  document.body.appendChild(ov);
+  ov.querySelector('[data-k="continuar"]').focus();
+}
+
 tarjetas.forEach(t => {
   t.addEventListener('click', () => {
     const tramite = t.dataset.tramite;
-    tarjetas.forEach(x => x.classList.remove('activa'));
-    t.classList.add('activa');
-    Object.values(forms).forEach(f => f.classList.remove('activo'));
-    forms[tramite].classList.add('activo');
-    tarjetasEl.style.display = 'none';
-    if (avisoConsultaMobile) avisoConsultaMobile.classList.remove('activo');
-    try { localStorage.setItem('tramite_activo', tramite); } catch(e){}
+    mostrarInfoTramite(tramite, () => {
+      tarjetas.forEach(x => x.classList.remove('activa'));
+      t.classList.add('activa');
+      Object.values(forms).forEach(f => f.classList.remove('activo'));
+      forms[tramite].classList.add('activo');
+      tarjetasEl.style.display = 'none';
+      if (avisoConsultaMobile) avisoConsultaMobile.classList.remove('activo');
+      try { localStorage.setItem('tramite_activo', tramite); } catch(e){}
+      window.scrollTo({ top: 0 });
+    });
   });
 });
 
