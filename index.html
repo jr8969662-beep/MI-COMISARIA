@@ -97,7 +97,7 @@
   .tarjeta .tarjeta-cta{display:inline-flex;align-items:center;gap:6px;margin-top:14px;
     color:var(--dorado);font-weight:600;font-size:0.85rem;transition:gap 0.2s;}
   .tarjeta:hover .tarjeta-cta{gap:10px;color:var(--dorado-brilloso);}
-  form{background:rgba(13,42,77,0.6);backdrop-filter:blur(8px);
+  form{background:rgba(13,42,77,0.9);
     border:1px solid rgba(201,169,97,0.35);border-top:3px solid var(--dorado);
     border-radius:10px;padding:22px;display:none;box-shadow:var(--sombra-suave);}
   form.activo{display:block;}
@@ -2072,7 +2072,7 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
     }
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment', width: { ideal: 2560 }, height: { ideal: 1440 } }
+        video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } }
       });
       video.srcObject = stream;
       video.hidden = false;
@@ -2141,21 +2141,35 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
       try { detector = new BarcodeDetector({ formats: ['pdf417', 'qr_code'] }); }
       catch (e) { detector = null; }
     }
-    captura._scanInterval = setInterval(escanearFrame, 600);
+    captura._scanInterval = setInterval(escanearFrame, 700);
     setTimeout(escanearFrame, 400);
   }
 
+  // Escaneo liviano: trabaja con imágenes chicas y deja respirar al celular entre pasos,
+  // así la vista previa de la cámara no se traba al mover el teléfono.
+  let cvQR = null, cicloEscaneo = 0;
+  const cederTurno = () => new Promise(r => setTimeout(r, 0));
+
+  function fotoCompletaDelVideo() {
+    const esc = Math.min(1, 1920 / video.videoWidth);
+    const fc = document.createElement('canvas');
+    fc.width = Math.round(video.videoWidth * esc);
+    fc.height = Math.round(video.videoHeight * esc);
+    fc.getContext('2d').drawImage(video, 0, 0, fc.width, fc.height);
+    return fc;
+  }
+
   async function escanearFrame() {
-    if (!scannerActivo || escaneandoAhora) return;
+    if (!scannerActivo || escaneandoAhora || document.hidden) return;
     if (!video.srcObject || video.readyState < 2 || !video.videoWidth) return;
     escaneandoAhora = true;
+    cicloEscaneo++;
     try {
-      const anchoMax = 1600;
-      const escala = Math.min(1, anchoMax / video.videoWidth);
-      canvas.width = Math.round(video.videoWidth * escala);
-      canvas.height = Math.round(video.videoHeight * escala);
+      const esc = Math.min(1, 1280 / video.videoWidth);
+      const w = Math.round(video.videoWidth * esc), h = Math.round(video.videoHeight * esc);
+      if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
       const ctx = canvas.getContext('2d', { willReadFrequently: true });
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      ctx.drawImage(video, 0, 0, w, h);
       let rawValue = null;
       if (detector) {
         try {
@@ -2164,26 +2178,33 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
         } catch (e) { }
       }
       if (!rawValue && window.jsQR) {
+        await cederTurno();
         try {
-          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-          const qr = window.jsQR(imageData.data, imageData.width, imageData.height, {
-            inversionAttempts: 'dontInvert'
-          });
+          const wq = 800, hq = Math.round(h * wq / w);
+          if (!cvQR) cvQR = document.createElement('canvas');
+          if (cvQR.width !== wq || cvQR.height !== hq) { cvQR.width = wq; cvQR.height = hq; }
+          const cq = cvQR.getContext('2d', { willReadFrequently: true });
+          cq.drawImage(canvas, 0, 0, wq, hq);
+          const imageData = cq.getImageData(0, 0, wq, hq);
+          const qr = window.jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: 'dontInvert' });
           if (qr && qr.data) rawValue = qr.data;
         } catch (e) { }
       }
       if (rawValue) {
         const datos = parsearCodigoDNI(rawValue);
-        if (datos && (datos.dni || datos.nombreCompleto)) { exitoEscaneo(datos, canvas); return; }
+        if (datos && (datos.dni || datos.nombreCompleto)) { exitoEscaneo(datos, fotoCompletaDelVideo()); return; }
       }
-      // Respaldo: ZXing (PDF417 / QR) cuando el lector del navegador no lo vio
-      const textoZX = leerConZXing(canvas);
-      if (textoZX) {
-        const datos = parsearCodigoDNI(textoZX);
-        if (datos && (datos.dni || datos.nombreCompleto)) { exitoEscaneo(datos, canvas); return; }
+      // Respaldo ZXing (PDF417 / QR): es lo más pesado, así que se usa una de cada dos vueltas
+      if (!rawValue && cicloEscaneo % 2 === 0) {
+        await cederTurno();
+        const textoZX = leerConZXing(canvas);
+        if (textoZX) {
+          const datos = parsearCodigoDNI(textoZX);
+          if (datos && (datos.dni || datos.nombreCompleto)) { exitoEscaneo(datos, fotoCompletaDelVideo()); return; }
+        }
       }
       intentosSinDeteccion++;
-      if (intentosSinDeteccion === 30) mostrarTimeout();
+      if (intentosSinDeteccion === 26) mostrarTimeout();
     } catch (err) { console.warn('Error escaneando frame:', err); }
     finally { escaneandoAhora = false; }
   }
