@@ -997,6 +997,31 @@
     </select>
     <div id="aut-bloque-acompanante" style="display:none;">
       <h3 class="seccion">Datos del Acompañante</h3>
+      <h3 class="seccion" style="border-top:none;margin-top:0;padding-top:0;font-size:1rem;">📸 Escaneá el DNI del acompañante</h3>
+    <div class="captura-foto captura-solicitante destacada" data-target="aut-acompanante">
+      <div class="captura-visor">
+        <video autoplay playsinline muted poster="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"></video>
+        <div class="marco-dni"><div class="marco-dni-texto">Encuadrá el DNI dentro del marco</div></div>
+        <div class="scan-indicador"><span>Buscando código</span><span class="scan-dot"></span><span class="scan-dot"></span><span class="scan-dot"></span></div>
+        <button type="button" class="btn-flash" title="Activar/desactivar flash">🔦</button>
+        <img hidden alt="Foto del DNI capturada">
+      </div>
+      <canvas hidden></canvas>
+      <input type="hidden" name="foto_acompanante" value="">
+      <div class="aviso-foto">
+        ⚠️ <span class="motivo-texto">No pudimos leer el código del DNI.</span>
+        <div class="acciones">
+          <button type="button" class="btn-repetir-aviso">Reintentar</button>
+          <button type="button" class="btn-usar-igual">Tomar foto igual</button>
+        </div>
+      </div>
+      <div class="captura-botones">
+        <button type="button" class="btn-secundario btn-camara">Activar cámara</button>
+        <button type="button" class="btn-secundario btn-cancelar" hidden>Cancelar</button>
+      </div>
+      <p class="captura-estado">Sin foto capturada</p>
+      <p class="escaneo-estado"></p>
+    </div>
       <div class="fila">
         <div><label>Nombre completo</label><input type="text" name="nombreAcompanante"></div>
         <div><label>DNI</label><input type="text" name="dniAcompanante" pattern="[0-9]{7,8}"></div>
@@ -1792,6 +1817,7 @@ function camposABloquearParaTarget(target) {
   if (prefijo === 'aut') {
     if (persona === 'menor') return ['nombreMenor', 'dniMenor', 'fechaNacimientoMenor'];
     if (persona === 'progenitor') return ['nombreProgenitor', 'dniProgenitor'];
+    if (persona === 'acompanante') return ['nombreAcompanante', 'dniAcompanante'];
   }
   if (prefijo === 'ant') return ['nombre', 'dni', 'fechaNacimiento'];
   if (prefijo === 'dom') return ['nombre', 'dni'];
@@ -1994,6 +2020,7 @@ function camposParaTarget(target) {
   if (prefijo === 'aut') {
     if (persona === 'menor') return { nombre: 'nombreMenor', dni: 'dniMenor', fechaNacimiento: 'fechaNacimientoMenor' };
     if (persona === 'progenitor') return { nombre: 'nombreProgenitor', dni: 'dniProgenitor', fechaNacimiento: null };
+    if (persona === 'acompanante') return { nombre: 'nombreAcompanante', dni: 'dniAcompanante', fechaNacimiento: null };
   }
   if (prefijo === 'ant') return { nombre: 'nombre', dni: 'dni', fechaNacimiento: 'fechaNacimiento' };
   if (prefijo === 'dom') return { nombre: 'nombre', dni: 'dni', fechaNacimiento: null };
@@ -2986,7 +3013,7 @@ document.querySelectorAll('.volver').forEach(btn => {
     residencia:    ['nombre', 'dni', 'fechaNacimiento'],
     convivencia:   ['nombreSolicitante', 'dniSolicitante'],
     carencia:      ['nombre', 'dni'],
-    autorizacion:  ['nombreProgenitor', 'dniProgenitor', 'nombreMenor', 'dniMenor', 'fechaNacimientoMenor', 'nacionalidadMenor'],
+    autorizacion:  ['nombreProgenitor', 'dniProgenitor', 'nombreMenor', 'dniMenor', 'fechaNacimientoMenor', 'nacionalidadMenor', 'nombreAcompanante', 'dniAcompanante'],
     antecedentes:  ['nombre', 'dni', 'fechaNacimiento'],
     domicilio:     ['nombre', 'dni'],
     extravio:      ['nombre', 'dni', 'fechaNacimiento'],
@@ -3055,6 +3082,12 @@ document.querySelectorAll('.volver').forEach(btn => {
       `;
       primerInput.parentNode.insertBefore(aviso, primerInput.nextSibling);
       if (tramite === 'autorizacion') {
+        const ac = form.querySelector('[name="nombreAcompanante"]');
+        if (ac && !ac.parentNode.querySelector('.aviso-escaneo-obligatorio')) {
+          const a3 = aviso.cloneNode(true);
+          a3.querySelector('span:last-child').textContent = 'Escaneá el DNI del acompañante arriba para completar estos datos.';
+          ac.parentNode.insertBefore(a3, ac.nextSibling);
+        }
         const m = form.querySelector('[name="nombreMenor"]');
         if (m && !m.parentNode.querySelector('.aviso-escaneo-obligatorio')) {
           const a2 = aviso.cloneNode(true);
@@ -3073,6 +3106,7 @@ document.querySelectorAll('.volver').forEach(btn => {
 
   const GRUPOS_AUT = {
     'aut-progenitor': ['nombreProgenitor', 'dniProgenitor'],
+    'aut-acompanante': ['nombreAcompanante', 'dniAcompanante'],
     'aut-menor': ['nombreMenor', 'dniMenor', 'fechaNacimientoMenor', 'nacionalidadMenor'],
   };
   window.__desbloquearCamposPorEscaneo = function(form, target) {
