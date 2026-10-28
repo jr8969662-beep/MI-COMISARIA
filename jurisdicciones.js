@@ -55,7 +55,7 @@ function _bbox(anillo) {
 const DEPENDENCIAS = { cargado: false, porClave: {}, promesa: null };
 function cargarDependencias() {
   if (DEPENDENCIAS.promesa) return DEPENDENCIAS.promesa;
-  DEPENDENCIAS.promesa = fetch('dependencias.json?v=1')
+  DEPENDENCIAS.promesa = fetch('dependencias.json?v=2')
     .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
     .then(lista => {
       lista.forEach(d => { DEPENDENCIAS.porClave[d.clave] = d; });

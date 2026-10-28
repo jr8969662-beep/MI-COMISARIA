@@ -661,7 +661,10 @@ function renderizarResultado(s) {
                       text-transform:uppercase;letter-spacing:0.05em;margin-bottom:10px;">
             🗺️ Ubicación de la comisaría
           </div>
+          <div style="color:#fff;font-weight:600;margin-bottom:8px;">${escapeHtml(nombreLegibleJurisdiccion(s.comisaria_asignada) || comisariaInfo.nombre)}</div>
           <div id="mapa-comisaria"></div>
+          <a href="https://www.google.com/maps/dir/?api=1&destination=${comisariaInfo.lat},${comisariaInfo.lon}" target="_blank" rel="noopener"
+             style="display:inline-block;margin-top:10px;padding:9px 18px;border-radius:999px;background:var(--dorado-claro,#c9a961);color:#1a1a1a;font-weight:700;text-decoration:none;">🧭 Cómo llegar</a>
         </div>
       ` : ''}
 

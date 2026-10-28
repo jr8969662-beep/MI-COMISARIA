@@ -1606,7 +1606,7 @@ function mostrarBannerUbicacion(form, ubic) {
     <div class="direccion">
       <strong>${ubic.domicilio_texto || 'Domicilio registrado'}</strong><br>
       ${ubic.localidad || ''}${ubic.zona ? ' · Zona ' + ubic.zona : ''}<br>
-      ${ubic.comisaria_asignada ? '🏢 ' + ubic.comisaria_asignada : ''}
+      ${ubic.comisaria_asignada ? '🏢 ' + nombreLegibleJurisdiccion(ubic.comisaria_asignada) : ''}
     </div>
     <div class="acciones">
       <button type="button" class="btn-usar-ubicacion" data-accion="usar">✅ Sí, sigue igual</button>
@@ -2806,7 +2806,7 @@ Object.entries(forms).forEach(([tramite, form]) => {
             ¡Tu trámite fue enviado!
           </h3>
           <p style="margin:0;color:#fff;font-size:0.95rem;line-height:1.6;">
-            Tu solicitud fue derivada a <strong>${comisariaAsignada}</strong>.<br>
+            Tu solicitud fue derivada a <strong>${nombreLegibleJurisdiccion(comisariaAsignada)}</strong>.<br>
             <strong>Esperá la validación del personal policial.</strong>
           </p>
         </div>
