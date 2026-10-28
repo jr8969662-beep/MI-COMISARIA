@@ -2514,10 +2514,14 @@ function crearMapaConfirmacion(aviso, form, { lat, lng, nombre, pedirPunto, zoom
         }
         mapaLeafletActivo.setView([pos.coords.latitude, pos.coords.longitude], 17);
         moverA(pos.coords.latitude, pos.coords.longitude, 'gps');
-      }, () => {
+      }, (err) => {
         btn.textContent = '📡 Estoy en mi casa: usar mi ubicación actual';
-        alert('No se pudo obtener tu ubicación. Activá el GPS y dale permiso al navegador, o marcá tu casa a mano en el mapa.');
-      }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
+        let m = 'No se pudo obtener tu ubicación. Activá el GPS y dale permiso al navegador, o marcá tu casa a mano en el mapa.';
+        if (err && err.code === 1) m = 'El permiso de ubicación está bloqueado para esta página.\n\nPara activarlo: tocá el candado (o ⋮ > Configuración > Permisos del sitio) > Ubicación > Permitir, y volvé a intentar.\n\nO marcá tu casa a mano en el mapa.';
+        else if (err && err.code === 2) m = 'El teléfono no pudo detectar tu posición. Activá la Ubicación del celular (en Ajustes rápidos) y probá de nuevo, o marcá tu casa a mano en el mapa.';
+        else if (err && err.code === 3) m = 'Tardó demasiado en encontrar tu posición. Salí a un lugar abierto o marcá tu casa a mano en el mapa.';
+        alert(m);
+      }, { enableHighAccuracy: false, timeout: 20000, maximumAge: 60000 });
     });
     setTimeout(() => mapaLeafletActivo && mapaLeafletActivo.invalidateSize(), 200);
   }, 50);
