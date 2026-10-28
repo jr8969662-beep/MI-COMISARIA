@@ -2516,6 +2516,8 @@ function crearMapaConfirmacion(aviso, form, { lat, lng, nombre, pedirPunto, zoom
         moverA(pos.coords.latitude, pos.coords.longitude, 'gps');
       }, (err) => {
         btn.textContent = '📡 Estoy en mi casa: usar mi ubicación actual';
+        const enApp = /; wv\)|Version\/[\d.]+ Chrome/.test(navigator.userAgent);
+        if (enApp) { alert('📍 No pudimos usar el GPS desde la app.\n\nNo hay problema: tocá el mapa o arrastrá el marcador hasta tu casa. La comisaría se asigna sola según el punto que marques.'); return; }
         let m = 'No se pudo obtener tu ubicación. Activá el GPS y dale permiso al navegador, o marcá tu casa a mano en el mapa.';
         if (err && err.code === 1) m = 'El permiso de ubicación está bloqueado para esta página.\n\nPara activarlo: tocá el candado (o ⋮ > Configuración > Permisos del sitio) > Ubicación > Permitir, y volvé a intentar.\n\nO marcá tu casa a mano en el mapa.';
         else if (err && err.code === 2) m = 'El teléfono no pudo detectar tu posición. Activá la Ubicación del celular (en Ajustes rápidos) y probá de nuevo, o marcá tu casa a mano en el mapa.';
