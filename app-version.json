@@ -1,6 +1,6 @@
 {
-  "versionCode": 2,
-  "versionName": "1.1",
+  "versionCode": 3,
+  "versionName": "1.2",
   "apkUrl": "https://jr8969662-beep.github.io/MI-COMISARIA/descargar.html",
-  "mensaje": "Hay una versión nueva de Mi Comisaría con un ícono nuevo y mejoras. Tocá Actualizar para descargarla e instalarla."
+  "mensaje": "Hay una versión nueva de Mi Comisaría: ahora la app pide el permiso de ubicación una sola vez para ubicar tu comisaría más fácil. Tocá Actualizar para descargarla e instalarla."
 }
