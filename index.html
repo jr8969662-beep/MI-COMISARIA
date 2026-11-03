@@ -18,6 +18,7 @@
 <script src="js/decodificador.js?v=1"></script>
 <script src="js/qr-dni-nuevo.js?v=1"></script>
 <script src="js/domicilio-ocr.js?v=1" defer></script>
+<script src="js/frente-dni.js?v=1"></script>
 <style>
   :root{
     --azul-fondo:#0a1e3d; --azul-oscuro:#0d2a4d; --azul:#1a3a6b; --azul-claro:#2c5aa0;
@@ -1971,6 +1972,7 @@ function resetCaptura(captura){
   estado.classList.remove('ok', 'error');
   if (btnCamara) btnCamara.hidden = false;
   if (btnCancelar) btnCancelar.hidden = true;
+  const btnFrenteR = captura.querySelector('.btn-leer-frente'); if (btnFrenteR) btnFrenteR.hidden = true;
   if (btnRepetir) btnRepetir.hidden = true;
   if (marcoDni) marcoDni.classList.remove('activo');
   if (avisoFoto) avisoFoto.classList.remove('activo');
@@ -2016,6 +2018,55 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
     escaneoEstado.textContent = 'Modo compatibilidad activo (jsQR).';
   }
 
+  // DNI nuevo: el FRENTE no tiene código; se lee por OCR (motor del Escáner DNI)
+  const btnFrente = document.createElement('button');
+  btnFrente.type = 'button'; btnFrente.className = 'btn-secundario btn-leer-frente'; btnFrente.hidden = true;
+  btnFrente.textContent = '📄 DNI nuevo: leer el frente';
+  btnFrente.style.cssText = 'margin-top:8px;';
+  (btnCancelar || btnCamara).insertAdjacentElement('afterend', btnFrente);
+  let leyendoFrente = false;
+  btnFrente.addEventListener('click', async () => {
+    if (leyendoFrente) return;
+    if (typeof DomicilioOCR === 'undefined' || typeof FrenteDNI === 'undefined') { estado.textContent = 'El lector del frente todavía está cargando. Probá en unos segundos.'; return; }
+    if (!video.srcObject || !video.videoWidth) { estado.textContent = 'Primero activá la cámara.'; return; }
+    leyendoFrente = true; btnFrente.disabled = true;
+    const seguia = scannerActivo;
+    scannerActivo = false;
+    if (captura._scanInterval) { clearInterval(captura._scanInterval); captura._scanInterval = null; }
+    if (avisoFoto) avisoFoto.classList.remove('activo');
+    estado.classList.remove('error', 'ok');
+    estado.textContent = '🔍 Leyendo el frente del DNI… mantenelo quieto, sin reflejos.';
+    try {
+      const foto = fotoFullDelVideo();
+      const textos = await DomicilioOCR.leerFrente(foto, (pr) => { estado.textContent = '🔍 Leyendo el frente del DNI… ' + Math.round(pr * 100) + '%'; },
+        (t) => FrenteDNI.completo(FrenteDNI.parsearVarios(t)), { tipo: 'nuevo' });
+      if (textos && textos.esReverso) {
+        estado.textContent = 'Eso es el reverso: apuntá al QR del dorso y se lee solo.';
+      } else {
+        const d = textos && !textos.cancelado ? FrenteDNI.parsearVarios(textos) : null;
+        if (d && d.dni && d.apellido && d.nombre) {
+          const sexo = d.sexo === 'M' || /^MASC/i.test(d.sexo || '') ? 'Masculino' : (d.sexo === 'F' || /^FEM/i.test(d.sexo || '') ? 'Femenino' : '');
+          leyendoFrente = false; btnFrente.disabled = false; btnFrente.hidden = true;
+          exitoEscaneo({
+            nombreCompleto: (d.apellido + ' ' + d.nombre).replace(/\s+/g, ' ').trim(), apellido: d.apellido, nombre: d.nombre,
+            dni: String(d.dni), sexo, fechaNacimientoISO: d.fechaNacimiento || '', fechaEmisionISO: d.fechaEmision || '',
+            fechaVencimientoISO: d.fechaVencimiento || '', ejemplar: d.ejemplar || '', nroTramite: d.tramite || '',
+            tipoDocumento: 'DNI', esNuevoDNI: true, porOCR: true, versionDNI: 'DNI nuevo (frente, leído por OCR)'
+          }, foto);
+          return;
+        }
+        estado.textContent = 'No se pudo leer el frente. Probá con más luz y sin reflejos, o escaneá el QR del dorso (es más preciso).';
+        estado.classList.add('error');
+      }
+    } catch (e) {
+      console.warn('OCR frente:', e);
+      estado.textContent = 'No se pudo leer el frente. Escaneá el QR del dorso.';
+      estado.classList.add('error');
+    }
+    leyendoFrente = false; btnFrente.disabled = false;
+    if (seguia && video.srcObject) iniciarEscaneo();
+  });
+
   btnCamara.addEventListener('click', async () => {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       estado.textContent = 'Este navegador no permite acceder a la cámara.';
@@ -2031,6 +2082,7 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
       img.hidden = true;
       btnCamara.hidden = true;
       if (btnCancelar) btnCancelar.hidden = false;
+      if (btnFrente) btnFrente.hidden = false;
       if (marcoDni) marcoDni.classList.add('activo');
       if (avisoFoto) avisoFoto.classList.remove('activo');
       if (scanIndicador) scanIndicador.classList.add('activo');
@@ -2357,13 +2409,13 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
     }
 
     const camposBloqueo = camposABloquearParaTarget(captura.dataset.target);
-    if (form && camposBloqueo.length) bloquearCampos(form, camposBloqueo);
+    if (form && camposBloqueo.length && !datos.porOCR) bloquearCampos(form, camposBloqueo);
 
     const etiquetaDNI = datos.versionDNI || (datos.esNuevoDNI ? 'DNI nuevo (QR)' : 'DNI (PDF417)');
-    estado.textContent = `✓ ${etiquetaDNI} escaneado: ${datos.nombreCompleto || ''} (${datos.dni || ''}) — Datos bloqueados`;
+    estado.textContent = `✓ ${etiquetaDNI}: ${datos.nombreCompleto || ''} (${datos.dni || ''})` + (datos.porOCR ? ' — revisá que estén bien' : ' — Datos bloqueados');
     estado.classList.add('ok');
     estado.classList.remove('error');
-    escaneoEstado.textContent = '🔒 Los datos fueron bloqueados para evitar modificaciones.';
+    escaneoEstado.textContent = datos.porOCR ? '✏️ Datos leídos del frente por OCR: revisalos y corregilos si hace falta. Para más precisión escaneá el QR del dorso.' : '🔒 Los datos fueron bloqueados para evitar modificaciones.';
 
     const target = captura.dataset.target;
     const esDniSolicitante = target.endsWith('-solicitante') || target === 'aut-progenitor';
