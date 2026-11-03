@@ -9,6 +9,15 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js"></script>
+<!-- Lectura de DNI viejo y nuevo (motores traídos del Escáner DNI) -->
+<script src="https://cdn.jsdelivr.net/npm/barcode-detector@3/dist/iife/index.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@7.0.0/dist/tesseract.min.js" defer></script>
+<script src="js/validators.js?v=1"></script>
+<script src="js/parser.js?v=1"></script>
+<script src="js/parser-dni-nuevo.js?v=1"></script>
+<script src="js/decodificador.js?v=1"></script>
+<script src="js/qr-dni-nuevo.js?v=1"></script>
+<script src="js/domicilio-ocr.js?v=1" defer></script>
 <style>
   :root{
     --azul-fondo:#0a1e3d; --azul-oscuro:#0d2a4d; --azul:#1a3a6b; --azul-claro:#2c5aa0;
@@ -1863,7 +1872,27 @@ function parsearCodigoDNIQR(texto) {
   };
 }
 
+// Motor del Escáner DNI: entiende el DNI tarjeta (PDF417, trae trámite y ejemplar), el DNI nuevo (QR del dorso) y la MRZ
+function parsearConMotorEscaner(texto) {
+  if (typeof DNIParser === 'undefined') return null;
+  let r = null;
+  try { r = DNIParser.parsear(texto); } catch (e) { r = null; }
+  if (!r || !r.dni) return null;
+  const nuevo = !!(DNIParser.esFormatoQRNuevo && DNIParser.esFormatoQRNuevo(texto));
+  const sexo = r.sexo === 'Masculino' || r.sexo === 'Femenino' ? r.sexo : (r.sexo === 'X' ? 'Otro / Prefiero no especificar' : '');
+  return {
+    nombreCompleto: String(r.nombreCompleto || ((r.apellido || '') + ' ' + (r.nombre || ''))).replace(/\s+/g, ' ').trim(),
+    apellido: r.apellido || '', nombre: r.nombre || '', dni: String(r.dni), sexo,
+    fechaNacimientoISO: r.fechaNacimiento || '', fechaEmisionISO: r.fechaEmision || '',
+    fechaVencimientoISO: r.fechaVencimiento || '', nroTramite: r.tramite || '', ejemplar: r.ejemplar || '',
+    cuil: r.cuil || '', tipoDocumento: 'DNI', esNuevoDNI: nuevo,
+    versionDNI: nuevo ? 'DNI nuevo (QR del dorso)' : (r.metodo === 'mrz' ? 'DNI (líneas MRZ)' : 'DNI tarjeta (código de barras)')
+  };
+}
+
 function parsearCodigoDNI(texto) {
+  const datosMotor = parsearConMotorEscaner(texto);
+  if (datosMotor) return datosMotor;
   const datosQR = parsearCodigoDNIQR(texto);
   if (datosQR) return datosQR;
   const contenido = String(texto || "").replace(/[\r\n]+/g, "@");
@@ -2005,7 +2034,7 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
       if (marcoDni) marcoDni.classList.add('activo');
       if (avisoFoto) avisoFoto.classList.remove('activo');
       if (scanIndicador) scanIndicador.classList.add('activo');
-      estado.textContent = 'Apuntá al código del DNI. Se escaneará automáticamente.';
+      estado.textContent = 'DNI tarjeta: apuntá al código de barras. DNI nuevo: al QR del dorso. Se escanea solo.';
       estado.classList.remove('ok', 'error');
       trackActual = stream.getVideoTracks()[0];
       const capacidades = trackActual.getCapabilities ? trackActual.getCapabilities() : {};
@@ -2082,6 +2111,14 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
     return fc;
   }
 
+  // Cuadro a resolución completa (para leer el reverso del DNI nuevo con OCR)
+  function fotoFullDelVideo() {
+    const fc = document.createElement('canvas');
+    fc.width = video.videoWidth; fc.height = video.videoHeight;
+    fc.getContext('2d').drawImage(video, 0, 0, fc.width, fc.height);
+    return fc;
+  }
+
   async function escanearFrame() {
     if (!scannerActivo || escaneandoAhora || document.hidden) return;
     if (!video.srcObject || video.readyState < 2 || !video.videoWidth) return;
@@ -2115,7 +2152,19 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
       }
       if (rawValue) {
         const datos = parsearCodigoDNI(rawValue);
-        if (datos && (datos.dni || datos.nombreCompleto)) { exitoEscaneo(datos, fotoCompletaDelVideo()); return; }
+        if (datos && datos.dni) { exitoEscaneo(datos, fotoCompletaDelVideo()); return; }
+      }
+      // DNI nuevo: su QR es muy denso; se usa el lector especial del Escáner DNI una de cada tres vueltas
+      if (!rawValue && typeof QRDNINuevo !== 'undefined' && cicloEscaneo % 3 === 1) {
+        await cederTurno();
+        try {
+          let rq = await QRDNINuevo.decodificarVideo(video, null, 'frame'), base = null;
+          if (rq === undefined) { base = fotoFullDelVideo(); rq = await QRDNINuevo.decodificar(base, { modo: 'frame' }); }
+          if (rq && rq.texto) {
+            const datos = parsearCodigoDNI(rq.texto);
+            if (datos && datos.dni) { exitoEscaneo(datos, fotoCompletaDelVideo(), { qr: rq, base: base || fotoFullDelVideo() }); return; }
+          }
+        } catch (e) { }
       }
       // Respaldo ZXing (PDF417 / QR): es lo más pesado, así que se usa una de cada dos vueltas
       if (!rawValue && cicloEscaneo % 2 === 0) {
@@ -2123,7 +2172,7 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
         const textoZX = leerConZXing(canvas);
         if (textoZX) {
           const datos = parsearCodigoDNI(textoZX);
-          if (datos && (datos.dni || datos.nombreCompleto)) { exitoEscaneo(datos, fotoCompletaDelVideo()); return; }
+          if (datos && datos.dni) { exitoEscaneo(datos, fotoCompletaDelVideo()); return; }
         }
       }
       intentosSinDeteccion++;
@@ -2177,7 +2226,67 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
     return mejor.canvas.toDataURL('image/jpeg', 0.88);
   }
 
-  async function exitoEscaneo(datos, canvasFoto) {
+  // DNI nuevo: el QR no trae sexo, vencimiento, domicilio ni CUIL. Se leen del reverso con OCR, sin frenar el formulario.
+  async function leerReversoDNINuevo(form, datos, extraQR, fijar) {
+    if (typeof DomicilioOCR === 'undefined' || typeof QRDNINuevo === 'undefined') return;
+    const base = extraQR.base, r = extraQR.qr;
+    const avisar = (t) => { if (escaneoEstado) escaneoEstado.textContent = t; };
+    try {
+      avisar('🔍 Leyendo el reverso del DNI (domicilio, CUIL y vencimiento)… podés seguir completando.');
+      const rect = QRDNINuevo.rectTarjeta(r.ubicacion, base.width, base.height);
+      let tarjeta = base, marcoRel = null;
+      if (rect) {
+        tarjeta = document.createElement('canvas');
+        tarjeta.width = Math.round(rect.w); tarjeta.height = Math.round(rect.h);
+        tarjeta.getContext('2d').drawImage(base, rect.x, rect.y, rect.w, rect.h, 0, 0, tarjeta.width, tarjeta.height);
+        const c0 = QRDNINuevo.rectTarjeta(r.ubicacion, base.width, base.height, 0);
+        if (c0) marcoRel = [(c0.x - rect.x) / rect.w, (c0.y - rect.y) / rect.h, (c0.x + c0.w - rect.x) / rect.w, (c0.y + c0.h - rect.y) / rect.h];
+      }
+      const prog = (p) => avisar('🔍 Leyendo el reverso del DNI… ' + Math.round(p * 100) + '% (podés seguir completando)');
+      let res = null;
+      if (DomicilioOCR.leerReversoRapido && marcoRel) res = await DomicilioOCR.leerReversoRapido(tarjeta, { dni: datos.dni, marcoRel, conMRZ: true, esperarMRZ: true }, prog);
+      if (!res || !(res.domicilio || res.cuil)) res = await DomicilioOCR.leer(tarjeta, 'arg', prog, { dni: datos.dni });
+      if (!res) { avisar(''); return; }
+      const m = res.identidad;
+      const mrzBuena = m && m.checks && m.checks.nacimiento && m.checks.vencimiento && (!m.dni || m.dni === datos.dni) ? m : null;
+      const sexo = mrzBuena && mrzBuena.sexo ? (/^M/i.test(mrzBuena.sexo) ? 'Masculino' : /^F/i.test(mrzBuena.sexo) ? 'Femenino' : '') : '';
+      const venc = (mrzBuena && mrzBuena.fechaVencimiento) || (res.mrzVerificada ? res.fechaVencimiento : '') || '';
+      if (sexo) fijar('dniSexo', sexo);
+      if (venc) fijar('dniVencimiento', venc);
+      if (res.cuil) fijar('dniCuil', res.cuil);
+      if (res.domicilio) fijar('dniDomicilio', res.domicilio);
+      if (res.lugarNacimiento) fijar('dniLugarNacimiento', res.lugarNacimiento);
+      const partes = [];
+      if (res.domicilio) partes.push('domicilio');
+      if (res.cuil) partes.push('CUIL');
+      if (venc) partes.push('vencimiento');
+      let msg = partes.length ? '✅ Reverso leído: ' + partes.join(', ') + '.' : '';
+      if (venc && new Date(venc + 'T23:59:59') < new Date()) {
+        const [y, mo, d] = venc.split('-');
+        msg += ` ⚠ Tu DNI figura vencido desde el ${d}/${mo}/${y}.`;
+      }
+      avisar(msg);
+      // Sugerencia: usar el domicilio impreso en el DNI si el campo está vacío
+      if (res.domicilio) {
+        const tramite = form.id.replace('form-', '');
+        const campoDom = typeof CAMPO_DOMICILIO !== 'undefined' ? CAMPO_DOMICILIO[tramite] : null;
+        const inputDom = campoDom && form.querySelector(`[name="${campoDom}"]`);
+        if (inputDom && !inputDom.value && !inputDom.parentNode.querySelector('.sugerencia-dom-dni')) {
+          const b = document.createElement('button');
+          b.type = 'button'; b.className = 'sugerencia-dom-dni';
+          b.style.cssText = 'margin-top:6px;padding:6px 12px;border-radius:999px;border:1px dashed var(--dorado-claro,#c9a961);background:transparent;color:inherit;font-size:0.82rem;cursor:pointer;';
+          b.textContent = '📄 Usar el domicilio del DNI: ' + res.domicilio;
+          b.addEventListener('click', () => { inputDom.value = res.domicilio; inputDom.dispatchEvent(new Event('input', { bubbles: true })); inputDom.dispatchEvent(new Event('change', { bubbles: true })); b.remove(); });
+          inputDom.insertAdjacentElement('afterend', b);
+        }
+      }
+    } catch (e) {
+      console.warn('OCR del reverso:', e);
+      avisar('');
+    }
+  }
+
+  async function exitoEscaneo(datos, canvasFoto, extraQR) {
     scannerActivo = false;
     if (captura._scanInterval) { clearInterval(captura._scanInterval); captura._scanInterval = null; }
     if (scanIndicador) scanIndicador.classList.remove('activo');
@@ -2213,7 +2322,24 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
       }
     }
 
-    if (datos.esNuevoDNI && form) {
+    const esPersonaPrincipal = /-solicitante$/.test(captura.dataset.target) || captura.dataset.target === 'aut-progenitor';
+    if (form && esPersonaPrincipal && datos.versionDNI) {
+      const fijar = (nombre, valor) => {
+        let input = form.querySelector(`input[name="${nombre}"]`);
+        if (!input) { input = document.createElement('input'); input.type = 'hidden'; input.name = nombre; form.appendChild(input); }
+        input.value = valor || '';
+      };
+      fijar('versionDNI', datos.versionDNI);
+      fijar('nroTramiteDNI', datos.nroTramite);
+      fijar('ejemplarDNI', datos.ejemplar);
+      fijar('fechaEmisionDNI', datos.fechaEmisionISO);
+      if (datos.sexo) fijar('dniSexo', datos.sexo);
+      if (datos.fechaVencimientoISO) fijar('dniVencimiento', datos.fechaVencimientoISO);
+      if (datos.cuil) fijar('dniCuil', datos.cuil);
+      if (datos.esNuevoDNI && extraQR && extraQR.qr) leerReversoDNINuevo(form, datos, extraQR, fijar);
+    }
+
+    if (datos.esNuevoDNI && form && esPersonaPrincipal) {
       const setHidden = (nombre, valor) => {
         let input = form.querySelector(`input[name="${nombre}"]`);
         if (!input) {
@@ -2233,7 +2359,7 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
     const camposBloqueo = camposABloquearParaTarget(captura.dataset.target);
     if (form && camposBloqueo.length) bloquearCampos(form, camposBloqueo);
 
-    const etiquetaDNI = datos.esNuevoDNI ? 'DNI nuevo (QR)' : 'DNI (PDF417)';
+    const etiquetaDNI = datos.versionDNI || (datos.esNuevoDNI ? 'DNI nuevo (QR)' : 'DNI (PDF417)');
     estado.textContent = `✓ ${etiquetaDNI} escaneado: ${datos.nombreCompleto || ''} (${datos.dni || ''}) — Datos bloqueados`;
     estado.classList.add('ok');
     estado.classList.remove('error');
@@ -2270,7 +2396,7 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
     scannerActivo = false;
     if (captura._scanInterval) { clearInterval(captura._scanInterval); captura._scanInterval = null; }
     if (scanIndicador) scanIndicador.classList.remove('activo');
-    if (motivoTexto) motivoTexto.textContent = 'No pudimos leer el código del DNI. Probá con más luz, sin reflejos, a unos 15–20 cm, apuntando al código del dorso.';
+    if (motivoTexto) motivoTexto.textContent = 'No pudimos leer el código del DNI. Probá con más luz, sin reflejos, a unos 15–20 cm, apuntando al código de barras (DNI tarjeta) o al QR del dorso (DNI nuevo).';
     if (avisoFoto) avisoFoto.classList.add('activo');
     estado.textContent = 'No se detectó el código. Tocá Reintentar.';
     estado.classList.add('error');

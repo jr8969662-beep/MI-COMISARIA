@@ -15,6 +15,7 @@ que le corresponde según el mapa oficial de jurisdicciones.
 | `consultar-tramite.html` | La persona consulta el estado de su trámite con el código |
 | `jurisdicciones.js` + `jurisdicciones.json` | Motor que asigna la comisaría por polígono oficial |
 | `comisarias-config.js` | Datos auxiliares de comisarías |
+| `js/` + `tessdata/` | Lectura del DNI viejo (código de barras) y nuevo (QR del dorso + OCR del reverso: sexo, vencimiento, domicilio y CUIL). Copiados del repositorio `escaner-dni-ar` (licencia MIT en `js/LICENSE-escaner-dni.txt`); si se mejora el Escáner DNI, copiar de nuevo esos archivos. |
 | `supabase-config.js` | Conexión pública a Supabase (la clave "anon" es pública por diseño) |
 | `herramientas/generar-jurisdicciones.py` | Regenera `jurisdicciones.json` desde los KMZ |
 | `datos-originales/` | Mapas KMZ/KML oficiales y archivos viejos; **no los usa la web** |
