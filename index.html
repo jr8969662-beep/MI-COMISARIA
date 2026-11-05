@@ -1451,7 +1451,7 @@
 
 <footer class="site-footer">
   <div class="footer-inner">
-    <p style="font-size:11px;opacity:.7;font-weight:normal;">Versión 05/11 · 22:50</p>
+    <p style="font-size:11px;opacity:.7;font-weight:normal;">Versión 05/11 · 23:10</p>
     <p><strong>© 2026 Policía de Salta</strong> · Dirección de Modernización e Innovación Tecnológica (JP)</p>
   </div>
 </footer>
@@ -1990,6 +1990,7 @@ function resetCaptura(captura){
   if (btnCamara) btnCamara.hidden = false;
   if (btnCancelar) btnCancelar.hidden = true;
   const btnFrenteR = captura.querySelector('.btn-leer-frente'); if (btnFrenteR) { btnFrenteR.hidden = true; btnFrenteR.textContent = '📸 Sacar foto (DNI nuevo: frente)'; }
+  { const cd = captura.parentNode && captura.parentNode.querySelector('.confirmar-datos[data-para="' + captura.dataset.target + '"]'); if (cd) cd.remove(); }
   captura._mostrandoFoto = false;
   if (btnRepetir) btnRepetir.hidden = true;
   if (marcoDni) marcoDni.classList.remove('activo');
@@ -2275,6 +2276,54 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
     return mejor;
   }
   // Mejora visual de la foto del frente: tamaño, niveles automáticos (contraste/brillo) y nitidez
+  // Después de leer la foto: "¿Son correctos estos datos?" con Sí / No
+  function mostrarConfirmacionDatos(camposBloqueo) {
+    const vieja = captura.parentNode.querySelector('.confirmar-datos[data-para="' + captura.dataset.target + '"]');
+    if (vieja) vieja.remove();
+    const val = (n) => { const el = n && form.querySelector(`[name="${n}"]`); return el ? el.value : ''; };
+    const fechaTxt = (() => { const f = val(campos.fechaNacimiento); const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(f || ''); return m ? `${m[3]}/${m[2]}/${m[1]}` : (f || '—'); })();
+    const caja = document.createElement('div');
+    caja.className = 'confirmar-datos'; caja.dataset.para = captura.dataset.target;
+    caja.style.cssText = 'margin:12px 0 4px;padding:14px;border-radius:10px;border:1px solid rgba(201,169,97,0.55);background:rgba(201,169,97,0.10);';
+    caja.innerHTML = `
+      <div style="font-weight:700;color:var(--dorado-claro);margin-bottom:8px;">¿Son correctos estos datos?</div>
+      <div style="line-height:1.6;font-size:0.95rem;">
+        <div><span style="opacity:0.75;">Nombre:</span> <strong>${escapeHtmlSimple(val(campos.nombre) || '—')}</strong></div>
+        <div><span style="opacity:0.75;">DNI:</span> <strong>${escapeHtmlSimple(val(campos.dni) || '—')}</strong></div>
+        ${campos.fechaNacimiento ? `<div><span style="opacity:0.75;">Nacimiento:</span> <strong>${escapeHtmlSimple(fechaTxt)}</strong></div>` : ''}
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;">
+        <button type="button" class="btn-datos-si" style="flex:1;min-width:140px;padding:11px;border-radius:999px;border:none;font-weight:700;cursor:pointer;background:#16a34a;color:#fff;">✅ Sí, son correctos</button>
+        <button type="button" class="btn-datos-no" style="flex:1;min-width:140px;padding:11px;border-radius:999px;border:1px solid rgba(255,255,255,0.4);font-weight:700;cursor:pointer;background:rgba(255,255,255,0.08);color:#fff;">✏️ No, quiero corregirlos</button>
+      </div>`;
+    captura.insertAdjacentElement('afterend', caja);
+    const marcar = (valor) => {
+      if (!(/-solicitante$/.test(captura.dataset.target) || captura.dataset.target === 'aut-progenitor')) return;
+      let h = form.querySelector('input[name="confirmacionDatosDNI"]');
+      if (!h) { h = document.createElement('input'); h.type = 'hidden'; h.name = 'confirmacionDatosDNI'; form.appendChild(h); }
+      h.value = valor;
+    };
+    caja.querySelector('.btn-datos-si').addEventListener('click', () => {
+      if (camposBloqueo && camposBloqueo.length) bloquearCampos(form, camposBloqueo);
+      marcar('Confirmados por el ciudadano (leídos de la foto)');
+      estado.textContent = `✓ Datos confirmados: ${val(campos.nombre)} (${val(campos.dni)})`;
+      caja.remove();
+      // seguir con el formulario: siguiente campo vacío después de los datos del DNI
+      const lista = Array.from(form.querySelectorAll('input:not([type=hidden]):not([readonly]):not([disabled]), select, textarea'));
+      const desde = form.querySelector(`[name="${campos.fechaNacimiento || campos.dni}"]`);
+      const idx = desde ? lista.indexOf(desde) : -1;
+      const sig = lista.slice(idx + 1).find(el => !el.value && el.offsetParent !== null);
+      if (sig) { sig.scrollIntoView({ behavior: 'smooth', block: 'center' }); setTimeout(() => { try { sig.focus({ preventScroll: true }); } catch (e) { } }, 400); }
+    });
+    caja.querySelector('.btn-datos-no').addEventListener('click', () => {
+      marcar('Corregidos a mano por el ciudadano');
+      estado.textContent = '✏️ Corregí los datos que estén mal.';
+      caja.remove();
+      const primero = form.querySelector(`[name="${campos.nombre}"]`);
+      if (primero) { primero.readOnly = false; primero.disabled = false; primero.scrollIntoView({ behavior: 'smooth', block: 'center' }); setTimeout(() => { try { primero.focus({ preventScroll: true }); primero.select(); } catch (e) { } }, 400); }
+    });
+  }
+
   // Mejora visual de la foto del DNI: balance de color, niveles (brillo/contraste), claridad local y nitidez
   function mejorarImagenDNI(src) {
     const k = 1600 / src.width;
@@ -2615,7 +2664,8 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
     estado.textContent = `✓ ${etiquetaDNI}: ${datos.nombreCompleto || ''} (${datos.dni || ''})` + (datos.porOCR ? ' — revisá que estén bien' : ' — Datos bloqueados');
     estado.classList.add('ok');
     estado.classList.remove('error');
-    escaneoEstado.textContent = datos.porOCR ? '✏️ Datos leídos de la foto del frente: revisalos y corregilos si hace falta.' : '🔒 Los datos fueron bloqueados para evitar modificaciones.';
+    escaneoEstado.textContent = datos.porOCR ? '' : '🔒 Los datos fueron bloqueados para evitar modificaciones.';
+    if (datos.porOCR && form && campos) mostrarConfirmacionDatos(camposBloqueo);
 
     const target = captura.dataset.target;
     const esDniSolicitante = target.endsWith('-solicitante') || target === 'aut-progenitor';
