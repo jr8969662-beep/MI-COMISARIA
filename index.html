@@ -1451,7 +1451,7 @@
 
 <footer class="site-footer">
   <div class="footer-inner">
-    <p style="font-size:11px;opacity:.7;font-weight:normal;">Versión 05/11 · 22:30</p>
+    <p style="font-size:11px;opacity:.7;font-weight:normal;">Versión 05/11 · 22:50</p>
     <p><strong>© 2026 Policía de Salta</strong> · Dirección de Modernización e Innovación Tecnológica (JP)</p>
   </div>
 </footer>
@@ -2393,8 +2393,12 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
       }
       // frente del DNI nuevo: todos sus datos impresos, leídos de la foto mejorada
       if (typeof DomicilioOCR !== 'undefined' && typeof FrenteDNI !== 'undefined') {
-        const textos = await DomicilioOCR.leerFrente(mejorada, (pr) => avisar('🔍 Leyendo los datos del frente… ' + Math.round(pr * 100) + '%'),
-          (t) => FrenteDNI.completo(FrenteDNI.parsearVarios(t)), { tipo: 'nuevo' });
+        const t0 = performance.now();
+        // alcanza con lo que pide el formulario (nombre, apellido, DNI y nacimiento): apenas está, se deja de leer
+        const suficiente = (t) => { const r = FrenteDNI.parsearVarios(t); return !!(r && r.dni && r.apellido && r.nombre && r.fechaNacimiento); };
+        const textos = await DomicilioOCR.leerFrente(mejorada, (pr) => avisar('🔍 Leyendo los datos del frente… ' + Math.round(pr * 100) + '%  (podés ir completando el resto del formulario)'),
+          suficiente, { tipo: 'nuevo' });
+        console.info('Lectura del frente:', Math.round(performance.now() - t0), 'ms');
         if (textos && textos.esReverso) {
           if (typeof QRDNINuevo !== 'undefined') {
             avisar('🔍 Es el dorso: leyendo el QR…');
