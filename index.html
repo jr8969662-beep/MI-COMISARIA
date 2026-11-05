@@ -120,7 +120,7 @@
     border:1px solid rgba(201,169,97,0.35);border-top:3px solid var(--dorado);
     border-radius:10px;padding:22px;display:none;box-shadow:var(--sombra-suave);}
   form.activo{display:block;}
-  .volver-arriba{position:sticky;top:8px;z-index:60;display:inline-flex;align-items:center;gap:6px;margin:0 0 10px;padding:9px 14px;border-radius:999px;font-size:0.9rem;font-weight:600;cursor:pointer;background:rgba(10,24,48,0.92);color:var(--dorado-claro);border:1px solid var(--dorado);box-shadow:0 2px 10px rgba(0,0,0,0.45);}
+  .volver-arriba{position:sticky;top:0;z-index:60;display:flex;align-items:center;gap:6px;width:calc(100% + 44px);margin:-22px -22px 14px;padding:11px 22px;border:none;border-bottom:1px solid rgba(201,169,97,0.35);border-radius:8px 8px 0 0;font-size:0.9rem;font-weight:600;cursor:pointer;background:rgba(9,22,44,0.97);color:var(--dorado-claro);box-shadow:0 4px 10px rgba(0,0,0,0.35);text-align:left;}
   .volver-arriba:active{transform:scale(0.97);}
   form h2{margin-top:0;color:var(--dorado-claro);font-size:1.1rem;text-shadow:0 2px 4px rgba(0,0,0,0.3);}
   form h3.seccion{font-size:0.85rem;color:var(--dorado);text-transform:uppercase;
@@ -157,6 +157,23 @@
     background:rgba(201,169,97,0.08);margin-bottom:20px;
     box-shadow:0 0 20px rgba(201,169,97,0.15);}
   .captura-visor{position:relative;width:100%;max-width:340px;margin:0 auto;}
+  /* Visor en reposo: tarjeta compacta en lugar del recuadro negro */
+  .captura-foto:not(.camara-activa) .captura-visor video{display:none;}
+  .visor-reposo{display:flex;align-items:center;gap:14px;width:100%;padding:14px 16px;border-radius:10px;cursor:pointer;
+    background:linear-gradient(135deg,rgba(201,169,97,0.14),rgba(255,255,255,0.04));border:1px solid rgba(201,169,97,0.45);
+    color:#fff;text-align:left;font:inherit;transition:background .2s,transform .1s;}
+  .visor-reposo:hover{background:linear-gradient(135deg,rgba(201,169,97,0.22),rgba(255,255,255,0.06));}
+  .visor-reposo:active{transform:scale(0.98);}
+  .visor-reposo .dni-ico{flex-shrink:0;width:64px;height:42px;border-radius:6px;border:2px solid var(--dorado-claro);position:relative;background:rgba(0,0,0,0.25);}
+  .visor-reposo .dni-ico::before{content:'';position:absolute;left:6px;top:7px;width:16px;height:22px;border-radius:3px;background:rgba(201,169,97,0.55);}
+  .visor-reposo .dni-ico::after{content:'';position:absolute;left:27px;top:10px;width:28px;height:3px;background:rgba(255,255,255,0.6);box-shadow:0 7px 0 rgba(255,255,255,0.45),0 14px 0 rgba(255,255,255,0.3);}
+  .visor-reposo strong{display:block;font-size:0.95rem;color:var(--dorado-claro);}
+  .visor-reposo small{display:block;font-size:0.78rem;opacity:0.8;margin-top:2px;line-height:1.35;}
+  .captura-foto.camara-activa .visor-reposo,.captura-visor:has(img:not([hidden])) .visor-reposo{display:none;}
+  .captura-foto:not(.camara-activa):not(:has(.captura-visor img:not([hidden]))) .captura-botones .btn-camara{display:none;}
+  .captura-foto:not(.camara-activa):not(:has(.captura-visor img:not([hidden]))) .captura-estado:not(.ok):not(.error){display:none;}
+  /* Un solo aviso por persona: la tarjeta ya indica que hay que escanear */
+  .aviso-escaneo-obligatorio{display:none !important;}
   .captura-visor video,.captura-visor img{width:100%;border-radius:6px;background:#000;display:block;}
   .captura-visor video[hidden],.captura-visor img[hidden]{display:none;}
   .marco-dni{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:92%;
@@ -1434,7 +1451,7 @@
 
 <footer class="site-footer">
   <div class="footer-inner">
-    <p style="font-size:11px;opacity:.7;font-weight:normal;">Versión 05/11 · 20:00</p>
+    <p style="font-size:11px;opacity:.7;font-weight:normal;">Versión 05/11 · 20:20</p>
     <p><strong>© 2026 Policía de Salta</strong> · Dirección de Modernización e Innovación Tecnológica (JP)</p>
   </div>
 </footer>
@@ -1983,6 +2000,30 @@ function resetCaptura(captura){
   const campos = camposABloquearParaTarget(captura.dataset.target);
   if (form && campos.length) desbloquearCampos(form, campos);
 }
+
+// Apariencia: tarjeta "Tocá para escanear" y clase camara-activa (no cambia el funcionamiento)
+document.querySelectorAll('.captura-foto').forEach(captura => {
+  const visor = captura.querySelector('.captura-visor'), video = captura.querySelector('video'), btnCam = captura.querySelector('.btn-camara');
+  if (!visor || !video || !btnCam || visor.querySelector('.visor-reposo')) return;
+  const t = captura.dataset.target || '';
+  const quien = /testigo1$/.test(t) ? 'del testigo 1' : /testigo2$/.test(t) ? 'del testigo 2' : /conviviente/.test(t) ? 'de esta persona'
+    : /menor$/.test(t) ? 'del menor' : /acompanante$/.test(t) ? 'del acompañante' : /progenitor/.test(t) ? 'del padre, madre o tutor' : '';
+  const b = document.createElement('button');
+  b.type = 'button'; b.className = 'visor-reposo';
+  b.innerHTML = `<span class="dni-ico" aria-hidden="true"></span><span><strong>📷 Tocá para escanear el DNI ${quien}</strong><small>DNI tarjeta: código de barras · DNI nuevo: QR del dorso. Los datos se completan solos.</small></span>`;
+  b.addEventListener('click', () => btnCam.click());
+  visor.insertBefore(b, visor.firstChild);
+  const activar = () => captura.classList.add('camara-activa');
+  const desactivar = () => captura.classList.remove('camara-activa');
+  video.addEventListener('loadedmetadata', activar);
+  video.addEventListener('playing', activar);
+  video.addEventListener('emptied', desactivar);
+  btnCam.addEventListener('click', () => { activar(); setTimeout(() => { const img = visor.querySelector('img'); if (!video.srcObject && (!img || img.hidden)) desactivar(); }, 6000); });
+  const btnCancel = captura.querySelector('.btn-cancelar');
+  if (btnCancel) btnCancel.addEventListener('click', () => setTimeout(() => { if (!video.srcObject) desactivar(); }, 50));
+  new MutationObserver(() => { const img = visor.querySelector('img'); if (img && !img.hidden) desactivar(); })
+    .observe(visor, { subtree: true, attributes: true, attributeFilter: ['hidden'] });
+});
 
 document.querySelectorAll('.captura-foto').forEach(captura => {
   const video = captura.querySelector('video');
