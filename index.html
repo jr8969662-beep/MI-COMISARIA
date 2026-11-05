@@ -1451,7 +1451,7 @@
 
 <footer class="site-footer">
   <div class="footer-inner">
-    <p style="font-size:11px;opacity:.7;font-weight:normal;">Versión 05/11 · 20:20</p>
+    <p style="font-size:11px;opacity:.7;font-weight:normal;">Versión 05/11 · 20:45</p>
     <p><strong>© 2026 Policía de Salta</strong> · Dirección de Modernización e Innovación Tecnológica (JP)</p>
   </div>
 </footer>
@@ -2123,7 +2123,6 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
       img.hidden = true;
       btnCamara.hidden = true;
       if (btnCancelar) btnCancelar.hidden = false;
-      if (btnFrente) btnFrente.hidden = false;
       if (marcoDni) marcoDni.classList.add('activo');
       if (avisoFoto) avisoFoto.classList.remove('activo');
       if (scanIndicador) scanIndicador.classList.add('activo');
@@ -2269,9 +2268,109 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
         }
       }
       intentosSinDeteccion++;
+      // Modo foto automático: si en unos segundos no salió el código (típico del DNI nuevo), se saca una foto en alta calidad y se lee
+      if (intentosSinDeteccion === 6 || intentosSinDeteccion === 17) { modoFotoAuto(); return; }
       if (intentosSinDeteccion === 26) mostrarTimeout();
     } catch (err) { console.warn('Error escaneando frame:', err); }
     finally { escaneandoAhora = false; }
+  }
+
+  // ===== Modo foto automático (detecta solo si es DNI tarjeta o DNI nuevo; sin botones) =====
+  let fotoAutoEnCurso = false;
+  const esperar = (ms) => new Promise(r => setTimeout(r, ms));
+  async function fotoAltaCalidad() {
+    const track = video.srcObject && video.srcObject.getVideoTracks ? video.srcObject.getVideoTracks()[0] : null;
+    if (track && typeof ImageCapture !== 'undefined' && typeof createImageBitmap === 'function') {
+      try {
+        const ic = new ImageCapture(track), opts = {};
+        try {
+          const pc = await ic.getPhotoCapabilities();
+          if (pc.imageWidth && pc.imageWidth.max) { const k = Math.min(1, 4032 / pc.imageWidth.max); opts.imageWidth = Math.round(pc.imageWidth.max * k); opts.imageHeight = Math.round(pc.imageHeight.max * k); }
+          if (pc.fillLightMode && pc.fillLightMode.indexOf('off') >= 0) opts.fillLightMode = 'off';
+        } catch (e) { }
+        const blob = await Promise.race([ic.takePhoto(opts), esperar(5000).then(() => { throw new Error('takePhoto tardó'); })]);
+        const bmp = await createImageBitmap(blob);
+        const esc = Math.min(1, 3000 / Math.max(bmp.width, bmp.height));
+        const c = document.createElement('canvas');
+        c.width = Math.round(bmp.width * esc); c.height = Math.round(bmp.height * esc);
+        const cx = c.getContext('2d'); cx.imageSmoothingQuality = 'high';
+        cx.drawImage(bmp, 0, 0, c.width, c.height); bmp.close();
+        if ((c.width > c.height) === (video.videoWidth > video.videoHeight)) return c;
+      } catch (e) { console.warn('Foto del sensor:', e); }
+    }
+    // Sin foto del sensor: el cuadro más nítido de varios
+    let mejor = null, sMejor = -1;
+    for (let i = 0; i < 4; i++) {
+      const f = fotoFullDelVideo();
+      const sN = medirNitidez(f);
+      if (sN > sMejor) { sMejor = sN; mejor = f; }
+      await esperar(120);
+    }
+    return mejor;
+  }
+  async function modoFotoAuto() {
+    if (fotoAutoEnCurso || !video.srcObject) return;
+    fotoAutoEnCurso = true;
+    const intentosPrevios = intentosSinDeteccion;
+    scannerActivo = false;
+    if (captura._scanInterval) { clearInterval(captura._scanInterval); captura._scanInterval = null; }
+    const mensajeAntes = escaneoEstado ? escaneoEstado.textContent : '';
+    const avisar = (t) => { if (escaneoEstado) escaneoEstado.textContent = t; };
+    let listo = false;
+    try {
+      avisar('📸 Sacando una foto en alta calidad para leer mejor tu DNI… mantenelo quieto');
+      const foto = await fotoAltaCalidad();
+      if (!foto || !video.srcObject) return;
+      // a) QR del DNI nuevo (lector especial, foto completa)
+      if (typeof QRDNINuevo !== 'undefined') {
+        avisar('🔍 Buscando el QR del DNI nuevo en la foto…');
+        const rq = await QRDNINuevo.decodificar(foto, {});
+        if (rq && rq.texto) {
+          const datos = parsearCodigoDNI(rq.texto);
+          if (datos && datos.dni) { listo = true; exitoEscaneo(datos, foto, { qr: rq, base: foto }); return; }
+        }
+      }
+      // b) Código de barras del DNI tarjeta (si en vivo salía movido)
+      if (typeof BarcodeDetectionAPI !== 'undefined') {
+        try {
+          const det = new BarcodeDetectionAPI.BarcodeDetector({ formats: ['pdf417', 'qr_code'] });
+          const cods = await det.detect(foto);
+          for (const c of cods || []) {
+            const datos = parsearCodigoDNI(c.rawValue || '');
+            if (datos && datos.dni) { listo = true; exitoEscaneo(datos, foto); return; }
+          }
+        } catch (e) { }
+      }
+      // c) Frente del DNI nuevo (no tiene código): se lee el texto por OCR
+      if (typeof DomicilioOCR !== 'undefined' && typeof FrenteDNI !== 'undefined') {
+        avisar('🔍 Leyendo el DNI… 0%');
+        const textos = await DomicilioOCR.leerFrente(foto, (pr) => avisar('🔍 Leyendo el DNI… ' + Math.round(pr * 100) + '%'),
+          (t) => FrenteDNI.completo(FrenteDNI.parsearVarios(t)), { tipo: 'nuevo' });
+        if (textos && textos.esReverso) {
+          avisar('↩️ Es el dorso del DNI: acercá el QR (o el código de barras) al centro del marco y mantenelo quieto.');
+          return;
+        }
+        const d = textos && !textos.cancelado ? FrenteDNI.parsearVarios(textos) : null;
+        if (d && d.dni && d.apellido && d.nombre) {
+          const sexo = d.sexo === 'M' || /^MASC/i.test(d.sexo || '') ? 'Masculino' : (d.sexo === 'F' || /^FEM/i.test(d.sexo || '') ? 'Femenino' : '');
+          listo = true;
+          exitoEscaneo({
+            nombreCompleto: (d.apellido + ' ' + d.nombre).replace(/\s+/g, ' ').trim(), apellido: d.apellido, nombre: d.nombre,
+            dni: String(d.dni), sexo, fechaNacimientoISO: d.fechaNacimiento || '', fechaEmisionISO: d.fechaEmision || '',
+            fechaVencimientoISO: d.fechaVencimiento || '', ejemplar: d.ejemplar || '', nroTramite: d.tramite || '',
+            tipoDocumento: 'DNI', esNuevoDNI: true, porOCR: true, versionDNI: 'DNI nuevo (frente, leído por OCR)'
+          }, foto);
+          return;
+        }
+      }
+      avisar('Todavía no se pudo leer. Probá con más luz, sin reflejos, y el DNI quieto dentro del marco.');
+    } catch (e) {
+      console.warn('Modo foto automático:', e);
+      avisar(mensajeAntes);
+    } finally {
+      fotoAutoEnCurso = false;
+      if (!listo && video.srcObject) { iniciarEscaneo(); intentosSinDeteccion = intentosPrevios; }
+    }
   }
 
   // Nitidez = varianza del Laplaciano sobre una copia chica en grises (más alto = más nítido)
