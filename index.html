@@ -1451,7 +1451,7 @@
 
 <footer class="site-footer">
   <div class="footer-inner">
-    <p style="font-size:11px;opacity:.7;font-weight:normal;">Versión 05/11 · 21:40</p>
+    <p style="font-size:11px;opacity:.7;font-weight:normal;">Versión 05/11 · 22:00</p>
     <p><strong>© 2026 Policía de Salta</strong> · Dirección de Modernización e Innovación Tecnológica (JP)</p>
   </div>
 </footer>
@@ -1989,7 +1989,8 @@ function resetCaptura(captura){
   estado.classList.remove('ok', 'error');
   if (btnCamara) btnCamara.hidden = false;
   if (btnCancelar) btnCancelar.hidden = true;
-  const btnFrenteR = captura.querySelector('.btn-leer-frente'); if (btnFrenteR) btnFrenteR.hidden = true;
+  const btnFrenteR = captura.querySelector('.btn-leer-frente'); if (btnFrenteR) { btnFrenteR.hidden = true; btnFrenteR.textContent = '📸 Sacar foto (DNI nuevo: frente)'; }
+  captura._mostrandoFoto = false;
   if (btnRepetir) btnRepetir.hidden = true;
   if (marcoDni) marcoDni.classList.remove('activo');
   if (avisoFoto) avisoFoto.classList.remove('activo');
@@ -2021,7 +2022,7 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
   btnCam.addEventListener('click', () => { activar(); setTimeout(() => { const img = visor.querySelector('img'); if (!video.srcObject && (!img || img.hidden)) desactivar(); }, 6000); });
   const btnCancel = captura.querySelector('.btn-cancelar');
   if (btnCancel) btnCancel.addEventListener('click', () => setTimeout(() => { if (!video.srcObject) desactivar(); }, 50));
-  new MutationObserver(() => { const img = visor.querySelector('img'); if (img && !img.hidden) desactivar(); })
+  new MutationObserver(() => { const img = visor.querySelector('img'); if (img && !img.hidden && !captura._mostrandoFoto) desactivar(); })
     .observe(visor, { subtree: true, attributes: true, attributeFilter: ['hidden'] });
 });
 
@@ -2068,6 +2069,7 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
   let leyendoFrente = false;
   btnFrente.addEventListener('click', async () => {
     if (!video.srcObject || !video.videoWidth) { estado.textContent = 'Primero activá la cámara.'; return; }
+    if (captura._mostrandoFoto) { volverACamaraEnVivo(); return; }
     btnFrente.disabled = true;
     try { await modoFotoAuto(); } finally { btnFrente.disabled = false; }
   });
@@ -2271,85 +2273,129 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
     }
     return mejor;
   }
+  // Mejora visual de la foto del frente: tamaño, niveles automáticos (contraste/brillo) y nitidez
+  function mejorarImagenDNI(src) {
+    const anchoObj = Math.max(1800, Math.min(2400, src.width));
+    const k = anchoObj / src.width;
+    const c = document.createElement('canvas');
+    c.width = Math.round(src.width * k); c.height = Math.round(src.height * k);
+    const cx = c.getContext('2d', { willReadFrequently: true }); cx.imageSmoothingQuality = 'high';
+    cx.drawImage(src, 0, 0, c.width, c.height);
+    const im = cx.getImageData(0, 0, c.width, c.height), d = im.data, n = d.length / 4;
+    // niveles automáticos: se estira el brillo entre el 1% más oscuro y el 1% más claro
+    const hist = new Uint32Array(256);
+    for (let i = 0; i < d.length; i += 4) hist[(d[i] * 77 + d[i + 1] * 150 + d[i + 2] * 29) >> 8]++;
+    let acc = 0, lo = 0, hi = 255;
+    for (let v = 0; v < 256; v++) { acc += hist[v]; if (acc > n * 0.01) { lo = v; break; } }
+    acc = 0; for (let v = 255; v >= 0; v--) { acc += hist[v]; if (acc > n * 0.01) { hi = v; break; } }
+    const rango = Math.max(40, hi - lo);
+    let medio = 0; for (let v = 0; v < 256; v++) medio += v * hist[v]; medio /= n;
+    const gamma = medio < 110 ? 0.8 : (medio > 170 ? 1.1 : 1);   // aclara si la foto quedó oscura
+    const lut = new Uint8ClampedArray(256);
+    for (let v = 0; v < 256; v++) lut[v] = 255 * Math.pow(Math.min(1, Math.max(0, (v - lo) / rango)), gamma);
+    for (let i = 0; i < d.length; i += 4) { d[i] = lut[d[i]]; d[i + 1] = lut[d[i + 1]]; d[i + 2] = lut[d[i + 2]]; }
+    // nitidez (máscara de enfoque 3x3)
+    const w = c.width, h = c.height, o = new Uint8ClampedArray(d), a = 0.55;
+    for (let y = 1; y < h - 1; y++) for (let x = 1; x < w - 1; x++) {
+      const i = (y * w + x) * 4;
+      for (let ch = 0; ch < 3; ch++) {
+        const j = i + ch;
+        const lap = 4 * o[j] - o[j - 4] - o[j + 4] - o[j - w * 4] - o[j + w * 4];
+        d[j] = o[j] + a * lap;
+      }
+    }
+    cx.putImageData(im, 0, 0);
+    return c;
+  }
+  function recortarAlMarco(foto) {
+    const W = foto.width, H = foto.height;
+    let w = W * 0.92 * 1.06, h = (W * 0.92 / 1.586) * 1.12;
+    if (h > H) h = H;
+    const x = Math.max(0, (W - w) / 2), y = Math.max(0, (H - h) / 2);
+    const c = document.createElement('canvas');
+    c.width = Math.round(Math.min(w, W)); c.height = Math.round(Math.min(h, H));
+    const cx = c.getContext('2d'); cx.imageSmoothingQuality = 'high';
+    cx.drawImage(foto, x, y, c.width, c.height, 0, 0, c.width, c.height);
+    return c;
+  }
+  function mostrarFotoTomada(canvasFoto) {
+    img.src = canvasFoto.toDataURL('image/jpeg', 0.9);
+    img.hidden = false;
+    video.hidden = true;
+    if (marcoDni) marcoDni.classList.remove('activo');
+    if (scanIndicador) scanIndicador.classList.remove('activo');
+    captura._mostrandoFoto = true;
+    const bf = captura.querySelector('.btn-leer-frente'); if (bf) bf.textContent = '🔄 Sacar otra foto';
+  }
+  function volverACamaraEnVivo() {
+    captura._mostrandoFoto = false;
+    img.hidden = true; img.src = '';
+    video.hidden = false;
+    captura.classList.add('camara-activa');
+    if (marcoDni) marcoDni.classList.add('activo');
+    if (scanIndicador) scanIndicador.classList.add('activo');
+    const bf = captura.querySelector('.btn-leer-frente'); if (bf) bf.textContent = '📸 Sacar foto (DNI nuevo: frente)';
+    if (escaneoEstado) escaneoEstado.textContent = 'Poné el FRENTE del DNI nuevo dentro del marco y tocá «Sacar foto».';
+    estado.classList.remove('error');
+    if (!scannerActivo && video.srcObject) iniciarEscaneo();
+  }
   async function modoFotoAuto() {
     if (fotoAutoEnCurso || !video.srcObject) return;
     fotoAutoEnCurso = true;
-    const intentosPrevios = intentosSinDeteccion;
     scannerActivo = false;
     if (captura._scanInterval) { clearInterval(captura._scanInterval); captura._scanInterval = null; }
-    const mensajeAntes = escaneoEstado ? escaneoEstado.textContent : '';
     const avisar = (t) => { if (escaneoEstado) escaneoEstado.textContent = t; };
-    let listo = false;
     try {
       avisar('📸 Sacando la foto… mantené el DNI quieto');
       const foto = await fotoAltaCalidad();
       if (!foto || !video.srcObject) return;
-      // Recorte al marco con forma de DNI (así el texto del frente se lee mucho mejor)
-      const recorteMarco = (() => {
-        const W = foto.width, H = foto.height;
-        let w = W * 0.92 * 1.06, h = (W * 0.92 / 1.586) * 1.12;
-        if (h > H) { h = H; }
-        const x = Math.max(0, (W - w) / 2), y = Math.max(0, (H - h) / 2);
-        const c = document.createElement('canvas');
-        c.width = Math.round(Math.min(w, W)); c.height = Math.round(Math.min(h, H));
-        const cx = c.getContext('2d'); cx.imageSmoothingQuality = 'high';
-        cx.drawImage(foto, x, y, c.width, c.height, 0, 0, c.width, c.height);
-        return c;
-      })();
-      // 1) Vistazo rápido por si hay un código (frente del DNI tarjeta / QR del dorso del nuevo)
-      const probarCodigos = async (fuente) => {
-        const dets = [];
-        if (typeof BarcodeDetectionAPI !== 'undefined') { try { dets.push(new BarcodeDetectionAPI.BarcodeDetector({ formats: ['pdf417', 'qr_code'] })); } catch (e) { } }
-        if (barcodeDisponible) { try { dets.push(new BarcodeDetector({ formats: ['pdf417', 'qr_code'] })); } catch (e) { } }
-        for (const det of dets) {
-          try {
-            const cods = await det.detect(fuente);
-            for (const c of cods || []) { const datos = parsearCodigoDNI(c.rawValue || ''); if (datos && datos.dni) return datos; }
-          } catch (e) { }
-        }
-        return null;
-      };
-      avisar('🔍 Leyendo el DNI…');
-      const porCodigo = await probarCodigos(foto);
-      if (porCodigo) { listo = true; exitoEscaneo(porCodigo, foto, porCodigo.esNuevoDNI ? { qr: { texto: '', ubicacion: null }, base: foto } : undefined); return; }
-      // 2) Frente del DNI nuevo: se leen todos sus datos impresos (OCR)
+      const mejorada = mejorarImagenDNI(recortarAlMarco(foto));
+      mostrarFotoTomada(mejorada);   // desde acá se ve la foto (mejorada), no la cámara en vivo
+      avisar('🔍 Leyendo los datos de la foto…');
+      // por si la foto tiene un código (DNI tarjeta / QR del dorso)
+      const dets = [];
+      if (typeof BarcodeDetectionAPI !== 'undefined') { try { dets.push(new BarcodeDetectionAPI.BarcodeDetector({ formats: ['pdf417', 'qr_code'] })); } catch (e) { } }
+      if (barcodeDisponible) { try { dets.push(new BarcodeDetector({ formats: ['pdf417', 'qr_code'] })); } catch (e) { } }
+      for (const det of dets) {
+        try {
+          for (const cod of (await det.detect(foto)) || []) {
+            const datos = parsearCodigoDNI(cod.rawValue || '');
+            if (datos && datos.dni) { datos.desdeFoto = true; exitoEscaneo(datos, mejorada, datos.esNuevoDNI ? { qr: { texto: '', ubicacion: null }, base: foto } : undefined); return; }
+          }
+        } catch (e) { }
+      }
+      // frente del DNI nuevo: todos sus datos impresos, leídos de la foto mejorada
       if (typeof DomicilioOCR !== 'undefined' && typeof FrenteDNI !== 'undefined') {
-        avisar('🔍 Leyendo los datos del frente… 0%');
-        const textos = await DomicilioOCR.leerFrente(recorteMarco, (pr) => avisar('🔍 Leyendo los datos del frente… ' + Math.round(pr * 100) + '%'),
+        const textos = await DomicilioOCR.leerFrente(mejorada, (pr) => avisar('🔍 Leyendo los datos del frente… ' + Math.round(pr * 100) + '%'),
           (t) => FrenteDNI.completo(FrenteDNI.parsearVarios(t)), { tipo: 'nuevo' });
         if (textos && textos.esReverso) {
-          // Es el dorso: ahí está el QR; se lo busca a fondo en la foto
           if (typeof QRDNINuevo !== 'undefined') {
             avisar('🔍 Es el dorso: leyendo el QR…');
             const rq = await QRDNINuevo.decodificar(foto, { anchos: [2000, 1400] });
-            if (rq && rq.texto) {
-              const datos = parsearCodigoDNI(rq.texto);
-              if (datos && datos.dni) { listo = true; exitoEscaneo(datos, foto, { qr: rq, base: foto }); return; }
-            }
+            const datos = rq && rq.texto ? parsearCodigoDNI(rq.texto) : null;
+            if (datos && datos.dni) { datos.desdeFoto = true; exitoEscaneo(datos, mejorada, { qr: rq, base: foto }); return; }
           }
-          avisar('↩️ Es el dorso del DNI. Para leer los datos, sacá la foto del FRENTE (o acercá el QR al centro del marco).');
+          avisar('↩️ Esa foto es del dorso. Tocá «Sacar otra foto» y mostrá el FRENTE del DNI.');
           return;
         }
         const d = textos && !textos.cancelado ? FrenteDNI.parsearVarios(textos) : null;
         if (d && d.dni && d.apellido && d.nombre) {
           const sexo = d.sexo === 'M' || /^MASC/i.test(d.sexo || '') ? 'Masculino' : (d.sexo === 'F' || /^FEM/i.test(d.sexo || '') ? 'Femenino' : '');
-          listo = true;
           exitoEscaneo({
             nombreCompleto: (d.apellido + ' ' + d.nombre).replace(/\s+/g, ' ').trim(), apellido: d.apellido, nombre: d.nombre,
             dni: String(d.dni), sexo, nacionalidad: d.nacionalidad || '', fechaNacimientoISO: d.fechaNacimiento || '', fechaEmisionISO: d.fechaEmision || '',
             fechaVencimientoISO: d.fechaVencimiento || '', ejemplar: d.ejemplar || '', nroTramite: d.tramite || '',
-            tipoDocumento: 'DNI', esNuevoDNI: true, porOCR: true, versionDNI: 'DNI nuevo (frente, leído por OCR)'
-          }, recorteMarco);
+            tipoDocumento: 'DNI', esNuevoDNI: true, porOCR: true, desdeFoto: true, versionDNI: 'DNI nuevo (frente, leído por foto)'
+          }, mejorada);
           return;
         }
       }
-      avisar('No se pudo leer. Probá otra foto con más luz, sin reflejos y el DNI ocupando casi todo el marco.');
+      avisar('No se pudieron leer todos los datos. Tocá «Sacar otra foto»: más luz, sin reflejos y el DNI ocupando el marco.');
     } catch (e) {
-      console.warn('Modo foto automático:', e);
-      avisar(mensajeAntes);
+      console.warn('Foto del DNI:', e);
+      avisar('No se pudo procesar la foto. Tocá «Sacar otra foto».');
     } finally {
       fotoAutoEnCurso = false;
-      if (!listo && video.srcObject) { iniciarEscaneo(); intentosSinDeteccion = intentosPrevios; }
     }
   }
 
@@ -2460,12 +2506,13 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
 
   async function exitoEscaneo(datos, canvasFoto, extraQR) {
     { const bf = captura.querySelector('.btn-leer-frente'); if (bf) bf.hidden = true; }
+    captura._mostrandoFoto = false;
     scannerActivo = false;
     if (captura._scanInterval) { clearInterval(captura._scanInterval); captura._scanInterval = null; }
     if (scanIndicador) scanIndicador.classList.remove('activo');
-    estado.textContent = '✓ Datos leídos. Mantené el DNI quieto un instante: sacando la foto nítida…';
+    estado.textContent = datos.desdeFoto ? '✓ Datos leídos de la foto.' : '✓ Datos leídos. Mantené el DNI quieto un instante: sacando la foto nítida…';
     estado.classList.remove('error');
-    const dataUrl = await tomarFotoNitida(canvasFoto);
+    const dataUrl = datos.desdeFoto ? canvasFoto.toDataURL('image/jpeg', 0.9) : await tomarFotoNitida(canvasFoto);
     hiddenInput.value = dataUrl;
     guardarFotoEnStorage(captura.dataset.target, dataUrl);
     img.src = dataUrl;
@@ -2537,7 +2584,7 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
     estado.textContent = `✓ ${etiquetaDNI}: ${datos.nombreCompleto || ''} (${datos.dni || ''})` + (datos.porOCR ? ' — revisá que estén bien' : ' — Datos bloqueados');
     estado.classList.add('ok');
     estado.classList.remove('error');
-    escaneoEstado.textContent = datos.porOCR ? '✏️ Datos leídos del frente por OCR: revisalos y corregilos si hace falta. Revisá que estén bien.' : '🔒 Los datos fueron bloqueados para evitar modificaciones.';
+    escaneoEstado.textContent = datos.porOCR ? '✏️ Datos leídos de la foto del frente: revisalos y corregilos si hace falta.' : '🔒 Los datos fueron bloqueados para evitar modificaciones.';
 
     const target = captura.dataset.target;
     const esDniSolicitante = target.endsWith('-solicitante') || target === 'aut-progenitor';
