@@ -1451,7 +1451,7 @@
 
 <footer class="site-footer">
   <div class="footer-inner">
-    <p style="font-size:11px;opacity:.7;font-weight:normal;">Versión 05/11 · 21:15</p>
+    <p style="font-size:11px;opacity:.7;font-weight:normal;">Versión 05/11 · 21:40</p>
     <p><strong>© 2026 Policía de Salta</strong> · Dirección de Modernización e Innovación Tecnológica (JP)</p>
   </div>
 </footer>
@@ -2010,7 +2010,7 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
     : /menor$/.test(t) ? 'del menor' : /acompanante$/.test(t) ? 'del acompañante' : /progenitor/.test(t) ? 'del padre, madre o tutor' : '';
   const b = document.createElement('button');
   b.type = 'button'; b.className = 'visor-reposo';
-  b.innerHTML = `<span class="dni-ico" aria-hidden="true"></span><span><strong>📷 Tocá para escanear el DNI ${quien}</strong><small>DNI tarjeta: código de barras · DNI nuevo: QR del dorso. Los datos se completan solos.</small></span>`;
+  b.innerHTML = `<span class="dni-ico" aria-hidden="true"></span><span><strong>📷 Tocá para escanear el DNI ${quien}</strong><small>DNI tarjeta: código de barras · DNI nuevo: foto del frente. Los datos se completan solos.</small></span>`;
   b.addEventListener('click', () => btnCam.click());
   visor.insertBefore(b, visor.firstChild);
   const activar = () => captura.classList.add('camara-activa');
@@ -2062,7 +2062,7 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
   // DNI nuevo: el FRENTE no tiene código; se lee por OCR (motor del Escáner DNI)
   const btnFrente = document.createElement('button');
   btnFrente.type = 'button'; btnFrente.className = 'btn-secundario btn-leer-frente'; btnFrente.hidden = true;
-  btnFrente.textContent = '📸 Sacar foto del DNI';
+  btnFrente.textContent = '📸 Sacar foto (DNI nuevo: frente)';
   btnFrente.style.cssText = 'margin-top:8px;font-weight:700;background:linear-gradient(135deg,var(--dorado-claro,#e8c87a),var(--dorado,#c9a961));color:#1a1a1a;border:none;';
   (btnCancelar || btnCamara).insertAdjacentElement('afterend', btnFrente);
   let leyendoFrente = false;
@@ -2091,7 +2091,7 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
       if (marcoDni) marcoDni.classList.add('activo');
       if (avisoFoto) avisoFoto.classList.remove('activo');
       if (scanIndicador) scanIndicador.classList.add('activo');
-      estado.textContent = 'DNI tarjeta: apuntá al código de barras. DNI nuevo: al QR del dorso. Se escanea solo.';
+      estado.textContent = 'DNI tarjeta: apuntá al código de barras y se lee solo. DNI nuevo: poné el FRENTE en el marco y tocá «Sacar foto».';
       estado.classList.remove('ok', 'error');
       trackActual = stream.getVideoTracks()[0];
       const capacidades = trackActual.getCapabilities ? trackActual.getCapabilities() : {};
@@ -2284,33 +2284,50 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
       avisar('📸 Sacando la foto… mantené el DNI quieto');
       const foto = await fotoAltaCalidad();
       if (!foto || !video.srcObject) return;
-      // a) QR del DNI nuevo (lector especial, foto completa)
-      if (typeof QRDNINuevo !== 'undefined') {
-        avisar('🔍 Buscando el QR del DNI nuevo en la foto…');
-        const rq = await QRDNINuevo.decodificar(foto, { anchos: [2000, 1400] });
-        if (rq && rq.texto) {
-          const datos = parsearCodigoDNI(rq.texto);
-          if (datos && datos.dni) { listo = true; exitoEscaneo(datos, foto, { qr: rq, base: foto }); return; }
+      // Recorte al marco con forma de DNI (así el texto del frente se lee mucho mejor)
+      const recorteMarco = (() => {
+        const W = foto.width, H = foto.height;
+        let w = W * 0.92 * 1.06, h = (W * 0.92 / 1.586) * 1.12;
+        if (h > H) { h = H; }
+        const x = Math.max(0, (W - w) / 2), y = Math.max(0, (H - h) / 2);
+        const c = document.createElement('canvas');
+        c.width = Math.round(Math.min(w, W)); c.height = Math.round(Math.min(h, H));
+        const cx = c.getContext('2d'); cx.imageSmoothingQuality = 'high';
+        cx.drawImage(foto, x, y, c.width, c.height, 0, 0, c.width, c.height);
+        return c;
+      })();
+      // 1) Vistazo rápido por si hay un código (frente del DNI tarjeta / QR del dorso del nuevo)
+      const probarCodigos = async (fuente) => {
+        const dets = [];
+        if (typeof BarcodeDetectionAPI !== 'undefined') { try { dets.push(new BarcodeDetectionAPI.BarcodeDetector({ formats: ['pdf417', 'qr_code'] })); } catch (e) { } }
+        if (barcodeDisponible) { try { dets.push(new BarcodeDetector({ formats: ['pdf417', 'qr_code'] })); } catch (e) { } }
+        for (const det of dets) {
+          try {
+            const cods = await det.detect(fuente);
+            for (const c of cods || []) { const datos = parsearCodigoDNI(c.rawValue || ''); if (datos && datos.dni) return datos; }
+          } catch (e) { }
         }
-      }
-      // b) Código de barras del DNI tarjeta (si en vivo salía movido)
-      if (typeof BarcodeDetectionAPI !== 'undefined') {
-        try {
-          const det = new BarcodeDetectionAPI.BarcodeDetector({ formats: ['pdf417', 'qr_code'] });
-          const cods = await det.detect(foto);
-          for (const c of cods || []) {
-            const datos = parsearCodigoDNI(c.rawValue || '');
-            if (datos && datos.dni) { listo = true; exitoEscaneo(datos, foto); return; }
-          }
-        } catch (e) { }
-      }
-      // c) Frente del DNI nuevo (no tiene código): se lee el texto por OCR
+        return null;
+      };
+      avisar('🔍 Leyendo el DNI…');
+      const porCodigo = await probarCodigos(foto);
+      if (porCodigo) { listo = true; exitoEscaneo(porCodigo, foto, porCodigo.esNuevoDNI ? { qr: { texto: '', ubicacion: null }, base: foto } : undefined); return; }
+      // 2) Frente del DNI nuevo: se leen todos sus datos impresos (OCR)
       if (typeof DomicilioOCR !== 'undefined' && typeof FrenteDNI !== 'undefined') {
-        avisar('🔍 Leyendo el DNI… 0%');
-        const textos = await DomicilioOCR.leerFrente(foto, (pr) => avisar('🔍 Leyendo el DNI… ' + Math.round(pr * 100) + '%'),
+        avisar('🔍 Leyendo los datos del frente… 0%');
+        const textos = await DomicilioOCR.leerFrente(recorteMarco, (pr) => avisar('🔍 Leyendo los datos del frente… ' + Math.round(pr * 100) + '%'),
           (t) => FrenteDNI.completo(FrenteDNI.parsearVarios(t)), { tipo: 'nuevo' });
         if (textos && textos.esReverso) {
-          avisar('↩️ Es el dorso del DNI: acercá el QR (o el código de barras) al centro del marco y mantenelo quieto.');
+          // Es el dorso: ahí está el QR; se lo busca a fondo en la foto
+          if (typeof QRDNINuevo !== 'undefined') {
+            avisar('🔍 Es el dorso: leyendo el QR…');
+            const rq = await QRDNINuevo.decodificar(foto, { anchos: [2000, 1400] });
+            if (rq && rq.texto) {
+              const datos = parsearCodigoDNI(rq.texto);
+              if (datos && datos.dni) { listo = true; exitoEscaneo(datos, foto, { qr: rq, base: foto }); return; }
+            }
+          }
+          avisar('↩️ Es el dorso del DNI. Para leer los datos, sacá la foto del FRENTE (o acercá el QR al centro del marco).');
           return;
         }
         const d = textos && !textos.cancelado ? FrenteDNI.parsearVarios(textos) : null;
@@ -2319,10 +2336,10 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
           listo = true;
           exitoEscaneo({
             nombreCompleto: (d.apellido + ' ' + d.nombre).replace(/\s+/g, ' ').trim(), apellido: d.apellido, nombre: d.nombre,
-            dni: String(d.dni), sexo, fechaNacimientoISO: d.fechaNacimiento || '', fechaEmisionISO: d.fechaEmision || '',
+            dni: String(d.dni), sexo, nacionalidad: d.nacionalidad || '', fechaNacimientoISO: d.fechaNacimiento || '', fechaEmisionISO: d.fechaEmision || '',
             fechaVencimientoISO: d.fechaVencimiento || '', ejemplar: d.ejemplar || '', nroTramite: d.tramite || '',
             tipoDocumento: 'DNI', esNuevoDNI: true, porOCR: true, versionDNI: 'DNI nuevo (frente, leído por OCR)'
-          }, foto);
+          }, recorteMarco);
           return;
         }
       }
@@ -2492,6 +2509,7 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
       if (datos.sexo) fijar('dniSexo', datos.sexo);
       if (datos.fechaVencimientoISO) fijar('dniVencimiento', datos.fechaVencimientoISO);
       if (datos.cuil) fijar('dniCuil', datos.cuil);
+      if (datos.nacionalidad) fijar('dniNacionalidad', datos.nacionalidad);
       if (datos.esNuevoDNI && extraQR && extraQR.qr) leerReversoDNINuevo(form, datos, extraQR, fijar);
     }
 
@@ -2519,7 +2537,7 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
     estado.textContent = `✓ ${etiquetaDNI}: ${datos.nombreCompleto || ''} (${datos.dni || ''})` + (datos.porOCR ? ' — revisá que estén bien' : ' — Datos bloqueados');
     estado.classList.add('ok');
     estado.classList.remove('error');
-    escaneoEstado.textContent = datos.porOCR ? '✏️ Datos leídos del frente por OCR: revisalos y corregilos si hace falta. Para más precisión escaneá el QR del dorso.' : '🔒 Los datos fueron bloqueados para evitar modificaciones.';
+    escaneoEstado.textContent = datos.porOCR ? '✏️ Datos leídos del frente por OCR: revisalos y corregilos si hace falta. Revisá que estén bien.' : '🔒 Los datos fueron bloqueados para evitar modificaciones.';
 
     const target = captura.dataset.target;
     const esDniSolicitante = target.endsWith('-solicitante') || target === 'aut-progenitor';
@@ -2552,7 +2570,7 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
     scannerActivo = false;
     if (captura._scanInterval) { clearInterval(captura._scanInterval); captura._scanInterval = null; }
     if (scanIndicador) scanIndicador.classList.remove('activo');
-    if (motivoTexto) motivoTexto.textContent = 'No pudimos leer el código del DNI. Probá con más luz, sin reflejos, a unos 15–20 cm, apuntando al código de barras (DNI tarjeta) o al QR del dorso (DNI nuevo).';
+    if (motivoTexto) motivoTexto.textContent = 'No pudimos leer el código del DNI. Probá con más luz, sin reflejos, a unos 15–20 cm, apuntando al código de barras (DNI tarjeta), o con el DNI nuevo tocá «Sacar foto» mostrando el frente.';
     if (avisoFoto) avisoFoto.classList.add('activo');
     estado.textContent = 'No se detectó el código. Tocá Reintentar.';
     estado.classList.add('error');
