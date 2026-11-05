@@ -351,7 +351,7 @@ const DomicilioOCR = (() => {
   // 3) una pasada más de párrafo. Corta apenas tiene todo. Devuelve los textos (+ .nombres) para votar.
   // Un solo motor de OCR: las lecturas se hacen de a una (en cola). Si dos lecturas se mezclaban, una le cambiaba
   // los parámetros a la otra a mitad de camino y las dos salían mal (frente automático + reverso al mismo tiempo).
-  const ANCHO_GENERAL = 1500;   // ancho de la pasada general del frente (menos píxeles = más rápido; las etiquetas son grandes)
+  const ANCHO_GENERAL = 1150;   // ancho de la pasada general del frente (menos píxeles = más rápido; las etiquetas son grandes)
   let cola = Promise.resolve(), generacionFrente = 0;
   function enCola(fn) { const p = cola.then(fn, fn); cola = p.catch(() => {}); return p; }
   // Corta la lectura del frente en curso (por ej. porque apareció el QR del reverso): devuelve lo que tenga hasta ahí

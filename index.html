@@ -17,7 +17,7 @@
 <script src="js/parser-dni-nuevo.js?v=1"></script>
 <script src="js/decodificador.js?v=1"></script>
 <script src="js/qr-dni-nuevo.js?v=1"></script>
-<script src="js/domicilio-ocr.js?v=1" defer></script>
+<script src="js/domicilio-ocr.js?v=2" defer></script>
 <script src="js/frente-dni.js?v=1"></script>
 <style>
   :root{
@@ -1451,7 +1451,7 @@
 
 <footer class="site-footer">
   <div class="footer-inner">
-    <p style="font-size:11px;opacity:.7;font-weight:normal;">Versión 05/11 · 23:10</p>
+    <p style="font-size:11px;opacity:.7;font-weight:normal;">Versión 05/11 · 23:30</p>
     <p><strong>© 2026 Policía de Salta</strong> · Dirección de Modernización e Innovación Tecnológica (JP)</p>
   </div>
 </footer>
@@ -2297,6 +2297,11 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
         <button type="button" class="btn-datos-no" style="flex:1;min-width:140px;padding:11px;border-radius:999px;border:1px solid rgba(255,255,255,0.4);font-weight:700;cursor:pointer;background:rgba(255,255,255,0.08);color:#fff;">✏️ No, quiero corregirlos</button>
       </div>`;
     captura.insertAdjacentElement('afterend', caja);
+    if (!val(campos.dni) || !val(campos.nombre)) {   // lectura parcial: no se puede confirmar, hay que completar
+      caja.querySelector('div').textContent = 'Faltan datos: completalos o corregilos abajo.';
+      caja.querySelector('.btn-datos-si').style.display = 'none';
+      caja.querySelector('.btn-datos-no').textContent = '✏️ Completar los datos';
+    }
     const marcar = (valor) => {
       if (!(/-solicitante$/.test(captura.dataset.target) || captura.dataset.target === 'aut-progenitor')) return;
       let h = form.querySelector('input[name="confirmacionDatosDNI"]');
@@ -2423,7 +2428,8 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
       avisar('📸 Sacando la foto… mantené el DNI quieto');
       const rel = marcoRelativo();
       if (typeof DomicilioOCR !== 'undefined' && DomicilioOCR.precargar) DomicilioOCR.precargar().catch(() => {});
-      const foto = await fotoAltaCalidad();
+      let foto = null, nit = -1;
+      for (let i = 0; i < 3; i++) { const f = fotoFullDelVideo(); const sN = medirNitidez(f); if (sN > nit) { nit = sN; foto = f; } if (i < 2) await esperar(90); }
       if (!foto || !video.srcObject) return;
       const mejorada = mejorarImagenDNI(recortarAlMarco(foto, rel));
       mostrarFotoTomada(mejorada);   // desde acá se ve la foto (mejorada), no la cámara en vivo
@@ -2445,8 +2451,14 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
         const t0 = performance.now();
         // alcanza con lo que pide el formulario (nombre, apellido, DNI y nacimiento): apenas está, se deja de leer
         const suficiente = (t) => { const r = FrenteDNI.parsearVarios(t); return !!(r && r.dni && r.apellido && r.nombre && r.fechaNacimiento); };
-        const textos = await DomicilioOCR.leerFrente(mejorada, (pr) => avisar('🔍 Leyendo los datos del frente… ' + Math.round(pr * 100) + '%  (podés ir completando el resto del formulario)'),
-          suficiente, { tipo: 'nuevo' });
+        const tSuave = setTimeout(() => { try { DomicilioOCR.cancelarFrente(); } catch (e) { } }, 4500);
+        let tDuro;
+        const corteDuro = new Promise(res => { tDuro = setTimeout(() => { try { DomicilioOCR.abortarFrente && DomicilioOCR.abortarFrente(); } catch (e) { } res(null); }, 6500); });
+        let textos = await Promise.race([
+          DomicilioOCR.leerFrente(mejorada, (pr) => avisar('🔍 Leyendo los datos del frente… ' + Math.round(pr * 100) + '%'), suficiente, { tipo: 'nuevo' }).catch(() => null),
+          corteDuro
+        ]);
+        clearTimeout(tSuave); clearTimeout(tDuro);
         console.info('Lectura del frente:', Math.round(performance.now() - t0), 'ms');
         if (textos && textos.esReverso) {
           if (typeof QRDNINuevo !== 'undefined') {
@@ -2458,8 +2470,9 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
           avisar('↩️ Esa foto es del dorso. Tocá «Sacar otra foto» y mostrá el FRENTE del DNI.');
           return;
         }
-        const d = textos && !textos.cancelado ? FrenteDNI.parsearVarios(textos) : null;
-        if (d && d.dni && d.apellido && d.nombre) {
+        const d = textos && textos.length ? FrenteDNI.parsearVarios(textos) : null;
+        if (d && (d.dni || (d.apellido && d.nombre))) {
+          d.apellido = d.apellido || ''; d.nombre = d.nombre || ''; d.dni = d.dni || '';
           const sexo = d.sexo === 'M' || /^MASC/i.test(d.sexo || '') ? 'Masculino' : (d.sexo === 'F' || /^FEM/i.test(d.sexo || '') ? 'Femenino' : '');
           exitoEscaneo({
             nombreCompleto: (d.apellido + ' ' + d.nombre).replace(/\s+/g, ' ').trim(), apellido: d.apellido, nombre: d.nombre,
@@ -2470,7 +2483,8 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
           return;
         }
       }
-      avisar('No se pudieron leer todos los datos. Tocá «Sacar otra foto»: más luz, sin reflejos y el DNI ocupando el marco.');
+      avisar('No se pudieron leer los datos a tiempo. Tocá «Sacar otra foto» (más luz, sin reflejos) o escribilos a mano abajo.');
+      if (window.__desbloquearCamposPorEscaneo && form) window.__desbloquearCamposPorEscaneo(form, captura.dataset.target);
     } catch (e) {
       console.warn('Foto del DNI:', e);
       avisar('No se pudo procesar la foto. Tocá «Sacar otra foto».');
