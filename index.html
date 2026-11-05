@@ -1451,7 +1451,7 @@
 
 <footer class="site-footer">
   <div class="footer-inner">
-    <p style="font-size:11px;opacity:.7;font-weight:normal;">Versión 05/11 · 23:30</p>
+    <p style="font-size:11px;opacity:.7;font-weight:normal;">Versión 06/11 · 00:00</p>
     <p><strong>© 2026 Policía de Salta</strong> · Dirección de Modernización e Innovación Tecnológica (JP)</p>
   </div>
 </footer>
@@ -2091,7 +2091,7 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
       btnCamara.hidden = true;
       if (btnCancelar) btnCancelar.hidden = false;
       if (btnFrente) btnFrente.hidden = false;
-      setTimeout(() => { if (video.srcObject && typeof DomicilioOCR !== 'undefined' && DomicilioOCR.precargar) DomicilioOCR.precargar().catch(() => {}); }, 2500);
+      setTimeout(() => { if (video.srcObject) lectorRapidoDNI().catch(() => {}); }, 1500);
       if (marcoDni) marcoDni.classList.add('activo');
       if (avisoFoto) avisoFoto.classList.remove('activo');
       if (scanIndicador) scanIndicador.classList.add('activo');
@@ -2427,7 +2427,7 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
     try {
       avisar('📸 Sacando la foto… mantené el DNI quieto');
       const rel = marcoRelativo();
-      if (typeof DomicilioOCR !== 'undefined' && DomicilioOCR.precargar) DomicilioOCR.precargar().catch(() => {});
+      lectorRapidoDNI().catch(() => {});
       let foto = null, nit = -1;
       for (let i = 0; i < 3; i++) { const f = fotoFullDelVideo(); const sN = medirNitidez(f); if (sN > nit) { nit = sN; foto = f; } if (i < 2) await esperar(90); }
       if (!foto || !video.srcObject) return;
@@ -2447,18 +2447,32 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
         } catch (e) { }
       }
       // frente del DNI nuevo: todos sus datos impresos, leídos de la foto mejorada
-      if (typeof DomicilioOCR !== 'undefined' && typeof FrenteDNI !== 'undefined') {
+      if (typeof FrenteDNI !== 'undefined') {
         const t0 = performance.now();
-        // alcanza con lo que pide el formulario (nombre, apellido, DNI y nacimiento): apenas está, se deja de leer
-        const suficiente = (t) => { const r = FrenteDNI.parsearVarios(t); return !!(r && r.dni && r.apellido && r.nombre && r.fechaNacimiento); };
-        const tSuave = setTimeout(() => { try { DomicilioOCR.cancelarFrente(); } catch (e) { } }, 4500);
-        let tDuro;
-        const corteDuro = new Promise(res => { tDuro = setTimeout(() => { try { DomicilioOCR.abortarFrente && DomicilioOCR.abortarFrente(); } catch (e) { } res(null); }, 6500); });
-        let textos = await Promise.race([
-          DomicilioOCR.leerFrente(mejorada, (pr) => avisar('🔍 Leyendo los datos del frente… ' + Math.round(pr * 100) + '%'), suficiente, { tipo: 'nuevo' }).catch(() => null),
-          corteDuro
-        ]);
-        clearTimeout(tSuave); clearTimeout(tDuro);
+        // Lectura rápida: el frente del DNI nuevo tiene un diseño fijo; se lee de una sola pasada solo la zona de los datos
+        // (a la derecha de la foto), achicada y en grises. En las pruebas: ~1,2 s contra ~6 s de la lectura completa.
+        let textos = [];
+        try {
+          const w = await lectorRapidoDNI();
+          const zona = (x0, y0, x1, y1, ancho, filtro) => {
+            const sw = (x1 - x0) * mejorada.width, sh = (y1 - y0) * mejorada.height, k = ancho / sw;
+            const c = document.createElement('canvas'); c.width = ancho; c.height = Math.round(sh * k);
+            const cx = c.getContext('2d'); cx.filter = filtro; cx.imageSmoothingQuality = 'high';
+            cx.drawImage(mejorada, x0 * mejorada.width, y0 * mejorada.height, sw, sh, 0, 0, c.width, c.height);
+            return c;
+          };
+          const completo = () => { const r = FrenteDNI.parsearVarios(textos); return !!(r && r.dni && r.apellido && r.nombre && r.fechaNacimiento); };
+          avisar('🔍 Leyendo los datos del frente…');
+          await w.setParameters({ tessedit_pageseg_mode: '6', preserve_interword_spaces: '1' });
+          textos.push((await w.recognize(zona(0.28, 0.04, 0.98, 0.76, 900, 'grayscale(1) contrast(1.6)'))).data.text || '');
+          if (/[I1][D0O]ARG|<<<</.test(textos.join(' ').toUpperCase().replace(/\s/g, ''))) textos.esReverso = true;
+          // segunda pasada (otra lectura de la misma zona) solo si faltó algo y hay tiempo
+          if (!textos.esReverso && !completo() && performance.now() - t0 < 4000) {
+            avisar('🔍 Leyendo los datos del frente… (una pasada más)');
+            await w.setParameters({ tessedit_pageseg_mode: '11', preserve_interword_spaces: '1' });
+            textos.push((await w.recognize(zona(0.25, 0.02, 1, 0.80, 1100, 'grayscale(1) contrast(1.9) brightness(1.05)'))).data.text || '');
+          }
+        } catch (e) { console.warn('Lectura rápida:', e); }
         console.info('Lectura del frente:', Math.round(performance.now() - t0), 'ms');
         if (textos && textos.esReverso) {
           if (typeof QRDNINuevo !== 'undefined') {
@@ -2483,7 +2497,7 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
           return;
         }
       }
-      avisar('No se pudieron leer los datos a tiempo. Tocá «Sacar otra foto» (más luz, sin reflejos) o escribilos a mano abajo.');
+      avisar('No se pudieron leer los datos. Tocá «Sacar otra foto» (más luz, sin reflejos, el DNI llenando el marco) o escribilos a mano abajo.');
       if (window.__desbloquearCamposPorEscaneo && form) window.__desbloquearCamposPorEscaneo(form, captura.dataset.target);
     } catch (e) {
       console.warn('Foto del DNI:', e);
@@ -2899,6 +2913,16 @@ function _sinResultado(form, aviso, mensaje) {
   const sub = aviso.querySelector('.sub-aviso'); if (sub) sub.textContent = '';
 }
 
+
+// ===== Lector de texto rápido para el frente del DNI nuevo (uno para toda la página) =====
+let _lectorRapidoDNI = null;
+function lectorRapidoDNI() {
+  if (!_lectorRapidoDNI) {
+    if (typeof Tesseract === 'undefined') return Promise.reject(new Error('Lector no cargado'));
+    _lectorRapidoDNI = Tesseract.createWorker('spa', 1).catch(e => { _lectorRapidoDNI = null; throw e; });
+  }
+  return _lectorRapidoDNI;
+}
 
 // ===== Ayuda inmediata cuando no sale la comisaría (se suma al mapa; no reemplaza nada) =====
 function _normBusq(t) { return String(t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[°º]/g, ' ').replace(/\bii\b/g, '2').replace(/\biii\b/g, '3').replace(/\s+/g, ' ').trim(); }
