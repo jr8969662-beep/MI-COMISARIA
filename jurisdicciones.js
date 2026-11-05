@@ -360,6 +360,39 @@ function _agruparPorJurisdiccion(cands) {
    { lat, lon, precision: 'localidad' }                                             solo se encontró la localidad
    null
 */
+// ====== BARRIOS OFICIALES DE LA CIUDAD (Municipalidad de Salta) ======
+// Capa oficial de 389 barrios cruzada con los límites de las comisarías (barrios-capital.json).
+// Se usa SOLO si la persona escribió "Barrio X"/"B° X"/"Villa X" en Salta Capital, el nombre coincide
+// exacto y el barrio cae (80% o más) en una sola comisaría. Si no, sigue el método de siempre.
+let _barriosCapital = null;
+async function _cargarBarriosCapital() {
+  if (_barriosCapital) return _barriosCapital;
+  try {
+    const r = await fetch('barrios-capital.json?v=1');
+    _barriosCapital = r.ok ? ((await r.json()).barrios || []) : [];
+  } catch (e) { _barriosCapital = []; }
+  return _barriosCapital;
+}
+async function buscarBarrioOficial(domicilio, localidad) {
+  const loc = _norm(String(localidad || '').replace(/\(.*?\)/g, ' '));
+  if (loc && !['salta', 'capital', 'salta capital'].includes(loc)) return null;
+  const d = String(domicilio || '');
+  const m = d.match(/\b(barrio|b[°ºo]\.?|bo\.|b\.|villa|asentamiento|loteo)\s*([^,]+)/i);
+  if (!m) return null;
+  const nombre = _norm(m[2].replace(/\b(mza|manzana|mz|lote|lt|casa|block|monoblock|dpto|depto|calle|pasaje|psje)\b.*$/i, ''));
+  if (!nombre) return null;
+  const lista = await _cargarBarriosCapital();
+  let iguales = lista.filter(b => _norm(b.n) === nombre);
+  if (/^villa$/i.test(m[1]) && iguales.some(b => b.c === 'Villa')) iguales = iguales.filter(b => b.c === 'Villa');
+  if (!iguales.length) return null;
+  const jur = new Set(iguales.map(b => b.j));
+  if (jur.size !== 1 || iguales.some(b => !b.j || b.p < 80)) return null; // homónimos en otra comisaría o barrio partido
+  // con manzana se deja que el método de siempre busque la cuadra, salvo que el barrio entero sea de una comisaría
+  if (/\b(mza|manzana|mz)\b/i.test(d) && iguales.some(b => b.p < 100)) return null;
+  const b = iguales.slice().sort((x, y) => y.p - x.p)[0];
+  return { lat: b.lat, lon: b.lon, precision: 'barrio', descripcion: `${b.c} ${b.n} (registro oficial de barrios)`, fuente: 'barrios-oficiales' };
+}
+
 async function geocodificarDomicilio(domicilio, localidad, zonaElegida) {
   if (!JURIS.cargado) { try { await cargarJurisdicciones(); } catch (e) {} }
   const loc = (localidad || '').replace(/\s*\(.*?\)\s*/g, ' ').trim();
@@ -378,6 +411,9 @@ async function geocodificarDomicilio(domicilio, localidad, zonaElegida) {
       if (grupos.length === 1) return { lat: grupos[0].lat, lon: grupos[0].lon, precision: 'numero', descripcion: `${a.calle} ${a.numero}` };
     }
   }
+
+  // 1b) Barrio oficial de la Municipalidad (sin internet, exacto). Si no aplica, sigue igual que siempre.
+  try { const bo = await buscarBarrioOficial(domicilio, localidad); if (bo) return bo; } catch (e) {}
 
   // 2) Barrio (+ manzana si la hay)
   if (a.barrio) {
