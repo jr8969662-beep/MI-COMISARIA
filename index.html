@@ -1434,7 +1434,7 @@
 
 <footer class="site-footer">
   <div class="footer-inner">
-    <p style="font-size:11px;opacity:.7;font-weight:normal;">Versión 05/11 · 19:30</p>
+    <p style="font-size:11px;opacity:.7;font-weight:normal;">Versión 05/11 · 20:00</p>
     <p><strong>© 2026 Policía de Salta</strong> · Dirección de Modernización e Innovación Tecnológica (JP)</p>
   </div>
 </footer>
@@ -2635,6 +2635,74 @@ function _sinResultado(form, aviso, mensaje) {
   const sub = aviso.querySelector('.sub-aviso'); if (sub) sub.textContent = '';
 }
 
+
+// ===== Ayuda inmediata cuando no sale la comisaría (se suma al mapa; no reemplaza nada) =====
+function _normBusq(t) { return String(t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[°º]/g, ' ').replace(/\bii\b/g, '2').replace(/\biii\b/g, '3').replace(/\s+/g, ' ').trim(); }
+function _agregarAyudaSinComisaria(form, aviso) {
+  const caja = document.createElement('div');
+  caja.className = 'mapa-confirmacion ayuda-sin-comisaria';
+  caja.style.cssText = 'margin-top:10px;padding:10px 12px;border:1px dashed rgba(255,255,255,0.3);border-radius:8px;';
+  caja.innerHTML = `
+    <div style="font-weight:600;margin-bottom:6px;">¿No te sale tu comisaría? Buscá tu barrio:</div>
+    <input type="text" class="buscar-barrio-oficial" placeholder="Ej: Grand Bourg, Santa Ana 3, Villa Asunción" autocomplete="off"
+      style="width:100%;padding:9px 10px;border-radius:6px;border:1px solid rgba(255,255,255,0.3);background:rgba(0,0,0,0.25);color:inherit;">
+    <div class="resultados-barrio" style="margin-top:6px;"></div>
+    <div style="font-size:0.78rem;opacity:0.8;margin-top:4px;">Barrios oficiales de la ciudad de Salta (Municipalidad). Para el interior, marcá tu casa en el mapa.</div>
+    <details style="margin-top:10px;">
+      <summary style="cursor:pointer;font-size:0.85rem;">No encuentro mi casa ni mi barrio: elegir la comisaría</summary>
+      <input type="text" class="buscar-comisaria-manual" placeholder="Escribí el nombre de la comisaría o localidad" autocomplete="off"
+        style="width:100%;margin-top:8px;padding:9px 10px;border-radius:6px;border:1px solid rgba(255,255,255,0.3);background:rgba(0,0,0,0.25);color:inherit;">
+      <div class="resultados-comisaria" style="margin-top:6px;"></div>
+      <div style="font-size:0.78rem;opacity:0.8;margin-top:4px;">El personal va a verificar que sea la comisaría correcta y, si no lo es, la deriva.</div>
+    </details>`;
+  aviso.appendChild(caja);
+  const estiloBtn = 'display:block;width:100%;text-align:left;margin:4px 0;padding:8px 10px;border-radius:6px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.06);color:inherit;cursor:pointer;line-height:1.35;';
+  const inB = caja.querySelector('.buscar-barrio-oficial'), outB = caja.querySelector('.resultados-barrio');
+  inB.addEventListener('input', async () => {
+    const q = _normBusq(inB.value).replace(/^(barrio|b|bo|villa|asentamiento|loteo)\s+/, '');
+    outB.innerHTML = '';
+    if (q.length < 3 || typeof _cargarBarriosCapital !== 'function') return;
+    const lista = await _cargarBarriosCapital();
+    const palabras = q.split(' ');
+    const hallados = lista.filter(b => b.j && palabras.every(w => _normBusq(b.c + ' ' + b.n).includes(w))).slice(0, 8);
+    if (!hallados.length) { outB.innerHTML = '<div style="font-size:0.82rem;opacity:0.8;">No está en la lista oficial. Marcá tu casa en el mapa.</div>'; return; }
+    hallados.forEach(b => {
+      const btn = document.createElement('button'); btn.type = 'button'; btn.style.cssText = estiloBtn;
+      btn.innerHTML = `<strong>${escapeHtmlSimple(b.c + ' ' + b.n)}</strong><br><small>${b.p >= 80 ? 'Comisaría: ' + escapeHtmlSimple(nombreLegibleJurisdiccion(b.j)) : 'Repartido entre comisarías: vas a marcar tu casa'}</small>`;
+      btn.addEventListener('click', () => {
+        form.dataset.ubicacionLat = b.lat; form.dataset.ubicacionLon = b.lon;
+        form.dataset.usarUbicacionGuardada = 'true'; form.dataset.ubicacionFuente = 'mapa';
+        if (b.p >= 80) mostrarAvisoComisaria(form, 'ok', { comisaria: b.j, lat: b.lat, lon: b.lon, origen: 'poligono_barrio', descripcion: `${b.c} ${b.n}` });
+        else mostrarAvisoComisaria(form, 'mapa', { motivo: `Tu barrio (${b.c} ${b.n}) está repartido entre dos comisarías: mové el marcador hasta tu casa.`, lat: b.lat, lon: b.lon, sugerida: b.j, vecina: b.o && b.o[0] ? b.o[0][0] : null });
+      });
+      outB.appendChild(btn);
+    });
+  });
+  const inC = caja.querySelector('.buscar-comisaria-manual'), outC = caja.querySelector('.resultados-comisaria');
+  inC.addEventListener('input', () => {
+    const q = _normBusq(inC.value); outC.innerHTML = '';
+    if (q.length < 2 || typeof JURIS === 'undefined') return;
+    const palabras = q.split(' ');
+    const lat0 = parseFloat(form.dataset.ubicacionLat), lon0 = parseFloat(form.dataset.ubicacionLon);
+    const dist = (clave) => { const d = typeof dependenciaOficial === 'function' ? dependenciaOficial(clave) : null; return d && isFinite(lat0) && d.lat ? Math.hypot(d.lat - lat0, (d.lon - lon0) * 0.9) : 9; };
+    const hallados = JURIS.lista.map(j => j.nombre).filter(n => { const t = _normBusq(nombreLegibleJurisdiccion(n) + ' ' + n); return palabras.every(w => t.includes(w)); })
+      .sort((a, b) => dist(a) - dist(b)).slice(0, 8);
+    hallados.forEach(n => {
+      const btn = document.createElement('button'); btn.type = 'button'; btn.style.cssText = estiloBtn;
+      btn.textContent = nombreLegibleJurisdiccion(n);
+      btn.addEventListener('click', () => {
+        _fijarResultado(form, aviso, n, 'Elegida por vos: el personal la va a verificar.');
+        let h = form.querySelector('input[name="comisariaElegidaPorCiudadano"]');
+        if (!h) { h = document.createElement('input'); h.type = 'hidden'; h.name = 'comisariaElegidaPorCiudadano'; form.appendChild(h); }
+        h.value = 'Sí — verificar que corresponda';
+        outC.innerHTML = '<div style="font-size:0.82rem;color:#86efac;">✓ Listo, ya podés enviar el trámite.</div>';
+      });
+      outC.appendChild(btn);
+    });
+  });
+}
+function escapeHtmlSimple(t) { return String(t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+
 function crearMapaConfirmacion(aviso, form, { lat, lng, nombre, pedirPunto, zoom }) {
   const bloqueMapa = document.createElement('div');
   bloqueMapa.className = 'mapa-confirmacion';
@@ -2720,6 +2788,7 @@ async function mostrarAvisoComisaria(form, estado, dato) {
   const aviso = form.querySelector('[data-comisaria-aviso]');
   if (!aviso) return;
   _limpiarAviso(aviso);
+  { const h = form.querySelector('input[name="comisariaElegidaPorCiudadano"]'); if (h) h.value = ''; }
   const texto = aviso.querySelector('.texto');
   const nombreEl = aviso.querySelector('.nombre');
 
@@ -2755,6 +2824,7 @@ async function mostrarAvisoComisaria(form, estado, dato) {
       lat: dato.lat ?? CENTRO_SALTA.lat, lng: dato.lon ?? CENTRO_SALTA.lng,
       nombre: dato.sugerida || null, pedirPunto: true, zoom: dato.lat == null ? 13 : (dato.sugerida ? 17 : 14)
     });
+    _agregarAyudaSinComisaria(form, aviso);
   } else if (estado === 'elegir') {
     _sinResultado(form, aviso, 'Hay más de un barrio con ese nombre. Tocá el tuyo:');
     const caja = document.createElement('div');
@@ -2779,6 +2849,7 @@ async function mostrarAvisoComisaria(form, estado, dato) {
     texto.textContent = '⚠️ No se pudo calcular la comisaría (revisá tu conexión).';
     nombreEl.textContent = 'Si no se resuelve, el personal la asignará';
     form.dataset.comisariaAsignada = '';
+    _agregarAyudaSinComisaria(form, aviso);
   } else {
     form.dataset.comisariaAsignada = '';
   }
