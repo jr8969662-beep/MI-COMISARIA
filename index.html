@@ -1451,7 +1451,7 @@
 
 <footer class="site-footer">
   <div class="footer-inner">
-    <p style="font-size:11px;opacity:.7;font-weight:normal;">Versión 06/11 · 00:00</p>
+    <p style="font-size:11px;opacity:.7;font-weight:normal;">Versión 06/11 · 00:30</p>
     <p><strong>© 2026 Policía de Salta</strong> · Dirección de Modernización e Innovación Tecnológica (JP)</p>
   </div>
 </footer>
@@ -2449,29 +2449,75 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
       // frente del DNI nuevo: todos sus datos impresos, leídos de la foto mejorada
       if (typeof FrenteDNI !== 'undefined') {
         const t0 = performance.now();
-        // Lectura rápida: el frente del DNI nuevo tiene un diseño fijo; se lee de una sola pasada solo la zona de los datos
-        // (a la derecha de la foto), achicada y en grises. En las pruebas: ~1,2 s contra ~6 s de la lectura completa.
+        // Lectura rápida del frente del DNI nuevo (diseño fijo): se lee solo la zona de los datos.
+        // La foto se limpia ANTES de leer (mediana + suavizado): el fondo de seguridad del DNI y los reflejos dejan
+        // un "granulado" que a la vista no molesta pero que confunde al lector. Se usa la foto sin realzar.
         let textos = [];
-        try {
-          const w = await lectorRapidoDNI();
-          const zona = (x0, y0, x1, y1, ancho, filtro) => {
-            const sw = (x1 - x0) * mejorada.width, sh = (y1 - y0) * mejorada.height, k = ancho / sw;
-            const c = document.createElement('canvas'); c.width = ancho; c.height = Math.round(sh * k);
-            const cx = c.getContext('2d'); cx.filter = filtro; cx.imageSmoothingQuality = 'high';
-            cx.drawImage(mejorada, x0 * mejorada.width, y0 * mejorada.height, sw, sh, 0, 0, c.width, c.height);
-            return c;
-          };
-          const completo = () => { const r = FrenteDNI.parsearVarios(textos); return !!(r && r.dni && r.apellido && r.nombre && r.fechaNacimiento); };
-          avisar('🔍 Leyendo los datos del frente…');
-          await w.setParameters({ tessedit_pageseg_mode: '6', preserve_interword_spaces: '1' });
-          textos.push((await w.recognize(zona(0.28, 0.04, 0.98, 0.76, 900, 'grayscale(1) contrast(1.6)'))).data.text || '');
-          if (/[I1][D0O]ARG|<<<</.test(textos.join(' ').toUpperCase().replace(/\s/g, ''))) textos.esReverso = true;
-          // segunda pasada (otra lectura de la misma zona) solo si faltó algo y hay tiempo
-          if (!textos.esReverso && !completo() && performance.now() - t0 < 4000) {
-            avisar('🔍 Leyendo los datos del frente… (una pasada más)');
-            await w.setParameters({ tessedit_pageseg_mode: '11', preserve_interword_spaces: '1' });
-            textos.push((await w.recognize(zona(0.25, 0.02, 1, 0.80, 1100, 'grayscale(1) contrast(1.9) brightness(1.05)'))).data.text || '');
+        const crudo = recortarAlMarco(foto, rel);
+        const limpiar = (x0, y0, x1, y1, op) => {
+          const sw = (x1 - x0) * crudo.width, sh = (y1 - y0) * crudo.height;
+          const k = op.ancho ? op.ancho / sw : op.alto / sh;
+          const w = Math.max(8, Math.round(sw * k)), h = Math.max(8, Math.round(sh * k));
+          const c = document.createElement('canvas'); c.width = w; c.height = h;
+          const cx = c.getContext('2d', { willReadFrequently: true }); cx.imageSmoothingQuality = 'high'; cx.filter = 'grayscale(1)';
+          cx.drawImage(crudo, x0 * crudo.width, y0 * crudo.height, sw, sh, 0, 0, w, h);
+          const im = cx.getImageData(0, 0, w, h), d = im.data, n = w * h;
+          let g = new Uint8ClampedArray(n);
+          for (let i = 0; i < n; i++) g[i] = d[i * 4];
+          // mediana 3x3: borra los puntitos del fondo sin borronear las letras
+          const m = new Uint8ClampedArray(g), v = new Array(9);
+          for (let y = 1; y < h - 1; y++) for (let x = 1; x < w - 1; x++) {
+            let t = 0; for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) v[t++] = g[(y + dy) * w + x + dx];
+            v.sort((p, q) => p - q); m[y * w + x] = v[4];
           }
+          // suavizado (núcleo 5 o 7), en dos pasadas
+          const ker = op.kernel === 7 ? [1, 6, 15, 20, 15, 6, 1] : [1, 4, 6, 4, 1], r = ker.length >> 1, ks = ker.reduce((p, q) => p + q, 0);
+          const tmp = new Float32Array(n);
+          for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { let acc = 0; for (let i = -r; i <= r; i++) acc += ker[i + r] * m[y * w + Math.min(w - 1, Math.max(0, x + i))]; tmp[y * w + x] = acc / ks; }
+          for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { let acc = 0; for (let i = -r; i <= r; i++) acc += ker[i + r] * tmp[Math.min(h - 1, Math.max(0, y + i)) * w + x]; g[y * w + x] = acc / ks; }
+          // contraste: 1% más oscuro → negro, 1% más claro → blanco
+          const hist = new Uint32Array(256); for (let i = 0; i < n; i++) hist[g[i]]++;
+          let lo = 0, hi = 255, acc = 0; for (let i = 0; i < 256; i++) { acc += hist[i]; if (acc > n * 0.01) { lo = i; break; } }
+          acc = 0; for (let i = 255; i >= 0; i--) { acc += hist[i]; if (acc > n * 0.01) { hi = i; break; } }
+          const rango = Math.max(30, hi - lo);
+          for (let i = 0; i < n; i++) { const val = Math.min(255, Math.max(0, (g[i] - lo) * 255 / rango)); d[i * 4] = d[i * 4 + 1] = d[i * 4 + 2] = val; d[i * 4 + 3] = 255; }
+          cx.putImageData(im, 0, 0);
+          return c;
+        };
+        let dniVotado = '', nacVotada = '';
+        // En la app (Android): lectura nativa de Google (ML Kit), en una fracción de segundo y mucho más precisa
+        if (typeof DomicilioOCR !== 'undefined' && DomicilioOCR.nativoDisponible && DomicilioOCR.nativoDisponible()) {
+          try {
+            avisar('🔍 Leyendo los datos del frente…');
+            const tn = await Promise.race([DomicilioOCR.leerFrente(crudo, null, null, { tipo: 'nuevo' }), esperar(4000).then(() => null)]);
+            if (tn && tn.length) textos = tn;
+          } catch (e) { console.warn('Lectura nativa:', e); }
+        }
+        const yaCompleto = () => { const r = FrenteDNI.parsearVarios(textos) || {}; return !!(textos.esReverso || (r.dni && r.apellido && r.nombre && r.fechaNacimiento)); };
+        if (!yaCompleto()) try {
+          const w = await lectorRapidoDNI();
+          const leer = async (img, psm, lista) => { await w.setParameters({ tessedit_pageseg_mode: psm, preserve_interword_spaces: '1', tessedit_char_whitelist: lista || '' }); return (await w.recognize(img)).data.text || ''; };
+          const actual = () => FrenteDNI.parsearVarios(textos) || {};
+          const completo = () => { const r = actual(); return !!((r.dni || dniVotado) && r.apellido && r.nombre && (r.fechaNacimiento || nacVotada)); };
+          const quedaTiempo = (ms) => performance.now() - t0 < ms;
+          avisar('🔍 Leyendo los datos del frente…');
+          textos.push(await leer(limpiar(0.28, 0.04, 0.98, 0.76, { ancho: 900, kernel: 5 }), '6'));
+          if (/[I1][D0O]ARG|<<<</.test(textos.join(' ').toUpperCase().replace(/\s/g, ''))) textos.esReverso = true;
+          if (!textos.esReverso && !completo() && quedaTiempo(3500)) textos.push(await leer(limpiar(0.28, 0.04, 0.98, 0.76, { ancho: 700, kernel: 7 }), '6'));
+          if (!textos.esReverso && !completo() && quedaTiempo(4200)) textos.push(await leer(limpiar(0.28, 0.04, 0.98, 0.76, { ancho: 900, kernel: 5 }), '11'));
+          // número de documento y fecha de nacimiento: zonas chicas, solo números, varias lecturas y gana la que más se repite
+          const votar = (lista, re, arreglar) => { const cuenta = {}; lista.forEach(t => { const m = re.exec(String(t).replace(/\s+/g, '')); if (m) { const val = arreglar(m); cuenta[val] = (cuenta[val] || 0) + 1; } }); let mejor = '', n = 0; for (const [k2, c2] of Object.entries(cuenta)) if (c2 > n) { mejor = k2; n = c2; } return mejor; };
+          if (!textos.esReverso && !actual().dni && quedaTiempo(5200)) {
+            const lect = [];
+            for (const op of [{ alto: 90, kernel: 5 }, { alto: 90, kernel: 7 }, { alto: 60, kernel: 7 }]) { if (!quedaTiempo(5800)) break; lect.push(await leer(limpiar(0.33, 0.53, 0.66, 0.69, op), '7', '0123456789.')); }
+            dniVotado = votar(lect, /(\d{1,2})\.?(\d{3})\.?(\d{3})/, m => m[1] + m[2] + m[3]);
+          }
+          if (!textos.esReverso && !actual().fechaNacimiento && quedaTiempo(5800)) {
+            const lect = [];
+            for (const op of [{ alto: 90, kernel: 5 }, { alto: 90, kernel: 7 }]) { if (!quedaTiempo(6300)) break; lect.push(await leer(limpiar(0.60, 0.44, 0.95, 0.58, op), '7', '0123456789.')); }
+            nacVotada = votar(lect, /(\d{2})\.?(\d{2})\.?((?:19|20)\d{2})/, m => `${m[3]}-${m[2]}-${m[1]}`);
+          }
+          await w.setParameters({ tessedit_char_whitelist: '' });
         } catch (e) { console.warn('Lectura rápida:', e); }
         console.info('Lectura del frente:', Math.round(performance.now() - t0), 'ms');
         if (textos && textos.esReverso) {
@@ -2484,7 +2530,8 @@ document.querySelectorAll('.captura-foto').forEach(captura => {
           avisar('↩️ Esa foto es del dorso. Tocá «Sacar otra foto» y mostrá el FRENTE del DNI.');
           return;
         }
-        const d = textos && textos.length ? FrenteDNI.parsearVarios(textos) : null;
+        let d = textos && textos.length ? FrenteDNI.parsearVarios(textos) : null;
+        if (dniVotado || nacVotada) { d = d || {}; if (!d.dni && dniVotado) d.dni = dniVotado; if (!d.fechaNacimiento && nacVotada) d.fechaNacimiento = nacVotada; }
         if (d && (d.dni || (d.apellido && d.nombre))) {
           d.apellido = d.apellido || ''; d.nombre = d.nombre || ''; d.dni = d.dni || '';
           const sexo = d.sexo === 'M' || /^MASC/i.test(d.sexo || '') ? 'Masculino' : (d.sexo === 'F' || /^FEM/i.test(d.sexo || '') ? 'Femenino' : '');
